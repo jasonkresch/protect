@@ -16,3 +16,7 @@ TODO: Write deployment instructions
 ## Operations
 
 TODO: Provide examples of performing various supported operations
+
+
+## Contributing
+Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
