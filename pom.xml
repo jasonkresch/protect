@@ -4,19 +4,61 @@
 
 	<groupId>com.ibm.pross</groupId>
 	<artifactId>pross</artifactId>
-	<packaging>jar</packaging>
+	<packaging>pom</packaging>
 	<version>1.0-SNAPSHOT</version>
 
 	<name>pross</name>
-	<url>http://maven.apache.org</url>
+	<description>Proactive Secret Sharing and Distributed Key Generation</description>
+	<url>https://github.com/jasonkresch/pross/</url>
+	<organization>
+		<name>IBM, Inc.</name>
+		<url>http://www.ibm.com</url>
+	</organization>
+
+	<issueManagement>
+		<system>github</system>
+		<url>https://github.com/jasonkresch/pross/issues</url>
+	</issueManagement>
+
+	
+	<modules>
+		<module>pross-common</module>
+		<module>pross-client</module>
+		<module>pross-server</module>
+		<module>bft-smart</module>
+	</modules>
+
+
+	<properties>
+		<apache.http.version>4.3.4</apache.http.version>
+		<apache.httpcore.version>4.4.6</apache.httpcore.version>
+		<apache.httpcore.httpclient.version>4.5.3</apache.httpcore.httpclient.version>
+		<apache.httpcore.httpasyncclient.version>4.1.3</apache.httpcore.httpasyncclient.version>
+		<!-- surefire/jacoco argLine integration. see: http://docs.sonarqube.org/display/SONAR/JaCoCo+Plugin -->
+		<argLine>-Xmx1024m -ea</argLine>
+		<current.version>${project.version}</current.version>
+		<default.namespace>com.ibm.keyprotect</default.namespace>
+		<jetty.version>9.2.10.v20150310</jetty.version>
+		<netty.version>4.1.17.Final</netty.version>
+		<bouncycastle.version>1.59</bouncycastle.version>
+		<log4j.legacy.version>1.2.17</log4j.legacy.version>
+		<log4j.version>2.2.cs.3</log4j.version>
+		<pit.threads>4</pit.threads>
+		<pit.timeoutFactor>3</pit.timeoutFactor>
+		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+		<project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+		<slf4j.version>1.7.5</slf4j.version>
+		<test.reuseForks>false</test.reuseForks>
+		<test.forkCount>1</test.forkCount>
+	</properties>
 
 	<build>
 		<plugins>
 			<plugin>
 				<artifactId>maven-compiler-plugin</artifactId>
 				<configuration>
-					<source>1.7</source>
-					<target>1.7</target>
+					<source>1.8</source>
+					<target>1.8</target>
 				</configuration>
 			</plugin>
 		</plugins>
