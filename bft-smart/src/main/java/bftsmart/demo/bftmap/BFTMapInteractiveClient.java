@@ -15,10 +15,9 @@ limitations under the License.
 */
 package bftsmart.demo.bftmap;
 
+import java.io.Console;
 import java.io.IOException;
 import java.util.Scanner;
-
-import java.io.Console;
 import java.util.TreeMap;
 
 /**
@@ -27,9 +26,8 @@ import java.util.TreeMap;
  */
 public class BFTMapInteractiveClient {
 
-
 	public static void main(String[] args) throws IOException {
-		if(args.length < 1) {
+		if (args.length < 1) {
 			System.out.println("Usage: java BFTMapInteractiveClient <process id>");
 			System.exit(-1);
 		}
@@ -38,9 +36,8 @@ public class BFTMapInteractiveClient {
 
 		Console console = System.console();
 		Scanner sc = new Scanner(System.in);
-		
 
-		while(true) {
+		while (true) {
 
 			System.out.println("select a command : 1. CREATE A NEW TABLE OF TABLES");
 			System.out.println("select a command : 2. REMOVE AN EXISTING TABLE");
@@ -53,8 +50,8 @@ public class BFTMapInteractiveClient {
 
 			int cmd = sc.nextInt();
 
-			switch(cmd) {
-			//operations on the table
+			switch (cmd) {
+			// operations on the table
 			case BFTMapRequestType.TAB_CREATE:
 				String tableName;
 				boolean tableExists = false;
@@ -62,34 +59,34 @@ public class BFTMapInteractiveClient {
 					tableName = console.readLine("Enter the HashMap name: ");
 					tableExists = bftMap.containsKey(tableName);
 					if (!tableExists) {
-						//if the table name does not exist then create the table
-						bftMap.put(tableName, new TreeMap<String,byte[]>());
+						// if the table name does not exist then create the table
+						bftMap.put(tableName, new TreeMap<String, byte[]>());
 					}
-				} while(tableExists);
+				} while (tableExists);
 				break;
 
 			case BFTMapRequestType.SIZE_TABLE:
-				//obtain the size of the table of tables.
+				// obtain the size of the table of tables.
 				System.out.println("Computing the size of the table");
-				int size=bftMap.size();
-				System.out.println("The size of the table of tables is: "+size);
+				int size = bftMap.size();
+				System.out.println("The size of the table of tables is: " + size);
 				break;
 
 			case BFTMapRequestType.TAB_REMOVE:
-				//Remove the table entry
+				// Remove the table entry
 				tableExists = false;
 				tableName = null;
 				System.out.println("Removing table");
 				tableName = console.readLine("Enter the valid table name you want to remove: ");
 				tableExists = bftMap.containsKey(tableName);
-				if(tableExists) {
+				if (tableExists) {
 					bftMap.remove(tableName);
 					System.out.println("Table removed");
 				} else
 					System.out.println("Table not found");
 				break;
 
-				//operations on the hashmap
+			// operations on the hashmap
 			case BFTMapRequestType.PUT:
 				System.out.println("Execute put function");
 				tableExists = false;
@@ -101,8 +98,8 @@ public class BFTMapInteractiveClient {
 
 				byte[] resultBytes;
 				tableExists = bftMap.containsKey(tableName);
-				if(tableExists) {
-					while(key.length() < 4)
+				if (tableExists) {
+					while (key.length() < 4)
 						key = "0" + key;
 					byte[] byteArray = value.getBytes();
 					resultBytes = bftMap.putEntry(tableName, key, byteArray);
@@ -120,11 +117,11 @@ public class BFTMapInteractiveClient {
 				tableExists = bftMap.containsKey(tableName);
 				if (tableExists) {
 					key = console.readLine("Enter the key: ");
-					while(key.length() < 4)
+					while (key.length() < 4)
 						key = "0" + key;
 					keyExists = bftMap.containsKey1(tableName, key);
-					if(keyExists) {
-						resultBytes = bftMap.getEntry(tableName,key);
+					if (keyExists) {
+						resultBytes = bftMap.getEntry(tableName, key);
 						System.out.println("The value received from GET is: " + new String(resultBytes));
 					} else
 						System.out.println("Key not found");
@@ -155,12 +152,12 @@ public class BFTMapInteractiveClient {
 				key = null;
 				tableName = console.readLine("Enter the table name from which you want to remove: ");
 				tableExists = bftMap.containsKey(tableName);
-				if(tableExists) {
+				if (tableExists) {
 					key = console.readLine("Enter the valid key: ");
 					keyExists = bftMap.containsKey1(tableName, key);
-					if(keyExists) {
-						byte[] result2 = bftMap.removeEntry(tableName,key);
-						System.out.println("The previous value was : "+new String(result2));
+					if (keyExists) {
+						byte[] result2 = bftMap.removeEntry(tableName, key);
+						System.out.println("The previous value was : " + new String(result2));
 					} else
 						System.out.println("Key not found");
 				} else

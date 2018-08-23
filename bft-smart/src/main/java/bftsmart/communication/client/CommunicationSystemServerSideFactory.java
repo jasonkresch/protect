@@ -24,7 +24,7 @@ import bftsmart.reconfiguration.ServerViewController;
  */
 public class CommunicationSystemServerSideFactory {
 
-    public static CommunicationSystemServerSide getCommunicationSystemServerSide(ServerViewController controller) {
-        return new NettyClientServerCommunicationSystemServerSide(controller);
-    }
+	public static CommunicationSystemServerSide getCommunicationSystemServerSide(ServerViewController controller) {
+		return new NettyClientServerCommunicationSystemServerSide(controller);
+	}
 }

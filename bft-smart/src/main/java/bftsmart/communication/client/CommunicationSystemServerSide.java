@@ -18,13 +18,17 @@ package bftsmart.communication.client;
 import bftsmart.tom.core.messages.TOMMessage;
 
 /**
- * Methods that should be implemented by the server side of the client-server communication system
+ * Methods that should be implemented by the server side of the client-server
+ * communication system
  *
  * @author Paulo
  */
-public interface CommunicationSystemServerSide {   
-   public void send(int[] targets, TOMMessage sm, boolean serializeClassHeaders);
-   public int[] getClients();
-   public void setRequestReceiver(RequestReceiver requestReceiver);
-   public void shutdown();
+public interface CommunicationSystemServerSide {
+	public void send(int[] targets, TOMMessage sm, boolean serializeClassHeaders);
+
+	public int[] getClients();
+
+	public void setRequestReceiver(RequestReceiver requestReceiver);
+
+	public void shutdown();
 }

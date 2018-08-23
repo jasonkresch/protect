@@ -17,6 +17,11 @@ package bftsmart.demo.microbenchmarks;
 
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.Collection;
+import java.util.LinkedList;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 
 import bftsmart.communication.client.ReplyListener;
 import bftsmart.tom.AsynchServiceProxy;
@@ -24,11 +29,6 @@ import bftsmart.tom.RequestContext;
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.core.messages.TOMMessageType;
 import bftsmart.tom.util.Storage;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-import java.util.concurrent.Future;
 
 /**
  *
@@ -37,146 +37,164 @@ import java.util.concurrent.Future;
  */
 public class AsyncLatencyClient {
 
-    static int initId;
-    
-    public static void main(String[] args) throws IOException {
-        if (args.length < 7) {
-            System.out.println("Usage: java ...AsyncLatencyClient <initial client id> <number of clients> <number of operations> <request size> <interval (ms)> <read only?> <verbose?>");
-            System.exit(-1);
-        }
+	static int initId;
 
-        initId = Integer.parseInt(args[0]);
-        int numThreads = Integer.parseInt(args[1]);
-        int numberOfOps = Integer.parseInt(args[2]);
-        int requestSize = Integer.parseInt(args[3]);
-        int interval = Integer.parseInt(args[4]);
-        boolean readOnly = Boolean.parseBoolean(args[5]);
-        boolean verbose = Boolean.parseBoolean(args[6]);
-        
-        Client[] clients = new Client[numThreads];
+	public static void main(String[] args) throws IOException {
+		if (args.length < 7) {
+			System.out.println(
+					"Usage: java ...AsyncLatencyClient <initial client id> <number of clients> <number of operations> <request size> <interval (ms)> <read only?> <verbose?>");
+			System.exit(-1);
+		}
 
-        for (int i = 0; i < numThreads; i++) {
-            try {
-                Thread.sleep(100);
-            } catch (InterruptedException ex) {
-                ex.printStackTrace();
-            }
+		initId = Integer.parseInt(args[0]);
+		int numThreads = Integer.parseInt(args[1]);
+		int numberOfOps = Integer.parseInt(args[2]);
+		int requestSize = Integer.parseInt(args[3]);
+		int interval = Integer.parseInt(args[4]);
+		boolean readOnly = Boolean.parseBoolean(args[5]);
+		boolean verbose = Boolean.parseBoolean(args[6]);
 
-            System.out.println("Launching client " + (initId + i));
-            clients[i] = new AsyncLatencyClient.Client(initId + i, numberOfOps, requestSize, interval, readOnly, verbose);
-        }
-        
-        ExecutorService exec = Executors.newFixedThreadPool(clients.length);
-        Collection<Future<?>> tasks = new LinkedList<>();
-        
-        for (Client c : clients) {
-            tasks.add(exec.submit(c));
-        }
-        
-        // wait for tasks completion
-        for (Future<?> currTask : tasks) {
-            try {
-                currTask.get();
-            } catch (Exception ex) {
-                ex.printStackTrace();
-            }
+		Client[] clients = new Client[numThreads];
 
-        }
-    
-        exec.shutdown();
-        
-        System.out.println("All clients done.");
+		for (int i = 0; i < numThreads; i++) {
+			try {
+				Thread.sleep(100);
+			} catch (InterruptedException ex) {
+				ex.printStackTrace();
+			}
 
-    }
+			System.out.println("Launching client " + (initId + i));
+			clients[i] = new AsyncLatencyClient.Client(initId + i, numberOfOps, requestSize, interval, readOnly,
+					verbose);
+		}
 
-    static class Client extends Thread {
+		ExecutorService exec = Executors.newFixedThreadPool(clients.length);
+		Collection<Future<?>> tasks = new LinkedList<>();
 
-        int id;
-        AsynchServiceProxy serviceProxy;
-        int numberOfOps;
-        int interval;
-        byte[] request;
-        TOMMessageType reqType;
-        boolean verbose;
+		for (Client c : clients) {
+			tasks.add(exec.submit(c));
+		}
 
-        public Client(int id, int numberOfOps, int requestSize, int interval, boolean readOnly, boolean verbose) {
+		// wait for tasks completion
+		for (Future<?> currTask : tasks) {
+			try {
+				currTask.get();
+			} catch (Exception ex) {
+				ex.printStackTrace();
+			}
 
-            this.id = id;
-            this.serviceProxy = new AsynchServiceProxy(id);
+		}
 
-            this.numberOfOps = numberOfOps;
-            this.interval = interval;
-            this.request = new byte[requestSize];
-            this.reqType = (readOnly ? TOMMessageType.UNORDERED_REQUEST : TOMMessageType.ORDERED_REQUEST);
-            this.verbose = verbose;
+		exec.shutdown();
 
-        }
+		System.out.println("All clients done.");
 
-        public void run() {
+	}
 
-            try {
+	static class Client extends Thread {
 
-                Storage st = new Storage(this.numberOfOps / 2);
-                
-                if (this.verbose) System.out.println("Executing experiment for " + this.numberOfOps + " ops");
+		int id;
+		AsynchServiceProxy serviceProxy;
+		int numberOfOps;
+		int interval;
+		byte[] request;
+		TOMMessageType reqType;
+		boolean verbose;
 
-                for (int i = 0; i < this.numberOfOps; i++) {
-                    
-                    long last_send_instant = System.nanoTime();
-                    this.serviceProxy.invokeAsynchRequest(this.request, new ReplyListener() {
+		public Client(int id, int numberOfOps, int requestSize, int interval, boolean readOnly, boolean verbose) {
 
-                        private int replies = 0;
+			this.id = id;
+			this.serviceProxy = new AsynchServiceProxy(id);
 
-                        @Override
-                        public void reset() {
+			this.numberOfOps = numberOfOps;
+			this.interval = interval;
+			this.request = new byte[requestSize];
+			this.reqType = (readOnly ? TOMMessageType.UNORDERED_REQUEST : TOMMessageType.ORDERED_REQUEST);
+			this.verbose = verbose;
 
-                            if (verbose) System.out.println("[RequestContext] The proxy is re-issuing the request to the replicas");
-                            replies = 0;
-                        }
+		}
 
-                        @Override
-                        public void replyReceived(RequestContext context, TOMMessage reply) {
-                            StringBuilder builder = new StringBuilder();
-                            builder.append("[RequestContext] id: " + context.getReqId() + " type: " + context.getRequestType());
-                            builder.append("[TOMMessage reply] sender id: " + reply.getSender() + " Hash content: " + Arrays.toString(reply.getContent()));
-                            if (verbose) System.out.println(builder.toString());
+		public void run() {
 
-                            replies++;
+			try {
 
-                            double q = Math.ceil((double) (serviceProxy.getViewManager().getCurrentViewN() + serviceProxy.getViewManager().getCurrentViewF() + 1) / 2.0);
+				Storage st = new Storage(this.numberOfOps / 2);
 
-                            if (replies >= q) {
-                                if (verbose) System.out.println("[RequestContext] clean request context id: " + context.getReqId());
-                                serviceProxy.cleanAsynchRequest(context.getOperationId());
-                            }
-                        }
-                    }, this.reqType);
-                    if (i > (this.numberOfOps / 2)) st.store(System.nanoTime() - last_send_instant);
+				if (this.verbose)
+					System.out.println("Executing experiment for " + this.numberOfOps + " ops");
 
-                    if (this.interval > 0) {
-                        Thread.sleep(this.interval);
-                    }
-                    
-                    if (this.verbose) System.out.println("Sending " + (i + 1) + "th op");
-                }
+				for (int i = 0; i < this.numberOfOps; i++) {
 
-                Thread.sleep(100);//wait 100ms to receive the last replies
-                
-                if(this.id == initId) {
-                   System.out.println(this.id + " // Average time for " + numberOfOps / 2 + " executions (-10%) = " + st.getAverage(true) / 1000 + " us ");
-                   System.out.println(this.id + " // Standard desviation for " + numberOfOps / 2 + " executions (-10%) = " + st.getDP(true) / 1000 + " us ");
-                   System.out.println(this.id + " // Average time for " + numberOfOps / 2 + " executions (all samples) = " + st.getAverage(false) / 1000 + " us ");
-                   System.out.println(this.id + " // Standard desviation for " + numberOfOps / 2 + " executions (all samples) = " + st.getDP(false) / 1000 + " us ");
-                   System.out.println(this.id + " // Maximum time for " + numberOfOps / 2 + " executions (all samples) = " + st.getMax(false) / 1000 + " us ");
-                }
+					long last_send_instant = System.nanoTime();
+					this.serviceProxy.invokeAsynchRequest(this.request, new ReplyListener() {
 
-            } catch (Exception e) {
-                e.printStackTrace();
-            } finally {
-                this.serviceProxy.close();
-            }
+						private int replies = 0;
 
-        }
+						@Override
+						public void reset() {
 
-    }
+							if (verbose)
+								System.out.println(
+										"[RequestContext] The proxy is re-issuing the request to the replicas");
+							replies = 0;
+						}
+
+						@Override
+						public void replyReceived(RequestContext context, TOMMessage reply) {
+							StringBuilder builder = new StringBuilder();
+							builder.append("[RequestContext] id: " + context.getReqId() + " type: "
+									+ context.getRequestType());
+							builder.append("[TOMMessage reply] sender id: " + reply.getSender() + " Hash content: "
+									+ Arrays.toString(reply.getContent()));
+							if (verbose)
+								System.out.println(builder.toString());
+
+							replies++;
+
+							double q = Math.ceil((double) (serviceProxy.getViewManager().getCurrentViewN()
+									+ serviceProxy.getViewManager().getCurrentViewF() + 1) / 2.0);
+
+							if (replies >= q) {
+								if (verbose)
+									System.out.println(
+											"[RequestContext] clean request context id: " + context.getReqId());
+								serviceProxy.cleanAsynchRequest(context.getOperationId());
+							}
+						}
+					}, this.reqType);
+					if (i > (this.numberOfOps / 2))
+						st.store(System.nanoTime() - last_send_instant);
+
+					if (this.interval > 0) {
+						Thread.sleep(this.interval);
+					}
+
+					if (this.verbose)
+						System.out.println("Sending " + (i + 1) + "th op");
+				}
+
+				Thread.sleep(100);// wait 100ms to receive the last replies
+
+				if (this.id == initId) {
+					System.out.println(this.id + " // Average time for " + numberOfOps / 2 + " executions (-10%) = "
+							+ st.getAverage(true) / 1000 + " us ");
+					System.out.println(this.id + " // Standard desviation for " + numberOfOps / 2
+							+ " executions (-10%) = " + st.getDP(true) / 1000 + " us ");
+					System.out.println(this.id + " // Average time for " + numberOfOps / 2
+							+ " executions (all samples) = " + st.getAverage(false) / 1000 + " us ");
+					System.out.println(this.id + " // Standard desviation for " + numberOfOps / 2
+							+ " executions (all samples) = " + st.getDP(false) / 1000 + " us ");
+					System.out.println(this.id + " // Maximum time for " + numberOfOps / 2
+							+ " executions (all samples) = " + st.getMax(false) / 1000 + " us ");
+				}
+
+			} catch (Exception e) {
+				e.printStackTrace();
+			} finally {
+				this.serviceProxy.close();
+			}
+
+		}
+
+	}
 }

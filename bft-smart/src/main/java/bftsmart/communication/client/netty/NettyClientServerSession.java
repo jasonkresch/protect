@@ -15,64 +15,60 @@ limitations under the License.
 */
 package bftsmart.communication.client.netty;
 
-import io.netty.channel.Channel;
-
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
 import javax.crypto.Mac;
 
+import io.netty.channel.Channel;
 
 /**
  *
  * @author Paulo Sousa
  */
 public class NettyClientServerSession {
-    private Channel channel;
-    private Mac macSend;
-    private Mac macReceive;
-    private int replicaId;
-    private Lock lock;
-    private int lastMsgReceived;
+	private Channel channel;
+	private Mac macSend;
+	private Mac macReceive;
+	private int replicaId;
+	private Lock lock;
+	private int lastMsgReceived;
 
-    public NettyClientServerSession(Channel channel, Mac macSend, Mac macReceive, int replicaId) {
-        this.channel = channel;
-        this.macSend = macSend;
-        this.macReceive = macReceive;
-        this.replicaId = replicaId;
-        this.lock =  new ReentrantLock();
-        this.lastMsgReceived = -1;
-    }
-    
+	public NettyClientServerSession(Channel channel, Mac macSend, Mac macReceive, int replicaId) {
+		this.channel = channel;
+		this.macSend = macSend;
+		this.macReceive = macReceive;
+		this.replicaId = replicaId;
+		this.lock = new ReentrantLock();
+		this.lastMsgReceived = -1;
+	}
 
-    public Mac getMacReceive() {
-        return macReceive;
-    }
+	public Mac getMacReceive() {
+		return macReceive;
+	}
 
+	public Mac getMacSend() {
+		return macSend;
+	}
 
-    public Mac getMacSend() {
-        return macSend;
-    }
+	public Channel getChannel() {
+		return channel;
+	}
 
+	public int getReplicaId() {
+		return replicaId;
+	}
 
-    public Channel getChannel() {
-        return channel;
-    }
+	public Lock getLock() {
+		return lock;
+	}
 
-    public int getReplicaId() {
-        return replicaId;
-    }
+	public int getLastMsgReceived() {
+		return lastMsgReceived;
+	}
 
-    public Lock getLock(){
-        return lock;
-    }
-
-    public int getLastMsgReceived(){
-        return lastMsgReceived;
-    }
-
-    public void setLastMsgReceived(int lastMsgReceived_){
-        this.lastMsgReceived = lastMsgReceived_;
-    }
+	public void setLastMsgReceived(int lastMsgReceived_) {
+		this.lastMsgReceived = lastMsgReceived_;
+	}
 
 }

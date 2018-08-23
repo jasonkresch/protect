@@ -31,7 +31,7 @@ public class FileRecoverer {
 	private byte[] ckpHash;
 	private int ckpLastConsensusId;
 	private int logLastConsensusId;
-	
+
 	private int replicaId;
 	private String defaultDir;
 
@@ -41,17 +41,18 @@ public class FileRecoverer {
 		ckpLastConsensusId = 0;
 		logLastConsensusId = 0;
 	}
-	
+
 	/**
 	 * Reads all log messages from the last log file created
+	 * 
 	 * @return an array with batches of messages executed for each consensus
 	 */
-//	public CommandsInfo[] getLogState() {
-//		String lastLogFilename = getLatestFile(".log");
-//		if(lastLogFilename != null)
-//			return getLogState(0, lastLogFilename);
-//		return null;
-//	}
+	// public CommandsInfo[] getLogState() {
+	// String lastLogFilename = getLatestFile(".log");
+	// if(lastLogFilename != null)
+	// return getLogState(0, lastLogFilename);
+	// return null;
+	// }
 
 	public CommandsInfo[] getLogState(int index, String logPath) {
 		RandomAccessFile log = null;
@@ -75,11 +76,14 @@ public class FileRecoverer {
 
 	/**
 	 * Recover portions of the log for collaborative state transfer.
-	 * @param start the index for which the commands start to be collected
-	 * @param number the number of commands retrieved
+	 * 
+	 * @param start
+	 *            the index for which the commands start to be collected
+	 * @param number
+	 *            the number of commands retrieved
 	 * @return The commands for the period selected
 	 */
-	public CommandsInfo[] getLogState(long pointer, int startOffset,  int number, String logPath) {
+	public CommandsInfo[] getLogState(long pointer, int startOffset, int number, String logPath) {
 		RandomAccessFile log = null;
 
 		System.out.println("GETTING LOG FROM " + logPath);
@@ -134,8 +138,7 @@ public class FileRecoverer {
 				System.out.println("--- Last ckp size: " + ckpSize + " Last ckp hash: " + Arrays.toString(ckpHash));
 			} catch (Exception e) {
 				e.printStackTrace();
-				System.err
-				.println("State recover was aborted due to an unexpected exception");
+				System.err.println("State recover was aborted due to an unexpected exception");
 			}
 			this.ckpHash = ckpHash;
 		}
@@ -151,16 +154,16 @@ public class FileRecoverer {
 					if (ckp.getFilePointer() < ckpLength) {
 						int size = ckp.readInt();
 						if (size > 0) {
-							ckpState = new byte[size];//ckp state
+							ckpState = new byte[size];// ckp state
 							int read = ckp.read(ckpState);
 							if (read == size) {
 								int hashSize = ckp.readInt();
 								if (hashSize > 0) {
-									ckpHash = new byte[hashSize];//ckp hash
+									ckpHash = new byte[hashSize];// ckp hash
 									read = ckp.read(ckpHash);
 									if (read == hashSize) {
 										mayRead = false;
-									}else{
+									} else {
 										ckpHash = null;
 										ckpState = null;
 									}
@@ -187,8 +190,7 @@ public class FileRecoverer {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err
-			.println("State recover was aborted due to an unexpected exception");
+			System.err.println("State recover was aborted due to an unexpected exception");
 		}
 
 		return ckpState;
@@ -209,22 +211,21 @@ public class FileRecoverer {
 			System.out.println("---Called transferLog." + totalBytes + " " + (sChannel == null));
 			FileChannel fileChannel = logFile.getChannel();
 			long bytesTransfered = 0;
-			while(bytesTransfered < totalBytes) {
+			while (bytesTransfered < totalBytes) {
 				long bufferSize = 65536;
-				if(totalBytes  - bytesTransfered < bufferSize) {
-					bufferSize = (int)(totalBytes - bytesTransfered);
-					if(bufferSize <= 0)
-						bufferSize = (int)totalBytes;
+				if (totalBytes - bytesTransfered < bufferSize) {
+					bufferSize = (int) (totalBytes - bytesTransfered);
+					if (bufferSize <= 0)
+						bufferSize = (int) totalBytes;
 				}
 				long bytesSent = fileChannel.transferTo(bytesTransfered, bufferSize, sChannel);
-				if(bytesSent > 0) {
+				if (bytesSent > 0) {
 					bytesTransfered += bytesSent;
 				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err
-			.println("State recover was aborted due to an unexpected exception");
+			System.err.println("State recover was aborted due to an unexpected exception");
 		}
 	}
 
@@ -251,24 +252,24 @@ public class FileRecoverer {
 			FileChannel fileChannel = ckp.getChannel();
 			long totalBytes = ckp.length();
 			long bytesTransfered = 0;
-			while(bytesTransfered < totalBytes) {
+			while (bytesTransfered < totalBytes) {
 				long bufferSize = 65536;
-				if(totalBytes  - bytesTransfered < bufferSize) {
-					bufferSize = (int)(totalBytes - bytesTransfered);
-					if(bufferSize <= 0)
-						bufferSize = (int)totalBytes;
+				if (totalBytes - bytesTransfered < bufferSize) {
+					bufferSize = (int) (totalBytes - bytesTransfered);
+					if (bufferSize <= 0)
+						bufferSize = (int) totalBytes;
 				}
 				long bytesRead = fileChannel.transferTo(bytesTransfered, bufferSize, sChannel);
-				if(bytesRead > 0) {
+				if (bytesRead > 0) {
 					bytesTransfered += bytesRead;
 				}
 			}
-			System.out.println("---Took " + (System.currentTimeMillis() - milliInit) + " milliseconds to transfer the checkpoint");
+			System.out.println(
+					"---Took " + (System.currentTimeMillis() - milliInit) + " milliseconds to transfer the checkpoint");
 			fileChannel.close();
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err
-			.println("State recover was aborted due to an unexpected exception");
+			System.err.println("State recover was aborted due to an unexpected exception");
 		}
 	}
 
@@ -299,7 +300,8 @@ public class FileRecoverer {
 			ArrayList<CommandsInfo> state = new ArrayList<CommandsInfo>();
 			int recoveredBatches = 0;
 			boolean mayRead = true;
-			System.out.println("filepointer: " + log.getFilePointer() + " loglength " + logLength + " endoffset " + endOffset);
+			System.out.println(
+					"filepointer: " + log.getFilePointer() + " loglength " + logLength + " endoffset " + endOffset);
 			while (mayRead) {
 				try {
 					if (log.getFilePointer() < logLength) {
@@ -308,10 +310,8 @@ public class FileRecoverer {
 							byte[] bytes = new byte[size];
 							int read = log.read(bytes);
 							if (read == size) {
-								ByteArrayInputStream bis = new ByteArrayInputStream(
-										bytes);
-								ObjectInputStream ois = new ObjectInputStream(
-										bis);
+								ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+								ObjectInputStream ois = new ObjectInputStream(bis);
 								state.add((CommandsInfo) ois.readObject());
 								if (++recoveredBatches == endOffset) {
 									System.out.println("read all " + endOffset + " log messages");
@@ -340,8 +340,7 @@ public class FileRecoverer {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err
-			.println("State recover was aborted due to an unexpected exception");
+			System.err.println("State recover was aborted due to an unexpected exception");
 		}
 
 		return null;
@@ -349,9 +348,13 @@ public class FileRecoverer {
 
 	/**
 	 * Searches the log file and retrieves the portion selected.
-	 * @param log The log file
-	 * @param start The offset to start retrieving commands
-	 * @param number The number of commands retrieved
+	 * 
+	 * @param log
+	 *            The log file
+	 * @param start
+	 *            The offset to start retrieving commands
+	 * @param number
+	 *            The number of commands retrieved
 	 * @return The commands for the period selected
 	 */
 	private CommandsInfo[] recoverLogState(RandomAccessFile log, long pointer, int startOffset, int number) {
@@ -364,7 +367,7 @@ public class FileRecoverer {
 			log.seek(pointer);
 
 			int index = 0;
-			while(index < startOffset) {
+			while (index < startOffset) {
 				int size = log.readInt();
 				byte[] bytes = new byte[size];
 				log.read(bytes);
@@ -381,10 +384,8 @@ public class FileRecoverer {
 							byte[] bytes = new byte[size];
 							int read = log.read(bytes);
 							if (read == size) {
-								ByteArrayInputStream bis = new ByteArrayInputStream(
-										bytes);
-								ObjectInputStream ois = new ObjectInputStream(
-										bis);
+								ByteArrayInputStream bis = new ByteArrayInputStream(bytes);
+								ObjectInputStream ois = new ObjectInputStream(bis);
 
 								state.add((CommandsInfo) ois.readObject());
 
@@ -412,8 +413,7 @@ public class FileRecoverer {
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
-			System.err
-			.println("State recover was aborted due to an unexpected exception");
+			System.err.println("State recover was aborted due to an unexpected exception");
 		}
 
 		return null;
@@ -423,13 +423,12 @@ public class FileRecoverer {
 		File directory = new File(defaultDir);
 		String latestFile = null;
 		if (directory.isDirectory()) {
-			File[] serverLogs = directory.listFiles(new FileListFilter(
-					replicaId, extention));
+			File[] serverLogs = directory.listFiles(new FileListFilter(replicaId, extention));
 			long timestamp = 0;
 			for (File f : serverLogs) {
 				String[] nameItems = f.getName().split("\\.");
 				long filets = new Long(nameItems[1]).longValue();
-				if(filets > timestamp) {
+				if (filets > timestamp) {
 					timestamp = filets;
 					latestFile = f.getAbsolutePath();
 				}
@@ -452,8 +451,7 @@ public class FileRecoverer {
 			boolean fileOK = false;
 
 			if (id >= 0) {
-				if (filename.startsWith(id + ".")
-						&& filename.endsWith(extention)) {
+				if (filename.startsWith(id + ".") && filename.endsWith(extention)) {
 					fileOK = true;
 				}
 			}

@@ -23,15 +23,15 @@ import bftsmart.tom.core.messages.TOMMessage;
  */
 public class DebugInfo {
 
-    public final int cid;
-    public final int epoch;
-    public final int leader;
-    public final TOMMessage msg;
+	public final int cid;
+	public final int epoch;
+	public final int leader;
+	public final TOMMessage msg;
 
-    public DebugInfo(int cid, int epoch, int leader, TOMMessage msg) {
-        this.cid = cid;
-        this.epoch = epoch;
-        this.leader = leader;
-        this.msg = msg;
-    }
+	public DebugInfo(int cid, int epoch, int leader, TOMMessage msg) {
+		this.cid = cid;
+		this.epoch = epoch;
+		this.leader = leader;
+		this.msg = msg;
+	}
 }

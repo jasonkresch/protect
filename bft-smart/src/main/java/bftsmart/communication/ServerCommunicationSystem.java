@@ -36,137 +36,140 @@ import bftsmart.tom.util.Logger;
  */
 public class ServerCommunicationSystem extends Thread {
 
-    private boolean doWork = true;
-    public final long MESSAGE_WAIT_TIME = 100;
-    private LinkedBlockingQueue<SystemMessage> inQueue = null;//new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
-    protected MessageHandler messageHandler;
-    private ServersCommunicationLayer serversConn;
-    private CommunicationSystemServerSide clientsConn;
-    private ServerViewController controller;
+	private boolean doWork = true;
+	public final long MESSAGE_WAIT_TIME = 100;
+	private LinkedBlockingQueue<SystemMessage> inQueue = null;// new LinkedBlockingQueue<SystemMessage>(IN_QUEUE_SIZE);
+	protected MessageHandler messageHandler;
+	private ServersCommunicationLayer serversConn;
+	private CommunicationSystemServerSide clientsConn;
+	private ServerViewController controller;
 
-    /**
-     * Creates a new instance of ServerCommunicationSystem
-     */
-    public ServerCommunicationSystem(ServerViewController controller, ServiceReplica replica) throws Exception {
-        super("Server CS");
+	/**
+	 * Creates a new instance of ServerCommunicationSystem
+	 */
+	public ServerCommunicationSystem(ServerViewController controller, ServiceReplica replica) throws Exception {
+		super("Server CS");
 
-        this.controller = controller;
+		this.controller = controller;
 
-        inQueue = new LinkedBlockingQueue<SystemMessage>(controller.getStaticConf().getInQueueSize());
+		inQueue = new LinkedBlockingQueue<SystemMessage>(controller.getStaticConf().getInQueueSize());
 
-        //create a new conf, with updated port number for servers
-        //TOMConfiguration serversConf = new TOMConfiguration(conf.getProcessId(),
-        //      Configuration.getHomeDir(), "hosts.config");
+		// create a new conf, with updated port number for servers
+		// TOMConfiguration serversConf = new TOMConfiguration(conf.getProcessId(),
+		// Configuration.getHomeDir(), "hosts.config");
 
-        //serversConf.increasePortNumber();
+		// serversConf.increasePortNumber();
 
-        serversConn = new ServersCommunicationLayer(controller, inQueue, replica);
+		serversConn = new ServersCommunicationLayer(controller, inQueue, replica);
 
-        messageHandler = new MessageHandler(controller.getStaticConf().getHmacAlgorithm());
-        
-        //******* EDUARDO BEGIN **************//
-       // if (manager.isInCurrentView() || manager.isInInitView()) {
-            clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
-       // }
-        //******* EDUARDO END **************//
-        //start();
-    }
+		messageHandler = new MessageHandler(controller.getStaticConf().getHmacAlgorithm());
 
-    //******* EDUARDO BEGIN **************//
-    public void joinViewReceived() {
-        serversConn.joinViewReceived();
-    }
+		// ******* EDUARDO BEGIN **************//
+		// if (manager.isInCurrentView() || manager.isInInitView()) {
+		clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
+		// }
+		// ******* EDUARDO END **************//
+		// start();
+	}
 
-    public void updateServersConnections() {
-        this.serversConn.updateConnections();
-        if (clientsConn == null) {
-            clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
-        }
+	// ******* EDUARDO BEGIN **************//
+	public void joinViewReceived() {
+		serversConn.joinViewReceived();
+	}
 
-    }
+	public void updateServersConnections() {
+		this.serversConn.updateConnections();
+		if (clientsConn == null) {
+			clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
+		}
 
-    //******* EDUARDO END **************//
-    public void setAcceptor(Acceptor acceptor) {
-        messageHandler.setAcceptor(acceptor);
-    }
+	}
 
-    public void setTOMLayer(TOMLayer tomLayer) {
-        messageHandler.setTOMLayer(tomLayer);
-    }
+	// ******* EDUARDO END **************//
+	public void setAcceptor(Acceptor acceptor) {
+		messageHandler.setAcceptor(acceptor);
+	}
 
-    public void setRequestReceiver(RequestReceiver requestReceiver) {
-        if (clientsConn == null) {
-            clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
-        }
-        clientsConn.setRequestReceiver(requestReceiver);
-    }
+	public void setTOMLayer(TOMLayer tomLayer) {
+		messageHandler.setTOMLayer(tomLayer);
+	}
 
-    /**
-     * Thread method responsible for receiving messages sent by other servers.
-     */
-    @Override
-    public void run() {
-        
-        long count = 0;
-        while (doWork) {
-            try {
-                if (count % 1000 == 0 && count > 0) {
-                    Logger.println("(ServerCommunicationSystem.run) After " + count + " messages, inQueue size=" + inQueue.size());
-                }
+	public void setRequestReceiver(RequestReceiver requestReceiver) {
+		if (clientsConn == null) {
+			clientsConn = CommunicationSystemServerSideFactory.getCommunicationSystemServerSide(controller);
+		}
+		clientsConn.setRequestReceiver(requestReceiver);
+	}
 
-                SystemMessage sm = inQueue.poll(MESSAGE_WAIT_TIME, TimeUnit.MILLISECONDS);
+	/**
+	 * Thread method responsible for receiving messages sent by other servers.
+	 */
+	@Override
+	public void run() {
 
-                if (sm != null) {
-                    Logger.println("<-------receiving---------- " + sm);
-                    messageHandler.processData(sm);
-                    count++;
-                } else {                
-                    messageHandler.verifyPending();               
-                }
-            } catch (InterruptedException e) {
-                e.printStackTrace(System.err);
-            }
-        }
-        java.util.logging.Logger.getLogger(ServerCommunicationSystem.class.getName()).log(Level.INFO, "ServerCommunicationSystem stopped.");
+		long count = 0;
+		while (doWork) {
+			try {
+				if (count % 1000 == 0 && count > 0) {
+					Logger.println("(ServerCommunicationSystem.run) After " + count + " messages, inQueue size="
+							+ inQueue.size());
+				}
 
-    }
+				SystemMessage sm = inQueue.poll(MESSAGE_WAIT_TIME, TimeUnit.MILLISECONDS);
 
-    /**
-     * Send a message to target processes. If the message is an instance of 
-     * TOMMessage, it is sent to the clients, otherwise it is set to the
-     * servers.
-     *
-     * @param targets the target receivers of the message
-     * @param sm the message to be sent
-     */
-    public void send(int[] targets, SystemMessage sm) {
-        if (sm instanceof TOMMessage) {
-            clientsConn.send(targets, (TOMMessage) sm, false);
-        } else {
-            Logger.println("--------sending----------> " + sm);
-            serversConn.send(targets, sm, true);
-        }
-    }
+				if (sm != null) {
+					Logger.println("<-------receiving---------- " + sm);
+					messageHandler.processData(sm);
+					count++;
+				} else {
+					messageHandler.verifyPending();
+				}
+			} catch (InterruptedException e) {
+				e.printStackTrace(System.err);
+			}
+		}
+		java.util.logging.Logger.getLogger(ServerCommunicationSystem.class.getName()).log(Level.INFO,
+				"ServerCommunicationSystem stopped.");
 
-    public ServersCommunicationLayer getServersConn() {
-        return serversConn;
-    }
-    
-    public CommunicationSystemServerSide getClientsConn() {
-        return clientsConn;
-    }
-    
-    @Override
-    public String toString() {
-        return serversConn.toString();
-    }
-    
-    public void shutdown() {
-        
-        System.out.println("Shutting down communication layer");
-        
-        this.doWork = false;        
-        clientsConn.shutdown();
-        serversConn.shutdown();
-    }
+	}
+
+	/**
+	 * Send a message to target processes. If the message is an instance of
+	 * TOMMessage, it is sent to the clients, otherwise it is set to the servers.
+	 *
+	 * @param targets
+	 *            the target receivers of the message
+	 * @param sm
+	 *            the message to be sent
+	 */
+	public void send(int[] targets, SystemMessage sm) {
+		if (sm instanceof TOMMessage) {
+			clientsConn.send(targets, (TOMMessage) sm, false);
+		} else {
+			Logger.println("--------sending----------> " + sm);
+			serversConn.send(targets, sm, true);
+		}
+	}
+
+	public ServersCommunicationLayer getServersConn() {
+		return serversConn;
+	}
+
+	public CommunicationSystemServerSide getClientsConn() {
+		return clientsConn;
+	}
+
+	@Override
+	public String toString() {
+		return serversConn.toString();
+	}
+
+	public void shutdown() {
+
+		System.out.println("Shutting down communication layer");
+
+		this.doWork = false;
+		clientsConn.shutdown();
+		serversConn.shutdown();
+	}
 }

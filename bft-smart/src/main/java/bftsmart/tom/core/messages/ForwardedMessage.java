@@ -20,9 +20,6 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 import bftsmart.communication.SystemMessage;
-import bftsmart.tom.core.messages.TOMMessage;
-
-
 
 /**
  * Message used to forward a client request to the current leader when the first
@@ -31,53 +28,53 @@ import bftsmart.tom.core.messages.TOMMessage;
  */
 public final class ForwardedMessage extends SystemMessage {
 
-    private TOMMessage request;
+	private TOMMessage request;
 
-    public ForwardedMessage() {
-    }
+	public ForwardedMessage() {
+	}
 
-    public ForwardedMessage(int senderId, TOMMessage request) {
-        super(senderId);
-        this.request = request;
-    }
+	public ForwardedMessage(int senderId, TOMMessage request) {
+		super(senderId);
+		this.request = request;
+	}
 
-    public TOMMessage getRequest() {
-        return request;
-    }
+	public TOMMessage getRequest() {
+		return request;
+	}
 
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        super.writeExternal(out);
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		super.writeExternal(out);
 
-        out.writeInt(request.serializedMessage.length);
-        out.write(request.serializedMessage);
-        out.writeBoolean(request.signed);
+		out.writeInt(request.serializedMessage.length);
+		out.write(request.serializedMessage);
+		out.writeBoolean(request.signed);
 
-        if (request.signed) {
-            out.writeInt(request.serializedMessageSignature.length);
-            out.write(request.serializedMessageSignature);
-        }
-    }
+		if (request.signed) {
+			out.writeInt(request.serializedMessageSignature.length);
+			out.write(request.serializedMessageSignature);
+		}
+	}
 
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        super.readExternal(in);
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		super.readExternal(in);
 
-        byte[] serReq = new byte[in.readInt()];
-        in.readFully(serReq);
+		byte[] serReq = new byte[in.readInt()];
+		in.readFully(serReq);
 
-        request = TOMMessage.bytesToMessage(serReq);
-        request.serializedMessage = serReq;
+		request = TOMMessage.bytesToMessage(serReq);
+		request.serializedMessage = serReq;
 
-        boolean signed = in.readBoolean();
+		boolean signed = in.readBoolean();
 
-        if (signed) {
+		if (signed) {
 
-            byte[] serReqSign = new byte[in.readInt()];
-            in.readFully(serReqSign);
-            request.serializedMessageSignature = serReqSign;
+			byte[] serReqSign = new byte[in.readInt()];
+			in.readFully(serReqSign);
+			request.serializedMessageSignature = serReqSign;
 
-        }
-    }
+		}
+	}
 
 }

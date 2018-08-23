@@ -18,10 +18,10 @@ package bftsmart.tom.server.defaultservices;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
-import java.util.Arrays;
 
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.reconfiguration.util.TOMConfiguration;
@@ -170,7 +170,8 @@ public abstract class DefaultSingleRecoverable implements Recoverable, SingleExe
     @Override
     public ApplicationState getState(int cid, boolean sendState) {
         logLock.lock();
-        ApplicationState ret = (cid > -1 ? getLog().getApplicationState(cid, sendState) : new DefaultApplicationState());
+		ApplicationState ret = (cid > -1 ? getLog().getApplicationState(cid, sendState)
+				: new DefaultApplicationState());
 
         // Only will send a state if I have a proof for the last logged decision/consensus
         //TODO: I should always make sure to have a log with proofs, since this is a result

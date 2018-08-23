@@ -25,73 +25,73 @@ import bftsmart.tom.core.messages.TOMMessage;
 
 /**
  * Batch format: N_MESSAGES(int) + N_MESSAGES*[MSGSIZE(int),MSG(byte)] +
- *               TIMESTAMP(long) + N_NONCES(int) + NONCES(byte[])
+ * TIMESTAMP(long) + N_NONCES(int) + NONCES(byte[])
  *
  */
 public final class BatchReader {
 
-    private ByteBuffer proposalBuffer;
-    private boolean useSignatures;
+	private ByteBuffer proposalBuffer;
+	private boolean useSignatures;
 
-    /** wrap buffer */
-    public BatchReader(byte[] batch, boolean useSignatures) {
-        proposalBuffer = ByteBuffer.wrap(batch);
-        this.useSignatures = useSignatures;
-    }
+	/** wrap buffer */
+	public BatchReader(byte[] batch, boolean useSignatures) {
+		proposalBuffer = ByteBuffer.wrap(batch);
+		this.useSignatures = useSignatures;
+	}
 
-    public TOMMessage[] deserialiseRequests(ServerViewController controller) {
+	public TOMMessage[] deserialiseRequests(ServerViewController controller) {
 
-        //obtain the timestamps to be delivered to the application
-        long timestamp = proposalBuffer.getLong();
+		// obtain the timestamps to be delivered to the application
+		long timestamp = proposalBuffer.getLong();
 
-        int numberOfNonces = proposalBuffer.getInt();
-        
-        long seed = 0;
+		int numberOfNonces = proposalBuffer.getInt();
 
-        Random rnd = null;
-        if(numberOfNonces > 0){
-            seed = proposalBuffer.getLong();
-            rnd = new Random(seed);
-        }
-        else numberOfNonces = 0; // make sure the value is correct
-        
-        int numberOfMessages = proposalBuffer.getInt();
+		long seed = 0;
 
-        TOMMessage[] requests = new TOMMessage[numberOfMessages];
+		Random rnd = null;
+		if (numberOfNonces > 0) {
+			seed = proposalBuffer.getLong();
+			rnd = new Random(seed);
+		} else
+			numberOfNonces = 0; // make sure the value is correct
 
-        for (int i = 0; i < numberOfMessages; i++) {
-            //read the message and its signature from the batch
-            int messageSize = proposalBuffer.getInt();
+		int numberOfMessages = proposalBuffer.getInt();
 
-            byte[] message = new byte[messageSize];
-            proposalBuffer.get(message);
+		TOMMessage[] requests = new TOMMessage[numberOfMessages];
 
-            byte[] signature = null;
-            if(useSignatures){
-                signature = new byte[TOMUtil.getSignatureSize(controller)];
-                proposalBuffer.get(signature);
-            }
-            //obtain the nonces to be delivered to the application
-            byte[] nonces = new byte[numberOfNonces];
-            if (nonces.length > 0) {
-                rnd.nextBytes(nonces);
-            }
-            try {
-                DataInputStream ois = new DataInputStream(new ByteArrayInputStream(message));
-                TOMMessage tm = new TOMMessage();
-                tm.rExternal(ois);
+		for (int i = 0; i < numberOfMessages; i++) {
+			// read the message and its signature from the batch
+			int messageSize = proposalBuffer.getInt();
 
-                tm.serializedMessage = message;
-                tm.serializedMessageSignature = signature;
-                tm.numOfNonces = numberOfNonces;
-                tm.seed = seed;
-                tm.timestamp = timestamp;
-                requests[i] = tm;
+			byte[] message = new byte[messageSize];
+			proposalBuffer.get(message);
 
-            } catch (Exception e) {
-                e.printStackTrace(System.out);
-            }
-        }
-        return requests;
-    }
+			byte[] signature = null;
+			if (useSignatures) {
+				signature = new byte[TOMUtil.getSignatureSize(controller)];
+				proposalBuffer.get(signature);
+			}
+			// obtain the nonces to be delivered to the application
+			byte[] nonces = new byte[numberOfNonces];
+			if (nonces.length > 0) {
+				rnd.nextBytes(nonces);
+			}
+			try {
+				DataInputStream ois = new DataInputStream(new ByteArrayInputStream(message));
+				TOMMessage tm = new TOMMessage();
+				tm.rExternal(ois);
+
+				tm.serializedMessage = message;
+				tm.serializedMessageSignature = signature;
+				tm.numOfNonces = numberOfNonces;
+				tm.seed = seed;
+				tm.timestamp = timestamp;
+				requests[i] = tm;
+
+			} catch (Exception e) {
+				e.printStackTrace(System.out);
+			}
+		}
+		return requests;
+	}
 }

@@ -15,17 +15,13 @@ limitations under the License.
 */
 package bftsmart.communication.client.netty;
 
+import java.util.Map;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+
+import bftsmart.reconfiguration.ClientViewController;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.ByteToMessageDecoder;
 import io.netty.handler.codec.MessageToByteEncoder;
-
-import java.util.Map;
-import java.util.concurrent.locks.ReentrantLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-
-import javax.crypto.SecretKey;
-
-import bftsmart.reconfiguration.ClientViewController;
 
 
 public class NettyClientPipelineFactory{

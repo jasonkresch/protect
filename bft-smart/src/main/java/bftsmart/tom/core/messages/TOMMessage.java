@@ -32,10 +32,10 @@ import bftsmart.tom.util.DebugInfo;
  */
 public class TOMMessage extends SystemMessage implements Externalizable, Comparable, Cloneable {
 
-	//******* EDUARDO BEGIN **************//
-	private int viewID; //current sender view
+	// ******* EDUARDO BEGIN **************//
+	private int viewID; // current sender view
 	private TOMMessageType type; // request type: application or reconfiguration request
-	//******* EDUARDO END **************//
+	// ******* EDUARDO END **************//
 
 	private int session; // Sequence number defined by the client
 	// Sequence number defined by the client.
@@ -45,40 +45,41 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	private byte[] content = null; // Content of the message
 
-	//the fields bellow are not serialized!!!
+	// the fields bellow are not serialized!!!
 	private transient int id; // ID for this message. It should be unique
 
 	public transient long timestamp = 0; // timestamp to be used by the application
 
-        public transient long seed = 0; // seed for the nonces
-        public transient int numOfNonces = 0; // number of nonces
-        
+	public transient long seed = 0; // seed for the nonces
+	public transient int numOfNonces = 0; // number of nonces
+
 	public transient int destination = -1; // message destination
 	public transient boolean signed = false; // is this message signed?
 
-	public transient long receptionTime;//the reception time of this message
-	public transient boolean timeout = false;//this message was timed out?
-        
-        public transient boolean recvFromClient = false; // Did the client already sent this message to me, or did it arrived in the batch?
+	public transient long receptionTime;// the reception time of this message
+	public transient boolean timeout = false;// this message was timed out?
 
-	//the bytes received from the client and its MAC and signature
+	public transient boolean recvFromClient = false; // Did the client already sent this message to me, or did it
+														// arrived in the batch?
+
+	// the bytes received from the client and its MAC and signature
 	public transient byte[] serializedMessage = null;
 	public transient byte[] serializedMessageSignature = null;
 	public transient byte[] serializedMessageMAC = null;
 
-	//for benchmarking purposes
-	public transient long consensusStartTime = 0; //time the consensus is created
-	public transient long proposeReceivedTime = 0; //time the propose is received
-	public transient long writeSentTime = 0; //time the replica' write message is sent
-	public transient long acceptSentTime = 0; //time the replica' accept message is sent
-	public transient long decisionTime = 0; //time the decision is established
-	public transient long deliveryTime =0; //time the request is delivered
-	public transient long executedTime =0; //time the request is executed
+	// for benchmarking purposes
+	public transient long consensusStartTime = 0; // time the consensus is created
+	public transient long proposeReceivedTime = 0; // time the propose is received
+	public transient long writeSentTime = 0; // time the replica' write message is sent
+	public transient long acceptSentTime = 0; // time the replica' accept message is sent
+	public transient long decisionTime = 0; // time the decision is established
+	public transient long deliveryTime = 0; // time the request is delivered
+	public transient long executedTime = 0; // time the request is executed
 
-	//the reply associated with this message
+	// the reply associated with this message
 	public transient TOMMessage reply = null;
 	public transient boolean alreadyProposed = false;
-	
+
 	private int replyServer = -1;
 
 	public TOMMessage() {
@@ -87,12 +88,18 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 	/**
 	 * Creates a new instance of TOMMessage
 	 *
-	 * @param sender ID of the process which sent the message
-	 * @param session Session id of the sender
-	 * @param sequence Sequence number defined by the client
-	 * @param content Content of the message
-	 * @param view ViewId of the message
-	 * @param type Type of the request
+	 * @param sender
+	 *            ID of the process which sent the message
+	 * @param session
+	 *            Session id of the sender
+	 * @param sequence
+	 *            Sequence number defined by the client
+	 * @param content
+	 *            Content of the message
+	 * @param view
+	 *            ViewId of the message
+	 * @param type
+	 *            Type of the request
 	 */
 	public TOMMessage(int sender, int session, int sequence, byte[] content, int view, TOMMessageType type) {
 		this(sender, session, sequence, -1, content, view, type);
@@ -101,15 +108,24 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 	/**
 	 * Creates a new instance of TOMMessage. This one has an operationId parameter
 	 * used for FIFO executions
-	 * @param sender The client id
-	 * @param session The session id of the sender
-	 * @param sequence The sequence number created based on the message type
-	 * @param operationId The operation sequence number disregarding message type
-	 * @param content The command to be executed
-	 * @param view The view in which the message was sent
-	 * @param type Ordered or Unordered request
+	 * 
+	 * @param sender
+	 *            The client id
+	 * @param session
+	 *            The session id of the sender
+	 * @param sequence
+	 *            The sequence number created based on the message type
+	 * @param operationId
+	 *            The operation sequence number disregarding message type
+	 * @param content
+	 *            The command to be executed
+	 * @param view
+	 *            The view in which the message was sent
+	 * @param type
+	 *            Ordered or Unordered request
 	 */
-	public TOMMessage(int sender, int session, int sequence, int operationId, byte[] content, int view, TOMMessageType type) {
+	public TOMMessage(int sender, int session, int sequence, int operationId, byte[] content, int view,
+			TOMMessageType type) {
 		super(sender);
 		this.session = session;
 		this.sequence = sequence;
@@ -120,12 +136,12 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 		this.type = type;
 	}
 
-
 	/** THIS IS JOAO'S CODE, FOR DEBUGGING */
 	private transient DebugInfo info = null; // Debug information
 
 	/**
 	 * Retrieves the debug info from the TOM layer
+	 * 
 	 * @return The debug info from the TOM layer
 	 */
 	public DebugInfo getDebugInfo() {
@@ -135,7 +151,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 	/**
 	 * Retrieves the debug info from the TOM layer
 	 */
-	public void  setDebugInfo(DebugInfo info) {
+	public void setDebugInfo(DebugInfo info) {
 		this.info = info;
 	}
 
@@ -143,6 +159,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	/**
 	 * Retrieves the session id of this message
+	 * 
 	 * @return The session id of this message
 	 */
 	public int getSession() {
@@ -151,12 +168,13 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	/**
 	 * Retrieves the sequence number defined by the client
+	 * 
 	 * @return The sequence number defined by the client
 	 */
 	public int getSequence() {
 		return sequence;
 	}
-	
+
 	public int getOperationId() {
 		return operationId;
 	}
@@ -171,6 +189,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	/**
 	 * Retrieves the ID for this message. It should be unique
+	 * 
 	 * @return The ID for this message.
 	 */
 	public int getId() {
@@ -179,6 +198,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	/**
 	 * Retrieves the content of the message
+	 * 
 	 * @return The content of the message
 	 */
 	public byte[] getContent() {
@@ -189,8 +209,8 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 	 * Verifies if two TOMMessage are equal. For performance reasons, the method
 	 * only verifies if the send and sequence are equal.
 	 *
-	 * Two TOMMessage are equal if they have the same sender, sequence number
-	 * and content.
+	 * Two TOMMessage are equal if they have the same sender, sequence number and
+	 * content.
 	 */
 	@Override
 	public boolean equals(Object o) {
@@ -209,10 +229,10 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 
 	@Override
 	public int hashCode() {
-		/*int hash = 5;
-		hash = 59 * hash + this.sequence;
-		hash = 59 * hash + this.getSender();
-		hash = 59 * hash + this.getOperationId();*/
+		/*
+		 * int hash = 5; hash = 59 * hash + this.sequence; hash = 59 * hash +
+		 * this.getSender(); hash = 59 * hash + this.getOperationId();
+		 */
 		return this.id;
 	}
 
@@ -229,7 +249,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 		out.writeInt(sequence);
 		out.writeInt(operationId);
 		out.writeInt(replyServer);
-		
+
 		if (content == null) {
 			out.writeInt(-1);
 		} else {
@@ -246,7 +266,7 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 		sequence = in.readInt();
 		operationId = in.readInt();
 		replyServer = in.readInt();
-		
+
 		int toRead = in.readInt();
 		if (toRead != -1) {
 			content = new byte[toRead];
@@ -259,93 +279,93 @@ public class TOMMessage extends SystemMessage implements Externalizable, Compara
 	/**
 	 * Used to build an unique id for the message
 	 */
-	 private void buildId() {
-		 //id = (sender << 20) | sequence;
-             	int hash = 5;
- 		hash = 59 * hash + this.getSender();               
+	private void buildId() {
+		// id = (sender << 20) | sequence;
+		int hash = 5;
+		hash = 59 * hash + this.getSender();
 		hash = 59 * hash + this.sequence;
 		hash = 59 * hash + this.session;
 		id = hash;
-	 }
+	}
 
-	 /**
-	  * Retrieves the process ID of the sender given a message ID
-	  * @param id Message ID
-	  * @return Process ID of the sender
-	  */
-	 public static int getSenderFromId(int id) {
-		 return id >>> 20;
-	 }
+	/**
+	 * Retrieves the process ID of the sender given a message ID
+	 * 
+	 * @param id
+	 *            Message ID
+	 * @return Process ID of the sender
+	 */
+	public static int getSenderFromId(int id) {
+		return id >>> 20;
+	}
 
-	 public static byte[] messageToBytes(TOMMessage m) {
-		 ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		 DataOutputStream dos = new DataOutputStream(baos);
-		 try{
-			 m.wExternal(dos);
-			 dos.flush();
-		 }catch(Exception e) {
-		 }
-		 return baos.toByteArray();
-	 }
+	public static byte[] messageToBytes(TOMMessage m) {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		DataOutputStream dos = new DataOutputStream(baos);
+		try {
+			m.wExternal(dos);
+			dos.flush();
+		} catch (Exception e) {
+		}
+		return baos.toByteArray();
+	}
 
-	 public static TOMMessage bytesToMessage(byte[] b) {
-		 ByteArrayInputStream bais = new ByteArrayInputStream(b);
-		 DataInputStream dis = new DataInputStream(bais);
+	public static TOMMessage bytesToMessage(byte[] b) {
+		ByteArrayInputStream bais = new ByteArrayInputStream(b);
+		DataInputStream dis = new DataInputStream(bais);
 
-		 TOMMessage m = new TOMMessage();
-		 try{
-			 m.rExternal(dis);
-		 }catch(Exception e) {
-			 System.out.println("error on bytesToMessage " + e);
-			 return null;
-		 }
-
-		 return m;
-	 }
-
-	 @Override
-	 public int compareTo(Object o) {
-		 final int BEFORE = -1;
-		 final int EQUAL = 0;
-		 final int AFTER = 1;
-
-		 TOMMessage tm = (TOMMessage)o;
-
-		 if (this.equals(tm))
-			 return EQUAL;
-
-		 if (this.getSender() < tm.getSender())
-			 return BEFORE;
-		 if (this.getSender() > tm.getSender())
-			 return AFTER;
-
-		 if (this.getSession() < tm.getSession())
-			 return BEFORE;
-		 if (this.getSession() > tm.getSession())
-			 return AFTER;
-
-		 if (this.getSequence() < tm.getSequence())
-			 return BEFORE;
-		 if (this.getSequence() > tm.getSequence())
-			 return AFTER;
-
-		 if(this.getOperationId() < tm.getOperationId())
-			 return BEFORE;
-		 if(this.getOperationId() > tm.getOperationId())
-			 return AFTER;
-
-		 return EQUAL;
-	 }
-	 
-	 public Object clone() throws CloneNotSupportedException {
-			return super.clone();
+		TOMMessage m = new TOMMessage();
+		try {
+			m.rExternal(dis);
+		} catch (Exception e) {
+			System.out.println("error on bytesToMessage " + e);
+			return null;
 		}
 
+		return m;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		final int BEFORE = -1;
+		final int EQUAL = 0;
+		final int AFTER = 1;
+
+		TOMMessage tm = (TOMMessage) o;
+
+		if (this.equals(tm))
+			return EQUAL;
+
+		if (this.getSender() < tm.getSender())
+			return BEFORE;
+		if (this.getSender() > tm.getSender())
+			return AFTER;
+
+		if (this.getSession() < tm.getSession())
+			return BEFORE;
+		if (this.getSession() > tm.getSession())
+			return AFTER;
+
+		if (this.getSequence() < tm.getSequence())
+			return BEFORE;
+		if (this.getSequence() > tm.getSequence())
+			return AFTER;
+
+		if (this.getOperationId() < tm.getOperationId())
+			return BEFORE;
+		if (this.getOperationId() > tm.getOperationId())
+			return AFTER;
+
+		return EQUAL;
+	}
+
+	public Object clone() throws CloneNotSupportedException {
+		return super.clone();
+	}
 
 	public int getReplyServer() {
 		return replyServer;
 	}
-
 
 	public void setReplyServer(int replyServer) {
 		this.replyServer = replyServer;

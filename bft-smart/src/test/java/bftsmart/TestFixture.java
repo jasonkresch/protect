@@ -31,14 +31,14 @@ public class TestFixture {
 	private static Process replica1;
 	private static Process replica2;
 	private static Process replica3;
-	
+
 	private static ConsoleLogger log0;
 	private static ConsoleLogger log1;
 	private static ConsoleLogger log2;
 	private static ConsoleLogger log3;
 
 	private static String[] command = new String[5];
-	
+
 	@BeforeClass
 	public static void startServers() {
 		try {
@@ -50,14 +50,14 @@ public class TestFixture {
 				System.out.println("Exception stoping remaining replicas");
 				e.printStackTrace();
 			}
-			
+
 			System.out.println("Starting the servers");
 			command[0] = "java";
 			command[1] = "-cp";
 			command[2] = "bin/:lib/*";
 			command[3] = "bftsmart.demo.bftmap.BFTMapServer";
 			command[4] = "0";
-			
+
 			startServer(0);
 
 			Thread.sleep(2000);
@@ -65,17 +65,18 @@ public class TestFixture {
 
 			Thread.sleep(2000);
 			startServer(2);
-			
+
 			Thread.sleep(2000);
 			startServer(3);
 
-		} catch(InterruptedException ie) {
+		} catch (InterruptedException ie) {
 			System.out.println("Exception during Thread sleep: " + ie.getMessage());
 		}
 	}
 
 	@AfterClass
-	public static void stopServers() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, IOException  {
+	public static void stopServers()
+			throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, IOException {
 		System.out.println("Stopping servers");
 		stopServer(0);
 		stopServer(1);
@@ -83,9 +84,9 @@ public class TestFixture {
 		stopServer(3);
 		System.out.println("Servers stopped");
 	}
-	
+
 	public static void stopServer(int id) {
-		switch(id) {
+		switch (id) {
 		case 0:
 			replica0.destroy();
 			break;
@@ -107,7 +108,7 @@ public class TestFixture {
 	public static void startServer(int id) {
 		command[4] = String.valueOf(id);
 		try {
-			switch(id) {
+			switch (id) {
 			case 0:
 				replica0 = new ProcessBuilder(command).redirectErrorStream(true).start();
 				log0 = new ConsoleLogger();
@@ -149,5 +150,5 @@ public class TestFixture {
 			e.printStackTrace();
 		}
 	}
-	
+
 }

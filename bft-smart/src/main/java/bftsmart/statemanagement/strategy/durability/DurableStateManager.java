@@ -26,18 +26,14 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.locks.ReentrantLock;
 
-import bftsmart.consensus.Consensus;
-import bftsmart.consensus.Epoch;
-import bftsmart.tom.core.ExecutionManager;
 import bftsmart.consensus.messages.ConsensusMessage;
-import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.ApplicationState;
 import bftsmart.statemanagement.SMMessage;
 import bftsmart.statemanagement.strategy.BaseStateManager;
 import bftsmart.tom.core.DeliveryThread;
+import bftsmart.tom.core.ExecutionManager;
 import bftsmart.tom.core.TOMLayer;
-import bftsmart.tom.leaderchange.CertifiedDecision;
 import bftsmart.tom.server.defaultservices.CommandsInfo;
 import bftsmart.tom.server.defaultservices.durability.DurabilityCoordinator;
 import bftsmart.tom.util.Logger;
@@ -45,7 +41,7 @@ import bftsmart.tom.util.TOMUtil;
 
 public class DurableStateManager extends BaseStateManager {
 
-	//private LCManager lcManager;
+	// private LCManager lcManager;
 	private ExecutionManager execManager;
 
 	private ReentrantLock lockTimer = new ReentrantLock();
@@ -65,7 +61,7 @@ public class DurableStateManager extends BaseStateManager {
 
 		this.tomLayer = tomLayer;
 		this.dt = dt;
-		//this.lcManager = tomLayer.getSyncher().getLCManager();
+		// this.lcManager = tomLayer.getSyncher().getLCManager();
 		this.execManager = tomLayer.execManager;
 
 		state = null;
@@ -82,30 +78,24 @@ public class DurableStateManager extends BaseStateManager {
 
 		int myProcessId = SVController.getStaticConf().getProcessId();
 		int[] otherProcesses = SVController.getCurrentViewOtherAcceptors();
-		int globalCkpPeriod = SVController.getStaticConf()
-				.getGlobalCheckpointPeriod();
+		int globalCkpPeriod = SVController.getStaticConf().getGlobalCheckpointPeriod();
 
 		CSTRequestF1 cst = new CSTRequestF1(waitingCID);
 		cst.defineReplicas(otherProcesses, globalCkpPeriod, myProcessId);
 		this.cstRequest = cst;
-		CSTSMMessage cstMsg = new CSTSMMessage(myProcessId, waitingCID,
-				TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
-		tomLayer.getCommunication().send(
-				SVController.getCurrentViewOtherAcceptors(), cstMsg);
+		CSTSMMessage cstMsg = new CSTSMMessage(myProcessId, waitingCID, TOMUtil.SM_REQUEST, cst, null, null, -1, -1);
+		tomLayer.getCommunication().send(SVController.getCurrentViewOtherAcceptors(), cstMsg);
 
 		System.out
-		.println("(TOMLayer.requestState) I just sent a request to the other replicas for the state up to CID "
-				+ waitingCID);
+				.println("(TOMLayer.requestState) I just sent a request to the other replicas for the state up to CID "
+						+ waitingCID);
 
 		TimerTask stateTask = new TimerTask() {
 			public void run() {
 				int[] myself = new int[1];
 				myself[0] = SVController.getStaticConf().getProcessId();
-				tomLayer.getCommunication().send(
-						myself,
-						new CSTSMMessage(-1, waitingCID,
-								TOMUtil.TRIGGER_SM_LOCALLY, null, null, null,
-								-1, -1));
+				tomLayer.getCommunication().send(myself,
+						new CSTSMMessage(-1, waitingCID, TOMUtil.TRIGGER_SM_LOCALLY, null, null, null, -1, -1));
 			}
 		};
 
@@ -117,7 +107,8 @@ public class DurableStateManager extends BaseStateManager {
 	@Override
 	public void stateTimeout() {
 		lockTimer.lock();
-		Logger.println("(StateManager.stateTimeout) Timeout for the replica that was supposed to send the complete state. Changing desired replica.");
+		Logger.println(
+				"(StateManager.stateTimeout) Timeout for the replica that was supposed to send the complete state. Changing desired replica.");
 		System.out.println("Timeout no timer do estado!");
 		if (stateTimer != null)
 			stateTimer.cancel();
@@ -130,30 +121,27 @@ public class DurableStateManager extends BaseStateManager {
 	public void SMRequestDeliver(SMMessage msg, boolean isBFT) {
 		System.out.println("(TOMLayer.SMRequestDeliver) invoked method");
 		Logger.println("(TOMLayer.SMRequestDeliver) invoked method");
-		if (SVController.getStaticConf().isStateTransferEnabled()
-				&& dt.getRecoverer() != null) {
+		if (SVController.getStaticConf().isStateTransferEnabled() && dt.getRecoverer() != null) {
 			Logger.println("(TOMLayer.SMRequestDeliver) The state transfer protocol is enabled");
-			Logger.println("(TOMLayer.SMRequestDeliver) I received a state request for CID "
-					+ msg.getCID() + " from replica " + msg.getSender());
+			Logger.println("(TOMLayer.SMRequestDeliver) I received a state request for CID " + msg.getCID()
+					+ " from replica " + msg.getSender());
 			CSTSMMessage cstMsg = (CSTSMMessage) msg;
 			CSTRequestF1 cstConfig = cstMsg.getCstConfig();
-			boolean sendState = cstConfig.getCheckpointReplica() == SVController
-					.getStaticConf().getProcessId();
+			boolean sendState = cstConfig.getCheckpointReplica() == SVController.getStaticConf().getProcessId();
 			if (sendState)
 				Logger.println("(TOMLayer.SMRequestDeliver) I should be the one sending the state");
 
 			System.out.println("--- state asked");
 
 			int[] targets = { msg.getSender() };
-			InetSocketAddress address = SVController.getCurrentView().getAddress(
-					SVController.getStaticConf().getProcessId());
+			InetSocketAddress address = SVController.getCurrentView()
+					.getAddress(SVController.getStaticConf().getProcessId());
 			String myIp = address.getHostName();
 			int myId = SVController.getStaticConf().getProcessId();
 			int port = 4444 + myId;
 			address = new InetSocketAddress(myIp, port);
 			cstConfig.setAddress(address);
-			CSTSMMessage reply = new CSTSMMessage(myId, msg.getCID(),
-					TOMUtil.SM_REPLY, cstConfig, null,
+			CSTSMMessage reply = new CSTSMMessage(myId, msg.getCID(), TOMUtil.SM_REPLY, cstConfig, null,
 					SVController.getCurrentView(), tomLayer.getSynchronizer().getLCManager().getLastReg(),
 					tomLayer.execManager.getCurrentLeader());
 
@@ -173,38 +161,35 @@ public class DurableStateManager extends BaseStateManager {
 		CSTSMMessage reply = (CSTSMMessage) msg;
 		if (SVController.getStaticConf().isStateTransferEnabled()) {
 			Logger.println("(TOMLayer.SMReplyDeliver) The state transfer protocol is enabled");
-			System.out
-			.println("(TOMLayer.SMReplyDeliver) I received a state reply for CID "
-					+ reply.getCID()
-					+ " from replica "
-					+ reply.getSender());
+			System.out.println("(TOMLayer.SMReplyDeliver) I received a state reply for CID " + reply.getCID()
+					+ " from replica " + reply.getSender());
 
-			System.out.println("--- Received CID: " + reply.getCID()
-					+ ". Waiting " + waitingCID);
+			System.out.println("--- Received CID: " + reply.getCID() + ". Waiting " + waitingCID);
 			if (waitingCID != -1 && reply.getCID() == waitingCID) {
 
 				int currentRegency = -1;
 				int currentLeader = -1;
 				View currentView = null;
-				//                                CertifiedDecision currentProof = null;
+				// CertifiedDecision currentProof = null;
 
 				if (!appStateOnly) {
 					senderRegencies.put(reply.getSender(), reply.getRegency());
 					senderLeaders.put(reply.getSender(), reply.getLeader());
 					senderViews.put(reply.getSender(), reply.getView());
-					//                                        senderProofs.put(msg.getSender(), msg.getState().getCertifiedDecision(SVController));
+					// senderProofs.put(msg.getSender(),
+					// msg.getState().getCertifiedDecision(SVController));
 					if (enoughRegencies(reply.getRegency()))
 						currentRegency = reply.getRegency();
 					if (enoughLeaders(reply.getLeader()))
 						currentLeader = reply.getLeader();
 					if (enoughViews(reply.getView())) {
 						currentView = reply.getView();
-						if (!currentView.isMember(SVController.getStaticConf()
-								.getProcessId())) {
+						if (!currentView.isMember(SVController.getStaticConf().getProcessId())) {
 							System.out.println("Not a member!");
 						}
-					}                                        
-					//                                        if (enoughProofs(waitingCID, this.tomLayer.getSynchronizer().getLCManager())) currentProof = msg.getState().getCertifiedDecision(SVController);
+					}
+					// if (enoughProofs(waitingCID, this.tomLayer.getSynchronizer().getLCManager()))
+					// currentProof = msg.getState().getCertifiedDecision(SVController);
 
 				} else {
 					currentLeader = tomLayer.execManager.getCurrentLeader();
@@ -218,10 +203,8 @@ public class DurableStateManager extends BaseStateManager {
 				Socket clientSocket;
 				ApplicationState stateReceived = null;
 				try {
-					clientSocket = new Socket(address.getHostName(),
-							address.getPort());
-					ObjectInputStream in = new ObjectInputStream(
-							clientSocket.getInputStream());
+					clientSocket = new Socket(address.getHostName(), address.getPort());
+					ObjectInputStream in = new ObjectInputStream(clientSocket.getInputStream());
 					stateReceived = (ApplicationState) in.readObject();
 				} catch (UnknownHostException e) {
 					// TODO Auto-generated catch block
@@ -257,11 +240,9 @@ public class DurableStateManager extends BaseStateManager {
 
 					boolean haveState = false;
 					byte[] lowerbytes = TOMUtil.getBytes(lowerLog);
-					System.out.println("Log lower bytes size: "
-							+ lowerbytes.length);
+					System.out.println("Log lower bytes size: " + lowerbytes.length);
 					byte[] upperbytes = TOMUtil.getBytes(upperLog);
-					System.out.println("Log upper bytes size: "
-							+ upperbytes.length);
+					System.out.println("Log upper bytes size: " + upperbytes.length);
 
 					byte[] lowerLogHash = TOMUtil.computeHash(lowerbytes);
 					byte[] upperLogHash = TOMUtil.computeHash(upperbytes);
@@ -278,9 +259,9 @@ public class DurableStateManager extends BaseStateManager {
 					}
 
 					CSTState statePlusLower = new CSTState(stateCkp.getSerializedState(),
-							TOMUtil.getBytes(stateCkp.getSerializedState()),
-							stateLower.getLogLower(), stateCkp.getHashLogLower(), null, null,
-							stateCkp.getCheckpointCID(), stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId());
+							TOMUtil.getBytes(stateCkp.getSerializedState()), stateLower.getLogLower(),
+							stateCkp.getHashLogLower(), null, null, stateCkp.getCheckpointCID(),
+							stateUpper.getCheckpointCID(), SVController.getStaticConf().getProcessId());
 
 					if (haveState) { // validate checkpoint
 						System.out.println("validating checkpoint!!!");
@@ -295,13 +276,13 @@ public class DurableStateManager extends BaseStateManager {
 					System.out.println("-- current regency: " + currentRegency);
 					System.out.println("-- current leader: " + currentLeader);
 					System.out.println("-- current view: " + currentView);
-					if (currentRegency > -1 && currentLeader > -1
-							&& currentView != null && haveState && (!isBFT || /*currentProof != null ||*/ appStateOnly)) {
+					if (currentRegency > -1 && currentLeader > -1 && currentView != null && haveState
+							&& (!isBFT || /* currentProof != null || */ appStateOnly)) {
 						System.out.println("---- RECEIVED VALID STATE ----");
 
 						Logger.println("(TOMLayer.SMReplyDeliver) The state of those replies is good!");
 						Logger.println("(TOMLayer.SMReplyDeliver) CID State requested: " + reply.getCID());
-						Logger.println("(TOMLayer.SMReplyDeliver) CID State received: "	+ stateUpper.getLastCID());
+						Logger.println("(TOMLayer.SMReplyDeliver) CID State received: " + stateUpper.getLastCID());
 
 						tomLayer.getSynchronizer().getLCManager().setLastReg(currentRegency);
 						tomLayer.getSynchronizer().getLCManager().setNextReg(currentRegency);
@@ -309,55 +290,59 @@ public class DurableStateManager extends BaseStateManager {
 
 						tomLayer.execManager.setNewLeader(currentLeader);
 
-//						if (currentProof != null && !appStateOnly) {
-//
-//							System.out.println("Installing proof for consensus " + waitingCID);
-//
-//							Consensus cons = execManager.getConsensus(waitingCID);
-//							Epoch e = null;
-//
-//							for (ConsensusMessage cm : currentProof.getConsMessages()) {
-//
-//								e = cons.getEpoch(cm.getEpoch(), true, SVController);
-//								if (e.getTimestamp() != cm.getEpoch()) {
-//
-//									System.out.println("Strange... proof contains messages from more than just one epoch");
-//									e = cons.getEpoch(cm.getEpoch(), true, SVController);
-//								}
-//								e.addToProof(cm);
-//
-//								if (cm.getType() == MessageFactory.ACCEPT) {
-//									e.setAccept(cm.getSender(), cm.getValue());
-//								}
-//
-//								else if (cm.getType() == MessageFactory.WRITE) {
-//									e.setWrite(cm.getSender(), cm.getValue());
-//								}
-//
-//							}
-//
-//
-//							if (e != null) {
-//
-//								byte[] hash = tomLayer.computeHash(currentProof.getDecision());
-//								e.propValueHash = hash;
-//								e.propValue = currentProof.getDecision();
-//								e.deserializedPropValue = tomLayer.checkProposedValue(currentProof.getDecision(), false);
-//								cons.decided(e, false);
-//
-//								System.out.println("Successfully installed proof for consensus " + waitingCID);
-//
-//							} else {
-//								System.out.println("Failed to install proof for consensus " + waitingCID);
-//
-//							}
-//
-//						}
-
+						// if (currentProof != null && !appStateOnly) {
+						//
+						// System.out.println("Installing proof for consensus " + waitingCID);
+						//
+						// Consensus cons = execManager.getConsensus(waitingCID);
+						// Epoch e = null;
+						//
+						// for (ConsensusMessage cm : currentProof.getConsMessages()) {
+						//
+						// e = cons.getEpoch(cm.getEpoch(), true, SVController);
+						// if (e.getTimestamp() != cm.getEpoch()) {
+						//
+						// System.out.println("Strange... proof contains messages from more than just
+						// one epoch");
+						// e = cons.getEpoch(cm.getEpoch(), true, SVController);
+						// }
+						// e.addToProof(cm);
+						//
+						// if (cm.getType() == MessageFactory.ACCEPT) {
+						// e.setAccept(cm.getSender(), cm.getValue());
+						// }
+						//
+						// else if (cm.getType() == MessageFactory.WRITE) {
+						// e.setWrite(cm.getSender(), cm.getValue());
+						// }
+						//
+						// }
+						//
+						//
+						// if (e != null) {
+						//
+						// byte[] hash = tomLayer.computeHash(currentProof.getDecision());
+						// e.propValueHash = hash;
+						// e.propValue = currentProof.getDecision();
+						// e.deserializedPropValue =
+						// tomLayer.checkProposedValue(currentProof.getDecision(), false);
+						// cons.decided(e, false);
+						//
+						// System.out.println("Successfully installed proof for consensus " +
+						// waitingCID);
+						//
+						// } else {
+						// System.out.println("Failed to install proof for consensus " + waitingCID);
+						//
+						// }
+						//
+						// }
 
 						// I might have timed out before invoking the state transfer, so
-						// stop my re-transmission of STOP messages for all regencies up to the current one
-						if (currentRegency > 0) tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
+						// stop my re-transmission of STOP messages for all regencies up to the current
+						// one
+						if (currentRegency > 0)
+							tomLayer.getSynchronizer().removeSTOPretransmissions(currentRegency - 1);
 
 						System.out.print("trying to acquire deliverlock");
 						dt.deliverLock();
@@ -405,13 +390,11 @@ public class DurableStateManager extends BaseStateManager {
 							appStateOnly = false;
 							tomLayer.getSynchronizer().resumeLC();
 						}
-					} else if (state == null
-							&& (SVController.getCurrentViewN() / 2) < getReplies()) {
+					} else if (state == null && (SVController.getCurrentViewN() / 2) < getReplies()) {
 						System.out.println("---- DIDNT RECEIVE STATE ----");
 
 						Logger.println("(TOMLayer.SMReplyDeliver) I have more than "
-								+ (SVController.getCurrentViewN() / 2)
-								+ " messages that are no good!");
+								+ (SVController.getCurrentViewN() / 2) + " messages that are no good!");
 
 						waitingCID = -1;
 						reset();
@@ -425,7 +408,8 @@ public class DurableStateManager extends BaseStateManager {
 					} else if (!haveState) {
 						System.out.println("---- RECEIVED INVALID STATE  ----");
 
-						Logger.println("(TOMLayer.SMReplyDeliver) The replica from which I expected the state, sent one which doesn't match the hash of the others, or it never sent it at all");
+						Logger.println(
+								"(TOMLayer.SMReplyDeliver) The replica from which I expected the state, sent one which doesn't match the hash of the others, or it never sent it at all");
 
 						reset();
 						requestState();

@@ -9,17 +9,16 @@ import bftsmart.tom.core.messages.TOMMessage;
 
 /**
  *
- * Classes that implement this interface are invoked within
- * consensus instances upon reception of a PROPOSE message
- * in order to enforce the "external validity". More precisely,
- * objects extending this class must verify if the requests
- * are valid in accordance to the application semantics (and not
- * an erroneous requests sent by a Byzantine leader).
+ * Classes that implement this interface are invoked within consensus instances
+ * upon reception of a PROPOSE message in order to enforce the "external
+ * validity". More precisely, objects extending this class must verify if the
+ * requests are valid in accordance to the application semantics (and not an
+ * erroneous requests sent by a Byzantine leader).
  * 
  * @author joao
  */
 public interface RequestVerifier {
-    
-    public boolean isValidRequest(TOMMessage request);
-    
+
+	public boolean isValidRequest(TOMMessage request);
+
 }

@@ -6,48 +6,52 @@ import bftsmart.tom.core.messages.TOMMessageType;
 /**
  * This class contains information related to a client request.
  */
-public final class RequestContext{
+public final class RequestContext {
 
 	private final int reqId;
 	private final int operationId;
 	private final TOMMessageType requestType;
-	private final int [] targets;
+	private final int[] targets;
 	private final long sendingTime;
 	private final ReplyListener replyListener;
-        private final byte[] request;
-        
+	private final byte[] request;
 
-	public RequestContext(int reqId, int operationId, TOMMessageType requestType, int [] targets, 
-			long sendingTime, ReplyListener replyListener, byte[] request) {
+	public RequestContext(int reqId, int operationId, TOMMessageType requestType, int[] targets, long sendingTime,
+			ReplyListener replyListener, byte[] request) {
 		this.reqId = reqId;
 		this.operationId = operationId;
 		this.requestType = requestType;
 		this.targets = targets;
 		this.sendingTime = sendingTime;
 		this.replyListener = replyListener;
-                this.request = request;
+		this.request = request;
 	}
-        
+
 	public final int getReqId() {
 		return reqId;
 	}
-	public  final int getOperationId() {
+
+	public final int getOperationId() {
 		return operationId;
 	}
+
 	public final TOMMessageType getRequestType() {
 		return requestType;
 	}
-	public  final long getSendingTime() {
+
+	public final long getSendingTime() {
 		return sendingTime;
 	}
-	public ReplyListener getReplyListener(){
+
+	public ReplyListener getReplyListener() {
 		return replyListener;
 	}
-	public int [] getTargets() {
+
+	public int[] getTargets() {
 		return targets;
 	}
-        public byte [] getRequest() {
+
+	public byte[] getRequest() {
 		return request;
 	}
 }
-

@@ -28,79 +28,77 @@ import bftsmart.reconfiguration.views.ViewStorage;
  */
 public class ViewController {
 
-    protected View lastView = null;
-    protected View currentView = null;
-    private TOMConfiguration staticConf;
-    private ViewStorage viewStore;
+	protected View lastView = null;
+	protected View currentView = null;
+	private TOMConfiguration staticConf;
+	private ViewStorage viewStore;
 
-    public ViewController(int procId) {
-        this.staticConf = new TOMConfiguration(procId);
-    }
+	public ViewController(int procId) {
+		this.staticConf = new TOMConfiguration(procId);
+	}
 
-    
-    public ViewController(int procId, String configHome) {
-        this.staticConf = new TOMConfiguration(procId, configHome);
-    }
+	public ViewController(int procId, String configHome) {
+		this.staticConf = new TOMConfiguration(procId, configHome);
+	}
 
-    
-    public final ViewStorage getViewStore() {
-        if (this.viewStore == null) {
-            String className = staticConf.getViewStoreClass();
-            try {
-                this.viewStore = (ViewStorage) Class.forName(className).newInstance();
-            } catch (Exception e) {
-                this.viewStore = new DefaultViewStorage();
-            }
+	public final ViewStorage getViewStore() {
+		if (this.viewStore == null) {
+			String className = staticConf.getViewStoreClass();
+			try {
+				this.viewStore = (ViewStorage) Class.forName(className).newInstance();
+			} catch (Exception e) {
+				this.viewStore = new DefaultViewStorage();
+			}
 
-        }
-        return this.viewStore;
-    }
+		}
+		return this.viewStore;
+	}
 
-    public View getCurrentView(){
-        if(this.currentView == null){
-             this.currentView = getViewStore().readView();
-        }
-        return this.currentView;
-    }
-    
-    public View getLastView(){
-        return this.lastView;
-    }
-    
-    public SocketAddress getRemoteAddress(int id) {
-        return getCurrentView().getAddress(id);
-    }
-    
-    public void reconfigureTo(View newView) {
-        this.lastView = this.currentView;
-        this.currentView = newView;
-    }
+	public View getCurrentView() {
+		if (this.currentView == null) {
+			this.currentView = getViewStore().readView();
+		}
+		return this.currentView;
+	}
 
-    public TOMConfiguration getStaticConf() {
-        return staticConf;
-    }
+	public View getLastView() {
+		return this.lastView;
+	}
 
-    public boolean isCurrentViewMember(int id) {
-        return getCurrentView().isMember(id);
-    }
+	public SocketAddress getRemoteAddress(int id) {
+		return getCurrentView().getAddress(id);
+	}
 
-    public int getCurrentViewId() {
-        return getCurrentView().getId();
-    }
+	public void reconfigureTo(View newView) {
+		this.lastView = this.currentView;
+		this.currentView = newView;
+	}
 
-    public int getCurrentViewF() {
-        return getCurrentView().getF();
-    }
+	public TOMConfiguration getStaticConf() {
+		return staticConf;
+	}
 
-    public int getCurrentViewN() {
-        return getCurrentView().getN();
-    }
+	public boolean isCurrentViewMember(int id) {
+		return getCurrentView().isMember(id);
+	}
 
-    public int getCurrentViewPos(int id) {
-        return getCurrentView().getPos(id);
-    }
+	public int getCurrentViewId() {
+		return getCurrentView().getId();
+	}
 
-    public int[] getCurrentViewProcesses() {
-        return getCurrentView().getProcesses();
-    }
+	public int getCurrentViewF() {
+		return getCurrentView().getF();
+	}
+
+	public int getCurrentViewN() {
+		return getCurrentView().getN();
+	}
+
+	public int getCurrentViewPos(int id) {
+		return getCurrentView().getPos(id);
+	}
+
+	public int[] getCurrentViewProcesses() {
+		return getCurrentView().getProcesses();
+	}
 }

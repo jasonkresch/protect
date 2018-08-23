@@ -19,95 +19,100 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import bftsmart.communication.SystemMessage;
 import bftsmart.communication.server.ServersCommunicationLayer;
-import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.core.messages.TOMMessageType;
 import bftsmart.tom.util.Storage;
 
 public class Test {
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) throws Exception {
+	/**
+	 * @param args
+	 *            the command line arguments
+	 */
+	public static void main(String[] args) throws Exception {
 
-        //******* EDUARDO BEGIN **************//
-        ServerViewController controller = new ServerViewController(Integer.parseInt(args[0]));
-        LinkedBlockingQueue<SystemMessage> inQueue = new LinkedBlockingQueue<SystemMessage>();
-        ServersCommunicationLayer scl = new ServersCommunicationLayer(controller, inQueue,null);
+		// ******* EDUARDO BEGIN **************//
+		ServerViewController controller = new ServerViewController(Integer.parseInt(args[0]));
+		LinkedBlockingQueue<SystemMessage> inQueue = new LinkedBlockingQueue<SystemMessage>();
+		ServersCommunicationLayer scl = new ServersCommunicationLayer(controller, inQueue, null);
 
-        int id = controller.getStaticConf().getProcessId();
-        int n = controller.getCurrentViewN();
-        //******* EDUARDO END **************//
+		int id = controller.getStaticConf().getProcessId();
+		int n = controller.getCurrentViewN();
+		// ******* EDUARDO END **************//
 
+		int[] targets = new int[n - 1];
 
-        int[] targets = new int[n-1];
+		System.out.println("n = " + n);
 
-        System.out.println("n = "+n);
+		for (int i = 1; i < n; i++) {
+			targets[i - 1] = i;
+		}
 
-        for (int i=1; i<n; i++) {
-            targets[i-1] = i;
-        }
+		int iteractions = Integer.parseInt(args[1]);
 
-        int iteractions = Integer.parseInt(args[1]);
+		int warmup = iteractions / 2;
+		int test = iteractions / 2;
 
-        int warmup = iteractions/2;
-        int test = iteractions/2;
+		for (int i = 0; i < warmup; i++) {
+			String msg = "m" + i;
 
-        for(int i=0; i<warmup; i++) {
-            String msg = "m"+i;
+			// System.out.println("sending "+msg);
 
-            //System.out.println("sending "+msg);
+			if (id == 0) {
+				long time = System.nanoTime();
 
-            if(id == 0) {
-                long time = System.nanoTime();
+				scl.send(targets, new TOMMessage(id, 0, 0, i, msg.getBytes(), 0, TOMMessageType.ORDERED_REQUEST), true);
+				int rec = 0;
 
-                scl.send(targets, new TOMMessage(id,0,0, i,msg.getBytes(),0,TOMMessageType.ORDERED_REQUEST), true);
-                int rec = 0;
+				while (rec < n - 1) {
+					inQueue.take();
+					rec++;
+				}
 
-                while(rec < n-1) {
-                    inQueue.take();
-                    rec++;
-                }
+				// System.out.println();
+				System.out.println("Roundtrip " + ((System.nanoTime() - time) / 1000.0) + " us");
+			} else {
+				TOMMessage m = (TOMMessage) inQueue.take();
+				scl.send(new int[] { m.getSender() },
+						new TOMMessage(id, 0, 0, i, m.getContent(), 0, TOMMessageType.ORDERED_REQUEST), true);
+			}
+		}
 
-                //System.out.println();
-                System.out.println("Roundtrip "+((System.nanoTime()-time)/1000.0)+" us");
-            } else {
-                TOMMessage m = (TOMMessage) inQueue.take();
-                scl.send(new int[]{m.getSender()}, new TOMMessage(id,0,0,i,m.getContent(),0,TOMMessageType.ORDERED_REQUEST), true);
-            }
-        }
+		System.out.println("Beginning the real test with " + test + " roundtrips");
+		Storage st = new Storage(test);
 
-        System.out.println("Beginning the real test with "+test+" roundtrips");
-        Storage st = new Storage(test);
+		for (int i = 0; i < test; i++) {
+			String msg = "m" + i;
+			if (id == 0) {
+				long time = System.nanoTime();
 
-        for(int i=0; i<test; i++) {
-            String msg = "m"+i;
-            if(id == 0) {
-                long time = System.nanoTime();
+				scl.send(targets, new TOMMessage(id, 0, 0, i, msg.getBytes(), 0, TOMMessageType.ORDERED_REQUEST), true);
+				int rec = 0;
 
-                scl.send(targets, new TOMMessage(id,0,0,i,msg.getBytes(),0,TOMMessageType.ORDERED_REQUEST), true);
-                int rec = 0;
+				while (rec < n - 1) {
+					inQueue.take();
+					rec++;
+				}
 
-                while(rec < n-1) {
-                    inQueue.take();
-                    rec++;
-                }
+				st.store(System.nanoTime() - time);
+			} else {
+				TOMMessage m = (TOMMessage) inQueue.take();
+				scl.send(new int[] { m.getSender() },
+						new TOMMessage(id, 0, 0, i, m.getContent(), 0, TOMMessageType.ORDERED_REQUEST), true);
+			}
+		}
 
-                st.store(System.nanoTime()-time);
-            } else {
-                TOMMessage m = (TOMMessage) inQueue.take();
-                scl.send(new int[]{m.getSender()}, new TOMMessage(id,0,0,i,m.getContent(),0,TOMMessageType.ORDERED_REQUEST), true);
-            }
-        }
+		System.out.println("Average time for " + test + " executions (-10%) = " + st.getAverage(true) / 1000 + " us ");
+		System.out
+				.println("Standard desviation for " + test + " executions (-10%) = " + st.getDP(true) / 1000 + " us ");
+		System.out.println("Maximum time for " + test + " executions (-10%) = " + st.getMax(true) / 1000 + " us ");
+		System.out.println(
+				"Average time for " + test + " executions (all samples) = " + st.getAverage(false) / 1000 + " us ");
+		System.out.println(
+				"Standard desviation for " + test + " executions (all samples) = " + st.getDP(false) / 1000 + " us ");
+		System.out.println(
+				"Maximum time for " + test + " executions (all samples) = " + st.getMax(false) / 1000 + " us ");
 
-        System.out.println("Average time for "+test+" executions (-10%) = "+st.getAverage(true)/1000+ " us ");
-        System.out.println("Standard desviation for "+test+" executions (-10%) = "+st.getDP(true)/1000 + " us ");
-        System.out.println("Maximum time for "+test+" executions (-10%) = "+st.getMax(true)/1000+ " us ");
-        System.out.println("Average time for "+test+" executions (all samples) = "+st.getAverage(false)/1000+ " us ");
-        System.out.println("Standard desviation for "+test+" executions (all samples) = "+st.getDP(false)/1000 + " us ");
-        System.out.println("Maximum time for "+test+" executions (all samples) = "+st.getMax(false)/1000+ " us ");
-
-        //scl.shutdown();
-    }
+		// scl.shutdown();
+	}
 }

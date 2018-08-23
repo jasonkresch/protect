@@ -27,41 +27,45 @@ import java.io.ObjectOutput;
 
 public abstract class SystemMessage implements Externalizable {
 
-    protected int sender; // ID of the process which sent the message
-    public transient boolean authenticated; // set to TRUE if the message was received
-                                            // with a (valid) mac, FALSE if no mac was given
-                                            // note that if the message arrives with an
-                                            // invalid MAC, it won't be delivered
+	protected int sender; // ID of the process which sent the message
+	public transient boolean authenticated; // set to TRUE if the message was received
+											// with a (valid) mac, FALSE if no mac was given
+											// note that if the message arrives with an
+											// invalid MAC, it won't be delivered
 
-    /**
-     * Creates a new instance of SystemMessage
-     */
-    public SystemMessage(){}
-    
-    /**
-     * Creates a new instance of SystemMessage
-     * @param sender ID of the process which sent the message
-     */
-    public SystemMessage(int sender){
-        this.sender = sender;
-    }
-    
-    /**
-     * Returns the ID of the process which sent the message
-     * @return
-     */
-    public final int getSender() {
-        return sender;
-    }
+	/**
+	 * Creates a new instance of SystemMessage
+	 */
+	public SystemMessage() {
+	}
 
-    // This methods implement the Externalizable interface
-    @Override
-    public void writeExternal(ObjectOutput out) throws IOException {
-        out.writeInt(sender);
-    }
-    
-    @Override
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
-        sender = in.readInt();
-    }
+	/**
+	 * Creates a new instance of SystemMessage
+	 * 
+	 * @param sender
+	 *            ID of the process which sent the message
+	 */
+	public SystemMessage(int sender) {
+		this.sender = sender;
+	}
+
+	/**
+	 * Returns the ID of the process which sent the message
+	 * 
+	 * @return
+	 */
+	public final int getSender() {
+		return sender;
+	}
+
+	// This methods implement the Externalizable interface
+	@Override
+	public void writeExternal(ObjectOutput out) throws IOException {
+		out.writeInt(sender);
+	}
+
+	@Override
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+		sender = in.readInt();
+	}
 }

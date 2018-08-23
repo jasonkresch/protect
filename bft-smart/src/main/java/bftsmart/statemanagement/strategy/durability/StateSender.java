@@ -26,15 +26,15 @@ public class StateSender implements Runnable {
 
 	private final Socket socket;
 	private ApplicationState state;
-	
+
 	public StateSender(Socket socket) {
 		this.socket = socket;
 	}
-	
+
 	public void setState(ApplicationState state) {
 		this.state = state;
 	}
-	
+
 	@Override
 	public void run() {
 		try {

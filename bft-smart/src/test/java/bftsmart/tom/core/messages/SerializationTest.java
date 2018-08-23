@@ -20,39 +20,34 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 
-import bftsmart.tom.core.messages.TOMMessage;
-import bftsmart.tom.core.messages.TOMMessageType;
-
-
-
 public class SerializationTest {
 
-    /**
-     * @param args the command line arguments
-     */
-    public static void main(String[] args) throws Exception {
-        // TODO code application logic here
-        TOMMessage tm = new TOMMessage(0,0,0,0, new String("abc").getBytes(),0, TOMMessageType.ORDERED_REQUEST);
+	/**
+	 * @param args
+	 *            the command line arguments
+	 */
+	public static void main(String[] args) throws Exception {
+		// TODO code application logic here
+		TOMMessage tm = new TOMMessage(0, 0, 0, 0, new String("abc").getBytes(), 0, TOMMessageType.ORDERED_REQUEST);
 
-        ByteArrayOutputStream baos = new ByteArrayOutputStream(4);
-        DataOutputStream oos = new DataOutputStream(baos);
+		ByteArrayOutputStream baos = new ByteArrayOutputStream(4);
+		DataOutputStream oos = new DataOutputStream(baos);
 
-        tm.wExternal(oos);
-        oos.flush();
-        //oos.writeObject(tm);
+		tm.wExternal(oos);
+		oos.flush();
+		// oos.writeObject(tm);
 
+		byte[] message = baos.toByteArray();
+		System.out.println(message.length);
 
-        byte[] message = baos.toByteArray();
-        System.out.println(message.length);
+		ByteArrayInputStream bais = new ByteArrayInputStream(message);
+		DataInputStream ois = new DataInputStream(bais);
 
-        ByteArrayInputStream bais = new ByteArrayInputStream(message);
-        DataInputStream ois = new DataInputStream(bais);
+		// TOMMessage tm2 = (TOMMessage) ois.readObject();
+		TOMMessage tm2 = new TOMMessage();
+		tm2.rExternal(ois);
 
-        //TOMMessage tm2 = (TOMMessage) ois.readObject();
-        TOMMessage tm2 = new TOMMessage();
-        tm2.rExternal(ois);
-
-//        System.out.println(new String(tm2.getContent()));
-    }
+		// System.out.println(new String(tm2.getContent()));
+	}
 
 }

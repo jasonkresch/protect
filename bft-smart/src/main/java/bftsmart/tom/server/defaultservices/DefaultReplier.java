@@ -15,59 +15,59 @@ limitations under the License.
 */
 package bftsmart.tom.server.defaultservices;
 
-import bftsmart.tom.MessageContext;
-import bftsmart.tom.ReplicaContext;
-import bftsmart.tom.core.messages.TOMMessage;
-import bftsmart.tom.server.Replier;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import bftsmart.tom.MessageContext;
+import bftsmart.tom.ReplicaContext;
+import bftsmart.tom.core.messages.TOMMessage;
+import bftsmart.tom.server.Replier;
+
 /**
  *
  * @author miguel
  */
-public class DefaultReplier implements Replier{
-    
-    private Lock replyLock = new ReentrantLock();
-    private Condition contextSetted = replyLock.newCondition();
-    private ReplicaContext rc;
-    
-    @Override
-    public void manageReply(TOMMessage request, MessageContext msgCtx) {
-        
-        
-        while (rc == null) {
-            
-            try {
+public class DefaultReplier implements Replier {
 
-                this.replyLock.lock();
+	private Lock replyLock = new ReentrantLock();
+	private Condition contextSetted = replyLock.newCondition();
+	private ReplicaContext rc;
 
-                this.contextSetted.await();
-         
-                this.replyLock.unlock();
+	@Override
+	public void manageReply(TOMMessage request, MessageContext msgCtx) {
 
-            } catch (InterruptedException ex) {
-                Logger.getLogger(DefaultReplier.class.getName()).log(Level.SEVERE, null, ex);
-            }
-        }
-        
-        rc.getServerCommunicationSystem().send(new int[]{request.getSender()}, request.reply);
-        
-    }
+		while (rc == null) {
 
-    @Override
-    public void setReplicaContext(ReplicaContext rc) {
-        
-        this.replyLock.lock();
-        
-        this.rc = rc;
-        
-        this.contextSetted.signalAll();
-        
-        this.replyLock.unlock();
-    }
-    
+			try {
+
+				this.replyLock.lock();
+
+				this.contextSetted.await();
+
+				this.replyLock.unlock();
+
+			} catch (InterruptedException ex) {
+				Logger.getLogger(DefaultReplier.class.getName()).log(Level.SEVERE, null, ex);
+			}
+		}
+
+		rc.getServerCommunicationSystem().send(new int[] { request.getSender() }, request.reply);
+
+	}
+
+	@Override
+	public void setReplicaContext(ReplicaContext rc) {
+
+		this.replyLock.lock();
+
+		this.rc = rc;
+
+		this.contextSetted.signalAll();
+
+		this.replyLock.unlock();
+	}
+
 }

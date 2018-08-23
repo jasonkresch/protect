@@ -15,45 +15,47 @@ limitations under the License.
 */
 package bftsmart.demo.bftmap;
 
-import java.util.TreeMap;
 import java.util.Random;
+import java.util.TreeMap;
 
 public class BFTMapClient {
-	
+
 	private static int VALUE_SIZE = 1024;
 
-	public static void main(String[] args){
-		if(args.length < 1) {
+	public static void main(String[] args) {
+		if (args.length < 1) {
 			System.out.println("Usage: java BFTMapClient <process id>");
 			System.exit(-1);
 		}
 
-		int idProcess = Integer.parseInt(args[0]);//get process id
+		int idProcess = Integer.parseInt(args[0]);// get process id
 
 		BFTMap bftMap = new BFTMap(idProcess);
 		String tableName = "table";
 
 		try {
-			createTable(bftMap,tableName);
+			createTable(bftMap, tableName);
 		} catch (Exception e1) {
 			e1.printStackTrace();
-			System.out.println("Problems: Inserting a new value into the table("+tableName+"): "+e1.getLocalizedMessage());
+			System.out.println(
+					"Problems: Inserting a new value into the table(" + tableName + "): " + e1.getLocalizedMessage());
 			System.exit(1);
 		}
-		
+
 		int ops = 0;
-		while(true)	{
+		while (true) {
 			try {
-				boolean result = insertValue(bftMap,tableName,ops);
-				if(!result) {
-//					System.out.println("Problems: Inserting a new value into the table("+tableName+")");
-//					System.exit(1);	
+				boolean result = insertValue(bftMap, tableName, ops);
+				if (!result) {
+					// System.out.println("Problems: Inserting a new value into the
+					// table("+tableName+")");
+					// System.exit(1);
 				}
 
-				if(ops % 100 == 0)
-					System.out.println("ops sent: "+ops);
+				if (ops % 100 == 0)
+					System.out.println("ops sent: " + ops);
 				ops++;
-//				Thread.sleep(10);
+				// Thread.sleep(10);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}
@@ -66,7 +68,7 @@ public class BFTMapClient {
 		tableExists = bftMap.containsKey(nameTable);
 		System.out.println("tableExists:" + tableExists);
 		if (tableExists == false)
-			bftMap.put(nameTable, new TreeMap<String,byte[]>());
+			bftMap.put(nameTable, new TreeMap<String, byte[]>());
 		System.out.println("Created the table. Maybe");
 
 		return tableExists;
@@ -74,17 +76,17 @@ public class BFTMapClient {
 
 	private static boolean insertValue(BFTMap bftMap, String nameTable, int index) throws Exception {
 		String key = "Key" + index;
-                byte[] valueBytes = null;
-                
+		byte[] valueBytes = null;
+
 		Random rand = new Random();
-                valueBytes = new byte[VALUE_SIZE];
+		valueBytes = new byte[VALUE_SIZE];
 		rand.nextBytes(valueBytes);
 		byte[] resultBytes = bftMap.putEntry(nameTable, key, valueBytes);
-//		System.out.println("resultBytes" + resultBytes);
-		if(resultBytes == null)
+		// System.out.println("resultBytes" + resultBytes);
+		if (resultBytes == null)
 			return false;
 		return true;
-		
+
 	}
 
 }

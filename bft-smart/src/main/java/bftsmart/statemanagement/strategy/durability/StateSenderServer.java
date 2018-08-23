@@ -30,16 +30,16 @@ public class StateSenderServer implements Runnable {
 	private Recoverable recoverable;
 	private DurabilityCoordinator coordinator;
 	private CSTRequest request;
-	
+
 	public void setState(ApplicationState state) {
 		this.state = state;
 	}
-	
+
 	public void setRecoverable(Recoverable recoverable) {
 		this.recoverable = recoverable;
-		coordinator = (DurabilityCoordinator)(recoverable);
+		coordinator = (DurabilityCoordinator) (recoverable);
 	}
-	
+
 	public void setRequest(CSTRequest request) {
 		this.request = request;
 	}

@@ -19,25 +19,28 @@ import bftsmart.tom.MessageContext;
 
 /**
  * 
- * Executables that implement this interface can received unordered client requests.
- * To support ordered requests, objects that implement this interface must also implement
- * either 'FIFOExecutable', 'BatchExecutable' or 'SingleExecutable'.
+ * Executables that implement this interface can received unordered client
+ * requests. To support ordered requests, objects that implement this interface
+ * must also implement either 'FIFOExecutable', 'BatchExecutable' or
+ * 'SingleExecutable'.
  * 
  * @author Marcel Santos
  *
  */
 public interface Executable {
 
-    /**
-     * Method called to execute a request totally ordered.
-     * 
-     * The message context contains some useful information such as the command
-     * sender.
-     * 
-     * @param command the command issue by the client
-     * @param msgCtx information related with the command
-     * 
-     * @return the reply for the request issued by the client
-     */
-    public byte[] executeUnordered(byte[] command, MessageContext msgCtx);
+	/**
+	 * Method called to execute a request totally ordered.
+	 * 
+	 * The message context contains some useful information such as the command
+	 * sender.
+	 * 
+	 * @param command
+	 *            the command issue by the client
+	 * @param msgCtx
+	 *            information related with the command
+	 * 
+	 * @return the reply for the request issued by the client
+	 */
+	public byte[] executeUnordered(byte[] command, MessageContext msgCtx);
 }

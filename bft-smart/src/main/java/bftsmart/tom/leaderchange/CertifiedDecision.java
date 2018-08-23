@@ -15,12 +15,13 @@ limitations under the License.
 */
 package bftsmart.tom.leaderchange;
 
-import bftsmart.consensus.messages.ConsensusMessage;
 import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
 import java.util.Set;
+
+import bftsmart.consensus.messages.ConsensusMessage;
 
 /**
  * Data about the last consensus decision
@@ -29,97 +30,108 @@ import java.util.Set;
  */
 public class CertifiedDecision implements Externalizable {
 
-    private int pid; // process id
-    private int cid; // execution id
-    private byte[] decision; // decision value
-    private Set<ConsensusMessage>  consMsgs; // proof of the decision
-    
-    /**
-     * Empty constructor
-     */
-    public CertifiedDecision() {
-        pid = -1;
-        cid = -1;
-        decision = null;
-        consMsgs = null;
-    }
+	private int pid; // process id
+	private int cid; // execution id
+	private byte[] decision; // decision value
+	private Set<ConsensusMessage> consMsgs; // proof of the decision
 
-    /**
-     * Constructor
-     * 
-     * @param pid process id
-     * @param cid execution id
-     * @param decision decision value
-     * @param consMsgs proof of the decision in the form of authenticated Consensus Messages
-     */
-    public CertifiedDecision(int pid, int cid, byte[] decision, Set<ConsensusMessage> consMsgs) {
+	/**
+	 * Empty constructor
+	 */
+	public CertifiedDecision() {
+		pid = -1;
+		cid = -1;
+		decision = null;
+		consMsgs = null;
+	}
 
-        this.pid = pid;
-        this.cid = cid;
-        this.decision = decision;
-        this.consMsgs = consMsgs;
-    }
+	/**
+	 * Constructor
+	 * 
+	 * @param pid
+	 *            process id
+	 * @param cid
+	 *            execution id
+	 * @param decision
+	 *            decision value
+	 * @param consMsgs
+	 *            proof of the decision in the form of authenticated Consensus
+	 *            Messages
+	 */
+	public CertifiedDecision(int pid, int cid, byte[] decision, Set<ConsensusMessage> consMsgs) {
 
-    /**
-     * Get consensus ID
-     * @return consensus ID
-     */
-    public int getCID() {
-        return cid;
-    }
+		this.pid = pid;
+		this.cid = cid;
+		this.decision = decision;
+		this.consMsgs = consMsgs;
+	}
 
-    /**
-     * Get decision value
-     * @return decision value
-     */
-    public byte[] getDecision() {
-        return decision;
-    }
+	/**
+	 * Get consensus ID
+	 * 
+	 * @return consensus ID
+	 */
+	public int getCID() {
+		return cid;
+	}
 
-    /**
-     * Get proof of the decision in the form of authenticated Consensus Messages
-     * @return proof of the decision in the form of authenticated Consensus Messages
-     */
-    public Set<ConsensusMessage>  getConsMessages() {
-        return consMsgs;
-    }
+	/**
+	 * Get decision value
+	 * 
+	 * @return decision value
+	 */
+	public byte[] getDecision() {
+		return decision;
+	}
 
-    /**
-     * Get process id
-     * @return process id
-     */
-    public int getPID() {
-        return pid;
-    }
-    public boolean equals(Object obj) {
+	/**
+	 * Get proof of the decision in the form of authenticated Consensus Messages
+	 * 
+	 * @return proof of the decision in the form of authenticated Consensus Messages
+	 */
+	public Set<ConsensusMessage> getConsMessages() {
+		return consMsgs;
+	}
 
-        if (obj instanceof CertifiedDecision) {
+	/**
+	 * Get process id
+	 * 
+	 * @return process id
+	 */
+	public int getPID() {
+		return pid;
+	}
 
-            CertifiedDecision cDec = (CertifiedDecision) obj;
+	public boolean equals(Object obj) {
 
-            if (cDec.pid == pid) return true;
-        }
+		if (obj instanceof CertifiedDecision) {
 
-        return false;
-    }
+			CertifiedDecision cDec = (CertifiedDecision) obj;
 
-    public int hashCode() {
-        return pid;
-    }
-    
-    public void writeExternal(ObjectOutput out) throws IOException {
+			if (cDec.pid == pid)
+				return true;
+		}
 
-        out.writeInt(pid);
-        out.writeInt(cid);
-        out.writeObject(decision);
-        out.writeObject(consMsgs);
-    }
+		return false;
+	}
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+	public int hashCode() {
+		return pid;
+	}
 
-        pid = in.readInt();
-        cid = in.readInt();
-        decision = (byte[]) in.readObject();
-        consMsgs = (Set<ConsensusMessage>) in.readObject();
-    }
+	public void writeExternal(ObjectOutput out) throws IOException {
+
+		out.writeInt(pid);
+		out.writeInt(cid);
+		out.writeObject(decision);
+		out.writeObject(consMsgs);
+	}
+
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+		pid = in.readInt();
+		cid = in.readInt();
+		decision = (byte[]) in.readObject();
+		consMsgs = (Set<ConsensusMessage>) in.readObject();
+	}
 }

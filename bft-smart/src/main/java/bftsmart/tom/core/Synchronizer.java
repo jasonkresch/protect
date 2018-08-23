@@ -5,26 +5,6 @@
  */
 package bftsmart.tom.core;
 
-import bftsmart.communication.ServerCommunicationSystem;
-import bftsmart.consensus.Decision;
-import bftsmart.consensus.Epoch;
-import bftsmart.consensus.Consensus;
-import bftsmart.consensus.TimestampValuePair;
-import bftsmart.consensus.messages.ConsensusMessage;
-import bftsmart.consensus.messages.MessageFactory;
-import bftsmart.consensus.roles.Acceptor;
-import bftsmart.reconfiguration.ServerViewController;
-import bftsmart.statemanagement.StateManager;
-import bftsmart.tom.core.messages.TOMMessage;
-import bftsmart.tom.leaderchange.RequestsTimer;
-import bftsmart.tom.leaderchange.CollectData;
-import bftsmart.tom.leaderchange.LCManager;
-import bftsmart.tom.leaderchange.LCMessage;
-import bftsmart.tom.leaderchange.CertifiedDecision;
-import bftsmart.tom.util.BatchBuilder;
-import bftsmart.tom.util.BatchReader;
-import bftsmart.tom.util.Logger;
-import bftsmart.tom.util.TOMUtil;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -38,7 +18,29 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.logging.Level;
+
 import org.apache.commons.codec.binary.Base64;
+
+import bftsmart.communication.ServerCommunicationSystem;
+import bftsmart.consensus.Consensus;
+import bftsmart.consensus.Decision;
+import bftsmart.consensus.Epoch;
+import bftsmart.consensus.TimestampValuePair;
+import bftsmart.consensus.messages.ConsensusMessage;
+import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.consensus.roles.Acceptor;
+import bftsmart.reconfiguration.ServerViewController;
+import bftsmart.statemanagement.StateManager;
+import bftsmart.tom.core.messages.TOMMessage;
+import bftsmart.tom.leaderchange.CertifiedDecision;
+import bftsmart.tom.leaderchange.CollectData;
+import bftsmart.tom.leaderchange.LCManager;
+import bftsmart.tom.leaderchange.LCMessage;
+import bftsmart.tom.leaderchange.RequestsTimer;
+import bftsmart.tom.util.BatchBuilder;
+import bftsmart.tom.util.BatchReader;
+import bftsmart.tom.util.Logger;
+import bftsmart.tom.util.TOMUtil;
 
 /**
  *
@@ -457,8 +459,7 @@ public class Synchronizer {
 	}
 
 	/**
-	 * Remove all STOP messages being retransmitted up until the specified
-	 * regency
+	 * Remove all STOP messages being retransmitted up until the specified regency
 	 * 
 	 * @param regency
 	 *            The regency up to which STOP retransmission should be canceled
@@ -925,8 +926,8 @@ public class Synchronizer {
 	}
 
 	/**
-	 * This method is called by the MessageHandler each time it received
-	 * messages related to the leader change
+	 * This method is called by the MessageHandler each time it received messages
+	 * related to the leader change
 	 *
 	 * @param msg
 	 *            Message received from the other replica
@@ -988,8 +989,7 @@ public class Synchronizer {
 			// Am I the new leader, and am I expecting this messages?
 			if (regency == lcManager.getLastReg() && this.controller.getStaticConf().getProcessId() == execManager
 					.getCurrentLeader()/*
-										 * (regency %
-										 * this.reconfManager.getCurrentViewN())
+										 * (regency % this.reconfManager.getCurrentViewN())
 										 */) {
 
 				Logger.println("(Synchronizer.deliverTimeoutRequest) I'm the new leader and I received a STOPDATA");
@@ -1210,8 +1210,8 @@ public class Synchronizer {
 			return;
 
 		} /*
-			 * else if (tom.getLastExec() + 1 == lastHighestCID.getCID()) { //
-			 * Is this replica still executing the last decided consensus?
+			 * else if (tom.getLastExec() + 1 == lastHighestCID.getCID()) { // Is this
+			 * replica still executing the last decided consensus?
 			 * 
 			 * System.out.
 			 * println("(Synchronizer.finalise) I'm still at the CID before the most recent one!!! ("
@@ -1222,17 +1222,15 @@ public class Synchronizer {
 			 * 
 			 * int ets = cons.getEts();
 			 * 
-			 * if (e == null || e.getTimestamp() != ets) { e =
-			 * cons.createEpoch(ets, controller); } else { e.clear(); }
+			 * if (e == null || e.getTimestamp() != ets) { e = cons.createEpoch(ets,
+			 * controller); } else { e.clear(); }
 			 * 
 			 * byte[] hash = tom.computeHash(lastHighestCID.getCIDDecision());
-			 * e.propValueHash = hash; e.propValue =
-			 * lastHighestCID.getCIDDecision();
+			 * e.propValueHash = hash; e.propValue = lastHighestCID.getCIDDecision();
 			 * 
 			 * e.deserializedPropValue =
 			 * tom.checkProposedValue(lastHighestCID.getCIDDecision(), false);
-			 * cons.decided(e, true); // pass the decision to the delivery
-			 * thread }
+			 * cons.decided(e, true); // pass the decision to the delivery thread }
 			 */
 
 		// install proof of the last decided consensus
@@ -1350,8 +1348,8 @@ public class Synchronizer {
 
 			// Make sure the epoch is created
 			/*
-			 * if (e == null || e.getTimestamp() != ets) { e =
-			 * cons.createEpoch(ets, controller); } else { e.clear(); }
+			 * if (e == null || e.getTimestamp() != ets) { e = cons.createEpoch(ets,
+			 * controller); } else { e.clear(); }
 			 */
 			if (e == null || e.getTimestamp() != regency) {
 				e = cons.createEpoch(regency, controller);

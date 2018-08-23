@@ -26,44 +26,44 @@ import bftsmart.reconfiguration.views.View;
  * @author Alysson Bessani
  */
 public class ReplicaContext {
-    
-    private ServerCommunicationSystem cs; // Server side comunication system
-    private ServerViewController SVController;
 
-    public ReplicaContext(ServerCommunicationSystem cs, 
-                                 ServerViewController SVController) {
-        this.cs = cs;
-        this.SVController = SVController;
-    }
+	private ServerCommunicationSystem cs; // Server side comunication system
+	private ServerViewController SVController;
 
-    /**
-     * Returns the controller of the replica's view
-     * @return The controller of the replica's view
-     */
-    public ServerViewController getSVController() {
-        return SVController;
-    }
-    
-    //TODO: implement a method that allow the replica to send a message with
-    //total order to all other replicas
-       
-    /**
-     * Returns the static configuration of this replica.
-     * 
-     * @return the static configuration of this replica
-     */
-    public TOMConfiguration getStaticConfiguration() {
-        return SVController.getStaticConf();
-    }
-    
-    /**
-     * Returns the current view of the replica group.
-     * 
-     * @return the current view of the replica group.
-     */
-    public View getCurrentView() {
-        return SVController.getCurrentView();
-    }
+	public ReplicaContext(ServerCommunicationSystem cs, ServerViewController SVController) {
+		this.cs = cs;
+		this.SVController = SVController;
+	}
+
+	/**
+	 * Returns the controller of the replica's view
+	 * 
+	 * @return The controller of the replica's view
+	 */
+	public ServerViewController getSVController() {
+		return SVController;
+	}
+
+	// TODO: implement a method that allow the replica to send a message with
+	// total order to all other replicas
+
+	/**
+	 * Returns the static configuration of this replica.
+	 * 
+	 * @return the static configuration of this replica
+	 */
+	public TOMConfiguration getStaticConfiguration() {
+		return SVController.getStaticConf();
+	}
+
+	/**
+	 * Returns the current view of the replica group.
+	 * 
+	 * @return the current view of the replica group.
+	 */
+	public View getCurrentView() {
+		return SVController.getCurrentView();
+	}
 
 	public ServerCommunicationSystem getServerCommunicationSystem() {
 		return cs;

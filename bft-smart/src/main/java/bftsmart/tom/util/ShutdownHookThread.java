@@ -30,72 +30,72 @@ import bftsmart.tom.core.TOMLayer;
  */
 public class ShutdownHookThread extends Thread {
 
-    private final TOMLayer tomLayer;
-    private final MessageDigest md;
+	private final TOMLayer tomLayer;
+	private final MessageDigest md;
 
-    public ShutdownHookThread(TOMLayer tomLayer) {
+	public ShutdownHookThread(TOMLayer tomLayer) {
 
-        this.tomLayer = tomLayer;
-        this.md = this.tomLayer.md;
-    }
+		this.tomLayer = tomLayer;
+		this.md = this.tomLayer.md;
+	}
 
-    @Override
-    public void run() {
-        
-        StringBuffer buffer = new StringBuffer();
-        SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
-        int lastCons = tomLayer.getLastExec();
-        int currentCons = tomLayer.getInExec();
-        Consensus c = null;
-        Epoch e = null;
+	@Override
+	public void run() {
 
-        buffer.append("\n---------- DEBUG INFO ----------\n");
-        buffer.append("\nCurrent time: " + sdf.format(new Date()));
-        buffer.append("\nCurrent leader: " + tomLayer.execManager.getCurrentLeader());
-        buffer.append("\nCurrent regency: " + tomLayer.getSynchronizer().getLCManager().getLastReg());
+		StringBuffer buffer = new StringBuffer();
+		SimpleDateFormat sdf = new SimpleDateFormat("HH:mm:ss.SSS");
+		int lastCons = tomLayer.getLastExec();
+		int currentCons = tomLayer.getInExec();
+		Consensus c = null;
+		Epoch e = null;
 
-        buffer.append("\n\nLast finished consensus: " + (lastCons == -1 ? "None" : lastCons));
-        if(lastCons > -1) {
-            
-            c = tomLayer.execManager.getConsensus(lastCons);
-            
-            for (TimestampValuePair rv : c.getWriteSet()) {
-                if  (rv.getValue() != null && rv.getValue().length > 0)
-                    rv.setHashedValue(md.digest(rv.getValue()));
-            }
-            
-            buffer.append("\n\n\t -- Consensus state: \n\n\t\tETS=" + c.getEts() + " \n\t\tWriteSet=["+ c.getWriteSet()
-            + "] \n\t\t(VAL,TS)=["+c.getQuorumWrites() + "]");
-            
-            e = c.getLastEpoch();
-            if(e != null){
-                buffer.append("\n\n\t -- Epoch state: \n"+e.toString());
-            }
-        }
-        buffer.append("\n\nConsensus in execution: " + (currentCons == -1 ? "None" : currentCons));
-        
-        c = null;
-        e = null;
-        if(currentCons > -1) {
-            
-            c = tomLayer.execManager.getConsensus(currentCons);
-            
-            for (TimestampValuePair rv : c.getWriteSet()) {
-                if  (rv.getValue() != null && rv.getValue().length > 0)
-                    rv.setHashedValue(md.digest(rv.getValue()));
-            }
-            
-            buffer.append("\n\n\t -- Consensus state: \n\n\t\tETS=" + c.getEts() + " \n\t\tWriteSet=["+ c.getWriteSet()
-            + "] \n\t\t(VAL,TS)=["+c.getQuorumWrites() + "]");
-            
-            e = c.getLastEpoch();
-            if(e != null) {
-                buffer.append("\n\n\t -- Epoch state: \n"+e.toString());
-            }
-        }
+		buffer.append("\n---------- DEBUG INFO ----------\n");
+		buffer.append("\nCurrent time: " + sdf.format(new Date()));
+		buffer.append("\nCurrent leader: " + tomLayer.execManager.getCurrentLeader());
+		buffer.append("\nCurrent regency: " + tomLayer.getSynchronizer().getLCManager().getLastReg());
 
-        buffer.append("\n\n---------- ---------- ----------\n");
-        
-        System.out.println(buffer);
-    }
+		buffer.append("\n\nLast finished consensus: " + (lastCons == -1 ? "None" : lastCons));
+		if (lastCons > -1) {
+
+			c = tomLayer.execManager.getConsensus(lastCons);
+
+			for (TimestampValuePair rv : c.getWriteSet()) {
+				if (rv.getValue() != null && rv.getValue().length > 0)
+					rv.setHashedValue(md.digest(rv.getValue()));
+			}
+
+			buffer.append("\n\n\t -- Consensus state: \n\n\t\tETS=" + c.getEts() + " \n\t\tWriteSet=[" + c.getWriteSet()
+					+ "] \n\t\t(VAL,TS)=[" + c.getQuorumWrites() + "]");
+
+			e = c.getLastEpoch();
+			if (e != null) {
+				buffer.append("\n\n\t -- Epoch state: \n" + e.toString());
+			}
+		}
+		buffer.append("\n\nConsensus in execution: " + (currentCons == -1 ? "None" : currentCons));
+
+		c = null;
+		e = null;
+		if (currentCons > -1) {
+
+			c = tomLayer.execManager.getConsensus(currentCons);
+
+			for (TimestampValuePair rv : c.getWriteSet()) {
+				if (rv.getValue() != null && rv.getValue().length > 0)
+					rv.setHashedValue(md.digest(rv.getValue()));
+			}
+
+			buffer.append("\n\n\t -- Consensus state: \n\n\t\tETS=" + c.getEts() + " \n\t\tWriteSet=[" + c.getWriteSet()
+					+ "] \n\t\t(VAL,TS)=[" + c.getQuorumWrites() + "]");
+
+			e = c.getLastEpoch();
+			if (e != null) {
+				buffer.append("\n\n\t -- Epoch state: \n" + e.toString());
+			}
+		}
+
+		buffer.append("\n\n---------- ---------- ----------\n");
+
+		System.out.println(buffer);
+	}
 }

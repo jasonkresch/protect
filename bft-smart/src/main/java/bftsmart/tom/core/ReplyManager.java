@@ -4,12 +4,12 @@
  */
 package bftsmart.tom.core;
 
-import bftsmart.communication.ServerCommunicationSystem;
-import bftsmart.communication.SystemMessage;
-import bftsmart.tom.core.messages.TOMMessage;
 import java.util.LinkedList;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.TimeUnit;
+
+import bftsmart.communication.ServerCommunicationSystem;
+import bftsmart.tom.core.messages.TOMMessage;
 
 
 /**

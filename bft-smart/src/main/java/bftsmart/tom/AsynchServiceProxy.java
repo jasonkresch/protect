@@ -1,5 +1,9 @@
 package bftsmart.tom;
 
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.HashMap;
+
 import bftsmart.communication.client.ReplyListener;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.tom.core.messages.TOMMessage;
@@ -7,9 +11,6 @@ import bftsmart.tom.core.messages.TOMMessageType;
 import bftsmart.tom.util.Extractor;
 import bftsmart.tom.util.Logger;
 import bftsmart.tom.util.TOMUtil;
-import java.util.Arrays;
-import java.util.Comparator;
-import java.util.HashMap;
 
 /**
  * This class is an extension of 'ServiceProxy' that can waits for replies
@@ -20,226 +21,240 @@ import java.util.HashMap;
  */
 public class AsynchServiceProxy extends ServiceProxy {
 
-    /**
-     *
-     */
-    private HashMap<Integer, RequestContext> requestsContext;
-    private HashMap<Integer, TOMMessage[]> requestsReplies;
-    private HashMap<Integer, Integer> requestsAlias;
+	/**
+	 *
+	 */
+	private HashMap<Integer, RequestContext> requestsContext;
+	private HashMap<Integer, TOMMessage[]> requestsReplies;
+	private HashMap<Integer, Integer> requestsAlias;
 
-    /**
-     *
-     * @param processId Replica id
-     */
-    public AsynchServiceProxy(int processId) {
-        this(processId, null);
-        init();
-    }
+	/**
+	 *
+	 * @param processId
+	 *            Replica id
+	 */
+	public AsynchServiceProxy(int processId) {
+		this(processId, null);
+		init();
+	}
 
-    /**
-     *
-     * @param processId Replica id
-     * @param configHome Configuration folder
-     */
-    public AsynchServiceProxy(int processId, String configHome) {
-        super(processId, configHome);
-        init();
-    }
+	/**
+	 *
+	 * @param processId
+	 *            Replica id
+	 * @param configHome
+	 *            Configuration folder
+	 */
+	public AsynchServiceProxy(int processId, String configHome) {
+		super(processId, configHome);
+		init();
+	}
 
-    public AsynchServiceProxy(int processId, String configHome,
-            Comparator<byte[]> replyComparator, Extractor replyExtractor) {
-        super(processId, configHome, replyComparator, replyExtractor);
-        init();
-    }
+	public AsynchServiceProxy(int processId, String configHome, Comparator<byte[]> replyComparator,
+			Extractor replyExtractor) {
+		super(processId, configHome, replyComparator, replyExtractor);
+		init();
+	}
 
-    private void init() {
-        requestsContext = new HashMap<>();
-        requestsReplies = new HashMap<>();
-        requestsAlias = new HashMap<>();
-    }
-    
-    private View newView(byte[] bytes) {
-        
-        Object o = TOMUtil.getObject(bytes);
-        return (o != null && o instanceof View ? (View) o : null);
-    }
-    /**
-     *
-     * @param request
-     * @param replyListener
-     * @param reqType Request type
-     * @return
-     */
-    public int invokeAsynchRequest(byte[] request, ReplyListener replyListener, TOMMessageType reqType) {
-        return invokeAsynchRequest(request, super.getViewManager().getCurrentViewProcesses(), replyListener, reqType);
-    }
+	private void init() {
+		requestsContext = new HashMap<>();
+		requestsReplies = new HashMap<>();
+		requestsAlias = new HashMap<>();
+	}
 
-    /**
-     *
-     * @param request
-     * @param targets
-     * @param replyListener
-     * @param reqType Request type
-     * @return
-     */
-    public int invokeAsynchRequest(byte[] request, int[] targets, ReplyListener replyListener, TOMMessageType reqType) {
-        return invokeAsynch(request, targets, replyListener, reqType);
-    }
+	private View newView(byte[] bytes) {
 
-    /**
-     *
-     * @param requestId Request
-     */
-    public void cleanAsynchRequest(int requestId) {
+		Object o = TOMUtil.getObject(bytes);
+		return (o != null && o instanceof View ? (View) o : null);
+	}
 
-        Integer id = requestId;
+	/**
+	 *
+	 * @param request
+	 * @param replyListener
+	 * @param reqType
+	 *            Request type
+	 * @return
+	 */
+	public int invokeAsynchRequest(byte[] request, ReplyListener replyListener, TOMMessageType reqType) {
+		return invokeAsynchRequest(request, super.getViewManager().getCurrentViewProcesses(), replyListener, reqType);
+	}
 
-        do {
+	/**
+	 *
+	 * @param request
+	 * @param targets
+	 * @param replyListener
+	 * @param reqType
+	 *            Request type
+	 * @return
+	 */
+	public int invokeAsynchRequest(byte[] request, int[] targets, ReplyListener replyListener, TOMMessageType reqType) {
+		return invokeAsynch(request, targets, replyListener, reqType);
+	}
 
-            requestsContext.remove(id);
-            requestsReplies.remove(id);
+	/**
+	 *
+	 * @param requestId
+	 *            Request
+	 */
+	public void cleanAsynchRequest(int requestId) {
 
-            id = requestsAlias.remove(id);
+		Integer id = requestId;
 
-        } while (id != null);
+		do {
 
-    }
+			requestsContext.remove(id);
+			requestsReplies.remove(id);
 
-    /**
-     *
-     */
-    @Override
-    public void replyReceived(TOMMessage reply) {
-        Logger.println("Asynchronously received reply from " + reply.getSender() + " with sequence number " + reply.getSequence() + " and operation ID " + reply.getOperationId());
+			id = requestsAlias.remove(id);
 
-        try {
-            canReceiveLock.lock();
+		} while (id != null);
 
-            final RequestContext requestContext = requestsContext.get(reply.getOperationId());
+	}
 
-            if (requestContext == null) { // it is not a asynchronous request
-                super.replyReceived(reply);
-                return;
-            }
+	/**
+	 *
+	 */
+	@Override
+	public void replyReceived(TOMMessage reply) {
+		Logger.println("Asynchronously received reply from " + reply.getSender() + " with sequence number "
+				+ reply.getSequence() + " and operation ID " + reply.getOperationId());
 
-            if (contains(requestContext.getTargets(), reply.getSender())
-                    && (reply.getSequence() == requestContext.getReqId())
-                    //&& (reply.getOperationId() == requestContext.getOperationId())
-                    && (reply.getReqType().compareTo(requestContext.getRequestType())) == 0) {
+		try {
+			canReceiveLock.lock();
 
-                Logger.println("Deliverying message from " + reply.getSender() + " with sequence number " + reply.getSequence() + " and operation ID " + reply.getOperationId() + " to the listener");
+			final RequestContext requestContext = requestsContext.get(reply.getOperationId());
 
-                ReplyListener replyListener = requestContext.getReplyListener();
-                
-                View v = null;
+			if (requestContext == null) { // it is not a asynchronous request
+				super.replyReceived(reply);
+				return;
+			}
 
-                if (replyListener != null) {
+			if (contains(requestContext.getTargets(), reply.getSender())
+					&& (reply.getSequence() == requestContext.getReqId())
+					// && (reply.getOperationId() == requestContext.getOperationId())
+					&& (reply.getReqType().compareTo(requestContext.getRequestType())) == 0) {
 
-                    //if (reply.getViewID() > getViewManager().getCurrentViewId()) { // Deal with a system reconfiguration
-                    if ((v = newView(reply.getContent())) != null && !requestsAlias.containsKey(reply.getOperationId())) { // Deal with a system reconfiguration
-    
-                        TOMMessage[] replies = requestsReplies.get(reply.getOperationId());
+				Logger.println("Deliverying message from " + reply.getSender() + " with sequence number "
+						+ reply.getSequence() + " and operation ID " + reply.getOperationId() + " to the listener");
 
-                        int sameContent = 1;
-                        int replyQuorum = getReplyQuorum();
+				ReplyListener replyListener = requestContext.getReplyListener();
 
-                        int pos = getViewManager().getCurrentViewPos(reply.getSender());
+				View v = null;
 
-                        replies[pos] = reply;
+				if (replyListener != null) {
 
-                        for (int i = 0; i < replies.length; i++) {
+					// if (reply.getViewID() > getViewManager().getCurrentViewId()) { // Deal with a
+					// system reconfiguration
+					if ((v = newView(reply.getContent())) != null
+							&& !requestsAlias.containsKey(reply.getOperationId())) { // Deal with a system
+																						// reconfiguration
 
-                            if ((replies[i] != null) && (i != pos || getViewManager().getCurrentViewN() == 1)
-                                    && (reply.getReqType() != TOMMessageType.ORDERED_REQUEST || Arrays.equals(replies[i].getContent(), reply.getContent()))) {
-                                sameContent++;
-                            }
-                        }
-                        
-                        if (sameContent >= replyQuorum) {
+						TOMMessage[] replies = requestsReplies.get(reply.getOperationId());
 
-                            if (v.getId() > getViewManager().getCurrentViewId()) {
+						int sameContent = 1;
+						int replyQuorum = getReplyQuorum();
 
-                                reconfigureTo(v);
-                            }
+						int pos = getViewManager().getCurrentViewPos(reply.getSender());
 
-                            requestContext.getReplyListener().reset();
+						replies[pos] = reply;
 
-                            Thread t = new Thread() {
+						for (int i = 0; i < replies.length; i++) {
 
-                                @Override
-                                public void run() {
+							if ((replies[i] != null) && (i != pos || getViewManager().getCurrentViewN() == 1)
+									&& (reply.getReqType() != TOMMessageType.ORDERED_REQUEST
+											|| Arrays.equals(replies[i].getContent(), reply.getContent()))) {
+								sameContent++;
+							}
+						}
 
-                                    int id = invokeAsynch(requestContext.getRequest(), requestContext.getTargets(), requestContext.getReplyListener(), TOMMessageType.ORDERED_REQUEST);
+						if (sameContent >= replyQuorum) {
 
-                                    requestsAlias.put(reply.getOperationId(), id);
-                                }
+							if (v.getId() > getViewManager().getCurrentViewId()) {
 
-                            };
+								reconfigureTo(v);
+							}
 
-                            t.start();
+							requestContext.getReplyListener().reset();
 
-                        }
-                        
-                        
-                    } else if (!requestsAlias.containsKey(reply.getOperationId())) {
-                            
-                            requestContext.getReplyListener().replyReceived(requestContext, reply);
-                    }
-                }
-            }
-        } catch (Exception ex) {
-            ex.printStackTrace();
-        } finally {
-            canReceiveLock.unlock();
-        }
-    }
+							Thread t = new Thread() {
 
-    /**
-     *
-     * @param request
-     * @param targets
-     * @param replyListener
-     * @param reqType
-     * @return
-     */
-    private int invokeAsynch(byte[] request, int[] targets, ReplyListener replyListener, TOMMessageType reqType) {
+								@Override
+								public void run() {
 
-        Logger.println("Asynchronously sending request to " + Arrays.toString(targets));
+									int id = invokeAsynch(requestContext.getRequest(), requestContext.getTargets(),
+											requestContext.getReplyListener(), TOMMessageType.ORDERED_REQUEST);
 
-        RequestContext requestContext = null;
+									requestsAlias.put(reply.getOperationId(), id);
+								}
 
-        canSendLock.lock();
+							};
 
-        requestContext = new RequestContext(generateRequestId(reqType), generateOperationId(),
-                reqType, targets, System.currentTimeMillis(), replyListener, request);
+							t.start();
 
-        try {
-            Logger.println("Storing request context for " + requestContext.getOperationId());
-            requestsContext.put(requestContext.getOperationId(), requestContext);
-            requestsReplies.put(requestContext.getOperationId(), new TOMMessage[super.getViewManager().getCurrentViewN()]);
+						}
 
-            sendMessageToTargets(request, requestContext.getReqId(), requestContext.getOperationId(), targets, reqType);
+					} else if (!requestsAlias.containsKey(reply.getOperationId())) {
 
-        } finally {
-            canSendLock.unlock();
-        }
+						requestContext.getReplyListener().replyReceived(requestContext, reply);
+					}
+				}
+			}
+		} catch (Exception ex) {
+			ex.printStackTrace();
+		} finally {
+			canReceiveLock.unlock();
+		}
+	}
 
-        return requestContext.getOperationId();
-    }
+	/**
+	 *
+	 * @param request
+	 * @param targets
+	 * @param replyListener
+	 * @param reqType
+	 * @return
+	 */
+	private int invokeAsynch(byte[] request, int[] targets, ReplyListener replyListener, TOMMessageType reqType) {
 
-    /**
-     *
-     * @param targets
-     * @param senderId
-     * @return
-     */
-    private boolean contains(int[] targets, int senderId) {
-        for (int i = 0; i < targets.length; i++) {
-            if (targets[i] == senderId) {
-                return true;
-            }
-        }
-        return false;
-    }
+		Logger.println("Asynchronously sending request to " + Arrays.toString(targets));
+
+		RequestContext requestContext = null;
+
+		canSendLock.lock();
+
+		requestContext = new RequestContext(generateRequestId(reqType), generateOperationId(), reqType, targets,
+				System.currentTimeMillis(), replyListener, request);
+
+		try {
+			Logger.println("Storing request context for " + requestContext.getOperationId());
+			requestsContext.put(requestContext.getOperationId(), requestContext);
+			requestsReplies.put(requestContext.getOperationId(),
+					new TOMMessage[super.getViewManager().getCurrentViewN()]);
+
+			sendMessageToTargets(request, requestContext.getReqId(), requestContext.getOperationId(), targets, reqType);
+
+		} finally {
+			canSendLock.unlock();
+		}
+
+		return requestContext.getOperationId();
+	}
+
+	/**
+	 *
+	 * @param targets
+	 * @param senderId
+	 * @return
+	 */
+	private boolean contains(int[] targets, int senderId) {
+		for (int i = 0; i < targets.length; i++) {
+			if (targets[i] == senderId) {
+				return true;
+			}
+		}
+		return false;
+	}
 
 }

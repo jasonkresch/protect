@@ -31,43 +31,42 @@ import bftsmart.tom.util.Logger;
  */
 public class CounterClient {
 
-    public static void main(String[] args) throws IOException {
-        if (args.length < 2) {
-            System.out.println("Usage: java ... CounterClient <process id> <increment> [<number of operations>]");
-            System.out.println("       if <increment> equals 0 the request will be read-only");
-            System.out.println("       default <number of operations> equals 1000");
-            System.exit(-1);
-        }
+	public static void main(String[] args) throws IOException {
+		if (args.length < 2) {
+			System.out.println("Usage: java ... CounterClient <process id> <increment> [<number of operations>]");
+			System.out.println("       if <increment> equals 0 the request will be read-only");
+			System.out.println("       default <number of operations> equals 1000");
+			System.exit(-1);
+		}
 
-        ServiceProxy counterProxy = new ServiceProxy(Integer.parseInt(args[0]));
+		ServiceProxy counterProxy = new ServiceProxy(Integer.parseInt(args[0]));
 
-        Logger.debug = false;
-        
-        try {
+		Logger.debug = false;
 
-            int inc = Integer.parseInt(args[1]);
-            int numberOfOps = (args.length > 2) ? Integer.parseInt(args[2]) : 1000;
+		try {
 
-            for (int i = 0; i < numberOfOps; i++) {
+			int inc = Integer.parseInt(args[1]);
+			int numberOfOps = (args.length > 2) ? Integer.parseInt(args[2]) : 1000;
 
-                ByteArrayOutputStream out = new ByteArrayOutputStream(4);
-                new DataOutputStream(out).writeInt(inc);
+			for (int i = 0; i < numberOfOps; i++) {
 
-                System.out.print("Invocation " + i);
-                byte[] reply = (inc == 0)?
-                        counterProxy.invokeUnordered(out.toByteArray()):
-                	counterProxy.invokeOrdered(out.toByteArray()); //magic happens here
-                
-                if(reply != null) {
-                    int newValue = new DataInputStream(new ByteArrayInputStream(reply)).readInt();
-                    System.out.println(", returned value: " + newValue);
-                } else {
-                    System.out.println(", ERROR! Exiting.");
-                    break;
-                }
-            }
-        } catch(IOException | NumberFormatException e){
-            counterProxy.close();
-        }
-    }
+				ByteArrayOutputStream out = new ByteArrayOutputStream(4);
+				new DataOutputStream(out).writeInt(inc);
+
+				System.out.print("Invocation " + i);
+				byte[] reply = (inc == 0) ? counterProxy.invokeUnordered(out.toByteArray())
+						: counterProxy.invokeOrdered(out.toByteArray()); // magic happens here
+
+				if (reply != null) {
+					int newValue = new DataInputStream(new ByteArrayInputStream(reply)).readInt();
+					System.out.println(", returned value: " + newValue);
+				} else {
+					System.out.println(", ERROR! Exiting.");
+					break;
+				}
+			}
+		} catch (IOException | NumberFormatException e) {
+			counterProxy.close();
+		}
+	}
 }

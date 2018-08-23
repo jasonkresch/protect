@@ -24,118 +24,131 @@ import java.util.HashSet;
 import bftsmart.consensus.TimestampValuePair;
 
 /**
- * This class represents a COLLECT object with the information about the running consensus
+ * This class represents a COLLECT object with the information about the running
+ * consensus
  *
  * @author Joao Sousa
  */
 public class CollectData implements Externalizable {
 
-    private int pid; // process id
-    private int cid; // consensus id
-    private int ets; // consensus ETS
-    private TimestampValuePair quorumWrites; // last value recevied from a Byzantine quorum of WRITEs
-    private HashSet<TimestampValuePair> writeSet; // values written by the replica
-    
-    /**
-     * Empty constructor
-     */
-    public CollectData() {
-        pid = -1;
-        cid = -1;
-        ets = -1;
-        quorumWrites = null;
-        writeSet = null;
-    }
+	private int pid; // process id
+	private int cid; // consensus id
+	private int ets; // consensus ETS
+	private TimestampValuePair quorumWrites; // last value recevied from a Byzantine quorum of WRITEs
+	private HashSet<TimestampValuePair> writeSet; // values written by the replica
 
-    /**
-     * Constructor
-     *
-     * @param pid process id
-     * @param cid Consensus id
-     * @param ets Consensus ETS
-     * @param quorumWrites last value received from a Byzantine quorum of WRITEs
-     * @param writeSet values written by the replica
-     */
-    public CollectData(int pid, int cid, int ets, TimestampValuePair quorumWrites, HashSet<TimestampValuePair> writeSet) {
-        
-        this.pid = pid;
-        this.cid = cid;
-        this.ets = ets;
-        this.quorumWrites = quorumWrites;
-        this.writeSet = writeSet;
-    }
+	/**
+	 * Empty constructor
+	 */
+	public CollectData() {
+		pid = -1;
+		cid = -1;
+		ets = -1;
+		quorumWrites = null;
+		writeSet = null;
+	}
 
-    /**
-     * Get consensus id
-     * @return consensus id
-     */
-    public int getCid() {
-        return cid;
-    }
+	/**
+	 * Constructor
+	 *
+	 * @param pid
+	 *            process id
+	 * @param cid
+	 *            Consensus id
+	 * @param ets
+	 *            Consensus ETS
+	 * @param quorumWrites
+	 *            last value received from a Byzantine quorum of WRITEs
+	 * @param writeSet
+	 *            values written by the replica
+	 */
+	public CollectData(int pid, int cid, int ets, TimestampValuePair quorumWrites,
+			HashSet<TimestampValuePair> writeSet) {
 
-    /**
-     * Get consensus ETS
-     * @return consensus ETS
-     */
-    public int getEts() {
-        return ets;
-    }
-    
-    /**
-     * Get process id
-     * @return process id
-     */
-    public int getPid() {
-        return pid;
-    }
+		this.pid = pid;
+		this.cid = cid;
+		this.ets = ets;
+		this.quorumWrites = quorumWrites;
+		this.writeSet = writeSet;
+	}
 
-    /**
-     * Get value received from a Byzantine quorum of WRITEs
-     * @return value received from a Byzantine quorum of WRITEs
-     */
-    public TimestampValuePair getQuorumWrites() {
-        return quorumWrites;
-    }
+	/**
+	 * Get consensus id
+	 * 
+	 * @return consensus id
+	 */
+	public int getCid() {
+		return cid;
+	}
 
-    /**
-     * Get set of values written by the replica
-     * @return set of values written by the replica
-     */
-    public HashSet<TimestampValuePair> getWriteSet() {
-        return writeSet;
-    }
+	/**
+	 * Get consensus ETS
+	 * 
+	 * @return consensus ETS
+	 */
+	public int getEts() {
+		return ets;
+	}
 
-    public boolean equals(Object obj) {
+	/**
+	 * Get process id
+	 * 
+	 * @return process id
+	 */
+	public int getPid() {
+		return pid;
+	}
 
-        if (obj instanceof CollectData) {
+	/**
+	 * Get value received from a Byzantine quorum of WRITEs
+	 * 
+	 * @return value received from a Byzantine quorum of WRITEs
+	 */
+	public TimestampValuePair getQuorumWrites() {
+		return quorumWrites;
+	}
 
-            CollectData c = (CollectData) obj;
+	/**
+	 * Get set of values written by the replica
+	 * 
+	 * @return set of values written by the replica
+	 */
+	public HashSet<TimestampValuePair> getWriteSet() {
+		return writeSet;
+	}
 
-            if (c.pid == pid) return true;
-        }
+	public boolean equals(Object obj) {
 
-        return false;
-    }
+		if (obj instanceof CollectData) {
 
-    public int hashCode() {
-        return pid;
-    }
+			CollectData c = (CollectData) obj;
 
-    public void writeExternal(ObjectOutput out) throws IOException{
+			if (c.pid == pid)
+				return true;
+		}
 
-        out.writeInt(pid);
-        out.writeInt(cid);
-        out.writeInt(ets);
-        out.writeObject(quorumWrites);
-        out.writeObject(writeSet);
-    }
+		return false;
+	}
 
-    public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException{
+	public int hashCode() {
+		return pid;
+	}
 
-        pid = in.readInt();
-        cid = in.readInt();
-        ets = in.readInt();
-        quorumWrites = (TimestampValuePair) in.readObject();
-        writeSet = (HashSet<TimestampValuePair>) in.readObject();
-    }
+	public void writeExternal(ObjectOutput out) throws IOException {
+
+		out.writeInt(pid);
+		out.writeInt(cid);
+		out.writeInt(ets);
+		out.writeObject(quorumWrites);
+		out.writeObject(writeSet);
+	}
+
+	public void readExternal(ObjectInput in) throws IOException, ClassNotFoundException {
+
+		pid = in.readInt();
+		cid = in.readInt();
+		ets = in.readInt();
+		quorumWrites = (TimestampValuePair) in.readObject();
+		writeSet = (HashSet<TimestampValuePair>) in.readObject();
+	}
 }

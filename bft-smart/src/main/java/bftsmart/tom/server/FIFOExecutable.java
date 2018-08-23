@@ -19,15 +19,16 @@ import bftsmart.tom.MessageContext;
 
 /**
  * 
- * Executables that implement this interface will get requests
- * delivered in FIFO order.
+ * Executables that implement this interface will get requests delivered in FIFO
+ * order.
  * 
  * @author Marcel Santos
  *
  */
 public interface FIFOExecutable extends SingleExecutable {
 
-    public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId);
-    public byte[] executeUnorderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId);
+	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId);
+
+	public byte[] executeUnorderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId);
 
 }

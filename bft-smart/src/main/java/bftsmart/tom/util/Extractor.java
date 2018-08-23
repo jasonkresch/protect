@@ -24,5 +24,5 @@ import bftsmart.tom.core.messages.TOMMessage;
  * @author alysson
  */
 public interface Extractor {
-    TOMMessage extractResponse(TOMMessage[] replies, int sameContent, int lastReceived);
+	TOMMessage extractResponse(TOMMessage[] replies, int sameContent, int lastReceived);
 }

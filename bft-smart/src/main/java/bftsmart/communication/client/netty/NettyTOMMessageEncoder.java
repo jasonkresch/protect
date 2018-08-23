@@ -15,88 +15,86 @@ limitations under the License.
 */
 package bftsmart.communication.client.netty;
 
-
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
-
-import java.nio.channels.Channels;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.crypto.Mac;
 
 import bftsmart.tom.core.messages.TOMMessage;
-
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
 
 public class NettyTOMMessageEncoder extends MessageToByteEncoder<TOMMessage> {
-    
-    private boolean isClient;
-    private Map sessionTable;
-    private int macLength;
-    private int signatureLength;
-    private ReentrantReadWriteLock rl;
-    private boolean useMAC;
 
-    public NettyTOMMessageEncoder(boolean isClient, Map sessionTable, int macLength, ReentrantReadWriteLock rl, int signatureLength, boolean useMAC){
-        this.isClient = isClient;
-        this.sessionTable = sessionTable;
-        this.macLength = macLength;
-        this.rl = rl;
-        this.signatureLength = signatureLength;
-        this.useMAC = useMAC;
-    }
+	private boolean isClient;
+	private Map sessionTable;
+	private int macLength;
+	private int signatureLength;
+	private ReentrantReadWriteLock rl;
+	private boolean useMAC;
 
-    @Override
+	public NettyTOMMessageEncoder(boolean isClient, Map sessionTable, int macLength, ReentrantReadWriteLock rl,
+			int signatureLength, boolean useMAC) {
+		this.isClient = isClient;
+		this.sessionTable = sessionTable;
+		this.macLength = macLength;
+		this.rl = rl;
+		this.signatureLength = signatureLength;
+		this.useMAC = useMAC;
+	}
+
+	@Override
 	protected void encode(ChannelHandlerContext context, TOMMessage sm, ByteBuf buffer) throws Exception {
-        byte[] msgData;
-        byte[] macData = null;
-        byte[] signatureData = null;
+		byte[] msgData;
+		byte[] macData = null;
+		byte[] signatureData = null;
 
-        msgData = sm.serializedMessage;
-        if (sm.signed){
-            //signature was already produced before            
-            signatureData = sm.serializedMessageSignature;
-            if (signatureData.length != signatureLength)
-                System.out.println("WARNING: message signature has size "+signatureData.length+" and should have "+signatureLength);
-        }
-        
-        if (useMAC) {
-            macData = produceMAC(sm.destination, msgData, sm.getSender());
-            if(macData == null) {
-            	System.out.println("uses MAC and the MAC returned is null. Won't write to channel");
-            	return;
-            }
-        }
+		msgData = sm.serializedMessage;
+		if (sm.signed) {
+			// signature was already produced before
+			signatureData = sm.serializedMessageSignature;
+			if (signatureData.length != signatureLength)
+				System.out.println("WARNING: message signature has size " + signatureData.length + " and should have "
+						+ signatureLength);
+		}
 
-        int dataLength = 1+msgData.length+(macData==null?0:macData.length)+
-                (signatureData==null?0:signatureData.length);
+		if (useMAC) {
+			macData = produceMAC(sm.destination, msgData, sm.getSender());
+			if (macData == null) {
+				System.out.println("uses MAC and the MAC returned is null. Won't write to channel");
+				return;
+			}
+		}
 
-        //Logger.println("Sending message with "+dataLength+" bytes.");
-        /* msg size */
-        buffer.writeInt(dataLength);
-        /* control byte indicating if the message is signed or not */
-        buffer.writeByte(sm.signed==true?(byte)1:(byte)0);       
-        /* data to be sent */
-        buffer.writeBytes(msgData);
-         /* MAC */
-        if (useMAC)
-        	buffer.writeBytes(macData);
-        /* signature */
-        if (signatureData != null)
-        	buffer.writeBytes(signatureData);
+		int dataLength = 1 + msgData.length + (macData == null ? 0 : macData.length)
+				+ (signatureData == null ? 0 : signatureData.length);
 
-        context.flush();
-    }
+		// Logger.println("Sending message with "+dataLength+" bytes.");
+		/* msg size */
+		buffer.writeInt(dataLength);
+		/* control byte indicating if the message is signed or not */
+		buffer.writeByte(sm.signed == true ? (byte) 1 : (byte) 0);
+		/* data to be sent */
+		buffer.writeBytes(msgData);
+		/* MAC */
+		if (useMAC)
+			buffer.writeBytes(macData);
+		/* signature */
+		if (signatureData != null)
+			buffer.writeBytes(signatureData);
 
-    byte[] produceMAC(int id, byte[] data, int me) {
-        NettyClientServerSession session = (NettyClientServerSession)sessionTable.get(id);
-        if(session == null) {
-        	System.out.println("NettyTOMMessageEncoder.produceMAC(). session for client " + id + " is null");
-        	return null;
-        }
-        Mac macSend = session.getMacSend();
-        return macSend.doFinal(data);
-    }
+		context.flush();
+	}
+
+	byte[] produceMAC(int id, byte[] data, int me) {
+		NettyClientServerSession session = (NettyClientServerSession) sessionTable.get(id);
+		if (session == null) {
+			System.out.println("NettyTOMMessageEncoder.produceMAC(). session for client " + id + " is null");
+			return null;
+		}
+		Mac macSend = session.getMacSend();
+		return macSend.doFinal(data);
+	}
 
 }

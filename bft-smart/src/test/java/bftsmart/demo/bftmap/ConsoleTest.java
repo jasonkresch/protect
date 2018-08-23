@@ -15,18 +15,16 @@ limitations under the License.
 */
 package bftsmart.demo.bftmap;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.HashMap;
-
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
 import bftsmart.ConsoleLogger;
-import bftsmart.demo.bftmap.BFTMap;
 
 /**
  * 
@@ -84,14 +82,15 @@ public class ConsoleTest {
 
 			System.out.println("Servers started");
 
-		} catch(IOException ioe) {
+		} catch (IOException ioe) {
 			System.out.println("Exception during BFTMapInteractiveClient test: ");
 			System.out.println(ioe.getMessage());
 		}
 	}
 
 	@AfterClass
-	public static void stopServers() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, IOException  {
+	public static void stopServers()
+			throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, IOException {
 		System.out.println("Stopping servers");
 		replica0.destroy();
 		replica1.destroy();
@@ -101,30 +100,30 @@ public class ConsoleTest {
 	}
 
 	/**
-	 * Test regular case where there is the creation of a table, insert of
-	 * data and search for size of the table.
-	 * No servers are killed nor behaves different than expected.
+	 * Test regular case where there is the creation of a table, insert of data and
+	 * search for size of the table. No servers are killed nor behaves different
+	 * than expected.
 	 */
 	@Test
 	public void testRegularCase() {
-		try{
+		try {
 			Thread.sleep(1000);
 			BFTMap bftMap = new BFTMap(1001);
-			bftMap.put("TestTable1", new HashMap<String,byte[]>());
+			bftMap.put("TestTable1", new HashMap<String, byte[]>());
 			bftMap.putEntry("TestTable1", "key1", "value1".getBytes());
 			assertEquals("Main table size should be 1", 1, bftMap.size1("TestTable1"));
-			
-			for(int i = 0; i < 100; i++) {
-				String key = "key" + (2+i);
-				String value = "value" + (2+i);
+
+			for (int i = 0; i < 100; i++) {
+				String key = "key" + (2 + i);
+				String value = "value" + (2 + i);
 				bftMap.putEntry("TestTable1", key, value.getBytes());
 			}
 			assertEquals("Main table size should be 101", 101, bftMap.size1("TestTable1"));
 
 			bftMap.putEntry("TestTable1", "key102", "value102".getBytes());
 			assertEquals("Main table size should be 102", 102, bftMap.size1("TestTable1"));
-			
-		} catch(InterruptedException ie) {
+
+		} catch (InterruptedException ie) {
 			System.out.println("Exception during Thread sleep: " + ie.getMessage());
 		}
 	}
@@ -134,29 +133,28 @@ public class ConsoleTest {
 		startServers();
 		test.testStopAndStartNonLeader();
 		try {
-		stopServers();
-		} catch(Exception e) {
+			stopServers();
+		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	}
-	
+
 	/**
-	 * This test insert and retrieve data.
-	 * During this process a replica that is not the leader is killed.
-	 * After that the replica is started back.
-	 * During the whole process messages keep being sent, to test if
-	 * the application works as expected.
+	 * This test insert and retrieve data. During this process a replica that is not
+	 * the leader is killed. After that the replica is started back. During the
+	 * whole process messages keep being sent, to test if the application works as
+	 * expected.
 	 */
 	@Test
 	public void testStopAndStartNonLeader() {
-		try{
+		try {
 			Thread.sleep(1000);
 			BFTMap bftMap = new BFTMap(1001);
-			bftMap.put("TestTable2", new HashMap<String,byte[]>());
-			
-			for(int i = 0; i < 65; i++) {
-				String key = "key" + (1+i);
-				String value = "value" + (2+i);
+			bftMap.put("TestTable2", new HashMap<String, byte[]>());
+
+			for (int i = 0; i < 65; i++) {
+				String key = "key" + (1 + i);
+				String value = "value" + (2 + i);
 				bftMap.putEntry("TestTable2", key, value.getBytes());
 			}
 
@@ -166,14 +164,14 @@ public class ConsoleTest {
 
 			System.out.println("---------Killing replica 1");
 			replica1.destroy(); // Killing a non-leader replica, replica1
-			
+
 			System.out.println("---------Sleep2: " + new java.util.Date());
 			Thread.sleep(5000);
 			System.out.println("---------Wakeup2: " + new java.util.Date());
 
-			for(int i = 0; i < 35; i++) {
-				String key = "key" + (66+i);
-				String value = "value" + (66+i);
+			for (int i = 0; i < 35; i++) {
+				String key = "key" + (66 + i);
+				String value = "value" + (66 + i);
 				bftMap.putEntry("TestTable2", key, value.getBytes());
 			}
 
@@ -189,31 +187,31 @@ public class ConsoleTest {
 			log1.setIn(replica1.getInputStream());
 			log1.setOut(System.out);
 			log1.start();
-			
+
 			System.out.println("---------Sleep4: " + new java.util.Date());
 			Thread.sleep(20000);
 			System.out.println("---------Wakeup4: " + new java.util.Date());
 
-			for(int i = 0; i < 35; i++) {
-				String key = "key" + (101+i);
-				String value = "value" + (101+i);
+			for (int i = 0; i < 35; i++) {
+				String key = "key" + (101 + i);
+				String value = "value" + (101 + i);
 				bftMap.putEntry("TestTable2", key, value.getBytes());
 			}
-			
+
 			System.out.println("---------Sleep2: " + new java.util.Date());
 			Thread.sleep(20000);
 			System.out.println("---------Wakeup2: " + new java.util.Date());
-			
+
 			replica2.destroy(); // Killing another non-leader replica, replica3
-			for(int i = 0; i < 35; i++) {
-				String key = "key" + (136+i);
-				String value = "value" + (136+i);
+			for (int i = 0; i < 35; i++) {
+				String key = "key" + (136 + i);
+				String value = "value" + (136 + i);
 				bftMap.putEntry("TestTable2", key, value.getBytes());
 			}
 			System.out.println("----------Table size:" + bftMap.size1("TestTable2"));
-		} catch(InterruptedException ie) {
+		} catch (InterruptedException ie) {
 			System.out.println("Exception during Thread sleep: " + ie.getMessage());
-		} catch(IOException ioe) {
+		} catch (IOException ioe) {
 			System.out.println("Exception when starting replica 2: " + ioe.getMessage());
 		}
 	}
