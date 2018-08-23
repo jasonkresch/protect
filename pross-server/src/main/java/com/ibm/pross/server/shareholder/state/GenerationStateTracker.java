@@ -22,7 +22,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
-import com.ibm.pross.server.Channel;
+import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
@@ -108,9 +108,9 @@ public class GenerationStateTracker {
 		return ourSignedUpdateMessage;
 	}
 
-	public synchronized void sendOurSignedUpdateMessage(final Channel channel) {
+	public synchronized void sendOurSignedUpdateMessage(final ChannelSender sender) {
 		if (this.currentState.equals(States.INITALIZED)) {
-			channel.broadcast(ourSignedUpdateMessage);
+			sender.broadcast(ourSignedUpdateMessage);
 			this.currentState = States.SENT_UPDATE;
 		} else {
 			throw new IllegalStateException("Must be in States.INITIALIZED");

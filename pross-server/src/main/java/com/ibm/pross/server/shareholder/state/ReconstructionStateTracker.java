@@ -21,7 +21,8 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.ShamirShare;
-import com.ibm.pross.server.Channel;
+import com.ibm.pross.server.channel.AtomicBroadcastChannel;
+import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.SemiPrivateMessage;
 import com.ibm.pross.server.messages.SignedMessage;
@@ -97,9 +98,9 @@ public class ReconstructionStateTracker {
 		return ourSignedDetectionMessage;
 	}
 
-	public synchronized void sendOurSignedDetectionMessage(final Channel channel) {
+	public synchronized void sendOurSignedDetectionMessage(final ChannelSender sender) {
 		if (this.currentState.equals(States.INITALIZED)) {
-			channel.broadcast(ourSignedDetectionMessage);
+			sender.broadcast(ourSignedDetectionMessage);
 			this.currentState = States.SENT_DETECTION;
 		} else {
 			throw new IllegalStateException("Must be in States.INITIALIZED");
@@ -197,13 +198,13 @@ public class ReconstructionStateTracker {
 		}
 	}
 
-	public synchronized void sendPolynomialUpdateMessages(final Channel channel) {
+	public synchronized void sendPolynomialUpdateMessages(final ChannelSender sender) {
 		if (this.currentState.equals(States.CREATED_POLYNOMIALS)) {
 			this.currentState = States.SENT_POLYNOMIALS;
 
 			for (final ReconstructShareStateTracker reconstructShareState : this.reconstructionStates.values()) {
 				// Broadcast our update message
-				reconstructShareState.sendOurSignedUpdateMessage(channel);
+				reconstructShareState.sendOurSignedUpdateMessage(sender);
 			}
 		} else {
 			throw new IllegalStateException("Must be in States.CREATED_POLYNOMIALS");

@@ -86,8 +86,6 @@ public final class CounterServer extends DefaultSingleRecoverable  {
         new CounterServer(Integer.parseInt(args[0]));
     }
 
-    
-    @SuppressWarnings("unchecked")
     @Override
     public void installSnapshot(byte[] state) {
         try {

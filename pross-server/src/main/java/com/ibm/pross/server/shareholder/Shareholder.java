@@ -25,8 +25,10 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.Administration;
-import com.ibm.pross.server.Channel;
 import com.ibm.pross.server.Clock;
+import com.ibm.pross.server.channel.AtomicBroadcastChannel;
+import com.ibm.pross.server.channel.ChannelListener;
+import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
@@ -50,7 +52,7 @@ import com.ibm.pross.server.shareholder.state.ReconstructionStateTracker;
 import com.ibm.pross.server.shareholder.state.RefreshStateTracker;
 import com.ibm.pross.server.shareholder.state.RekeyingStateTracker;
 
-public class Shareholder implements PseudoRandomFunction {
+public class Shareholder implements PseudoRandomFunction, ChannelListener {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
@@ -70,7 +72,8 @@ public class Shareholder implements PseudoRandomFunction {
 
 	// Implements synchronous channel for communicating messages among
 	// shareholders
-	protected final Channel channel;
+	protected final AtomicBroadcastChannel channel;
+	protected final ChannelSender sender;
 
 	// Single DKG state
 	protected volatile GenerationStateTracker generationState;
@@ -93,7 +96,7 @@ public class Shareholder implements PseudoRandomFunction {
 	protected volatile EcPoint secretPublicKey;
 	protected volatile EcPoint[] sharePublicKeys;
 
-	public Shareholder(final Channel channel, final Clock clock, final int index,
+	public Shareholder(final AtomicBroadcastChannel channel, final Clock clock, final int index,
 			final Administration.Configuration configuration) {
 
 		// Private values
@@ -107,6 +110,7 @@ public class Shareholder implements PseudoRandomFunction {
 
 		// Shared configuration
 		this.channel = channel;
+		this.sender = channel.link(index);
 		this.clock = clock;
 
 		// Subscribe to receive messages
@@ -145,12 +149,25 @@ public class Shareholder implements PseudoRandomFunction {
 	 * Processes a message from a channel we have registered with
 	 * 
 	 * @param message
+	 * 
+	 * @see ChannelListener
 	 */
+	@Override
 	public void receiveSerializedMessage(final byte[] serializedMessage) {
 		SignedMessage signedMessage = (SignedMessage) Serialization.deserialize(serializedMessage);
 		this.process(signedMessage);
 	}
 
+	/**
+	 * Needed to register uniquely with the broadcast channel
+	 * 
+	 * @see ChannelListener
+	 */
+	@Override
+	public int getId() {
+		return this.getIndex();
+	}
+	
 	/**
 	 * Process a signed message received from a channel we have registered with
 	 * 
@@ -271,8 +288,8 @@ public class Shareholder implements PseudoRandomFunction {
 	}
 
 	/**
-	 * Creates a secure, encrypted and signed, message to the designated
-	 * recipients over the broadcast channel
+	 * Creates a secure, encrypted and signed, message to the designated recipients
+	 * over the broadcast channel
 	 * 
 	 * @param publicPayload
 	 *            The public part of the payload visible to every recipient
@@ -308,8 +325,8 @@ public class Shareholder implements PseudoRandomFunction {
 	}
 
 	/**
-	 * Creates a secure, encrypted and signed, message to the designated
-	 * recipient over the broadcast channel
+	 * Creates a secure, encrypted and signed, message to the designated recipient
+	 * over the broadcast channel
 	 * 
 	 * @param recipient
 	 * @param payload
@@ -365,7 +382,7 @@ public class Shareholder implements PseudoRandomFunction {
 	 */
 	public void send(final SignedMessage message) {
 		// Send to broadcast channel
-		this.channel.broadcast(message);
+		this.sender.broadcast(message);
 	}
 
 	/////////////////////////////////////////////////////////////////////////////
@@ -392,7 +409,7 @@ public class Shareholder implements PseudoRandomFunction {
 		final RefreshStateTracker stateTracker = this.refreshStates.get(currentTime);
 
 		// Broadcast our update message
-		stateTracker.sendOurSignedUpdateMessage(this.channel);
+		stateTracker.sendOurSignedUpdateMessage(this.sender);
 	}
 
 	// Step 3 of refresh
@@ -486,7 +503,7 @@ public class Shareholder implements PseudoRandomFunction {
 		final ReconstructionStateTracker stateTracker = this.reconstructionStates.get(currentTime);
 
 		// Broadcast our update message
-		stateTracker.sendOurSignedDetectionMessage(this.channel);
+		stateTracker.sendOurSignedDetectionMessage(this.sender);
 	}
 
 	// Step 3 of corruption detection AND Step 1 of reconstruction
@@ -530,7 +547,7 @@ public class Shareholder implements PseudoRandomFunction {
 		final long currentTime = this.clock.getTime();
 		final ReconstructionStateTracker stateTracker = this.reconstructionStates.get(currentTime);
 
-		stateTracker.sendPolynomialUpdateMessages(this.channel);
+		stateTracker.sendPolynomialUpdateMessages(this.sender);
 	}
 
 	// Step 3 of refresh
@@ -653,7 +670,7 @@ public class Shareholder implements PseudoRandomFunction {
 	public void sendShareGenerationMessages() {
 
 		// Broadcast our update message
-		this.generationState.sendOurSignedUpdateMessage(this.channel);
+		this.generationState.sendOurSignedUpdateMessage(this.sender);
 	}
 
 	// Step 3 of generation

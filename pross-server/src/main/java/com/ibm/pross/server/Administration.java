@@ -21,6 +21,8 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.PseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.server.channel.AtomicBroadcastChannel;
+import com.ibm.pross.server.channel.local.LocalAtomicBroadcastChannel;
 import com.ibm.pross.server.shareholder.Shareholder;
 
 /**
@@ -81,7 +83,7 @@ public class Administration {
 	// Our state
 	private final Configuration configuration;
 	private final Clock clock;
-	private final Channel channel;
+	private final AtomicBroadcastChannel channel;
 	private final Shareholder[] shareholders;
 	private final Coordinator coordinator;
 
@@ -94,7 +96,7 @@ public class Administration {
 		this.configuration = new Configuration(n, threshold, updateThreshold);
 
 		// Create synchronous channel
-		this.channel = new Channel();
+		this.channel = new LocalAtomicBroadcastChannel();
 
 		// Create global clock
 		this.clock = new Clock();

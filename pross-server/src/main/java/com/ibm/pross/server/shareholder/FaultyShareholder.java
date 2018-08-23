@@ -13,8 +13,8 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.Administration.Configuration;
-import com.ibm.pross.server.Channel;
 import com.ibm.pross.server.Clock;
+import com.ibm.pross.server.channel.AtomicBroadcastChannel;
 
 public class FaultyShareholder extends Shareholder {
 
@@ -27,7 +27,7 @@ public class FaultyShareholder extends Shareholder {
 	 * @param index
 	 * @param configuration
 	 */
-	public FaultyShareholder(Channel channel, Clock clock, int index, Configuration configuration) {
+	public FaultyShareholder(AtomicBroadcastChannel channel, Clock clock, int index, Configuration configuration) {
 		super(channel, clock, index, configuration);
 	}
 

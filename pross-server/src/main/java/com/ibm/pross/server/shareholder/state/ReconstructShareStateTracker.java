@@ -24,7 +24,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
-import com.ibm.pross.server.Channel;
+import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
@@ -122,12 +122,12 @@ public class ReconstructShareStateTracker {
 		return ourSignedUpdateMessage;
 	}
 
-	public synchronized void sendOurSignedUpdateMessage(final Channel channel) {
+	public synchronized void sendOurSignedUpdateMessage(final ChannelSender sender) {
 		if (this.currentState.equals(States.INITALIZED)) {
 
 			// Only send an update if we're not one of the corrupt shareholders
 			if (!this.ourDetectedCorruptions.contains(this.shareholder.getIndex())) {
-				channel.broadcast(this.ourSignedUpdateMessage);
+				sender.broadcast(this.ourSignedUpdateMessage);
 			}
 
 			this.currentState = States.SENT_UPDATE;
