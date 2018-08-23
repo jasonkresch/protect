@@ -467,14 +467,14 @@ public class NettyClientServerCommunicationSystemClientSide extends SimpleChanne
         }
     }
 
-    private ChannelInitializer<SocketChannel> getChannelInitializer() throws NoSuchAlgorithmException{
+    private ChannelInitializer getChannelInitializer() throws NoSuchAlgorithmException{
 
         Mac macDummy = Mac.getInstance(controller.getStaticConf().getHmacAlgorithm());
 
         final NettyClientPipelineFactory nettyClientPipelineFactory = new NettyClientPipelineFactory(this, sessionTable,
                     macDummy.getMacLength(), controller, rl, signatureLength);
 
-        ChannelInitializer<SocketChannel> channelInitializer = new ChannelInitializer<SocketChannel>() {
+        ChannelInitializer channelInitializer = new ChannelInitializer<SocketChannel>() {
             @Override
             public void initChannel(SocketChannel ch) throws Exception {
                 ch.pipeline().addLast(nettyClientPipelineFactory.getDecoder());

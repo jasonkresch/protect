@@ -24,7 +24,7 @@ import java.util.StringTokenizer;
 
 public class HostsConfig {
     
-    private Hashtable<Integer, Config> servers = new Hashtable<Integer, Config>();
+    private Hashtable servers = new Hashtable();
     
     
     /** Creates a new instance of ServersConfig */
@@ -115,9 +115,9 @@ public class HostsConfig {
     
     
     public int[] getHostsIds(){
-         Set<Integer> s = this.servers.keySet();
+         Set s = this.servers.keySet();
          int[] ret = new int[s.size()];
-         Iterator<Integer> it = s.iterator();
+         Iterator it = s.iterator();
          int p = 0;
          while(it.hasNext()){
             ret[p] = Integer.parseInt(it.next().toString());

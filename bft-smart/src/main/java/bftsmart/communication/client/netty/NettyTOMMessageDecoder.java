@@ -15,6 +15,10 @@ limitations under the License.
 */
 package bftsmart.communication.client.netty;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.ByteToMessageDecoder;
+
 import java.io.ByteArrayInputStream;
 import java.io.DataInputStream;
 import java.util.Arrays;
@@ -27,12 +31,11 @@ import javax.crypto.SecretKey;
 import javax.crypto.SecretKeyFactory;
 import javax.crypto.spec.PBEKeySpec;
 
+import org.slf4j.LoggerFactory;
+
 import bftsmart.reconfiguration.ViewController;
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.util.Logger;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.ByteToMessageDecoder;
 
 /**
  *
@@ -45,12 +48,12 @@ public class NettyTOMMessageDecoder extends ByteToMessageDecoder {
      */
     //private final int BENCHMARK_PERIOD = 10000;
     private boolean isClient;
-    private Map<Integer, NettyClientServerSession> sessionTable;
+    private Map sessionTable;
     //private Storage st;
     private int macSize;
     private int signatureSize;
     private ViewController controller;
-    //private boolean firstTime;
+    private boolean firstTime;
     private ReentrantReadWriteLock rl;
     //******* EDUARDO BEGIN: commented out some unused variables **************//
     //private long numReceivedMsgs = 0;
@@ -66,15 +69,15 @@ public class NettyTOMMessageDecoder extends ByteToMessageDecoder {
     
     private boolean useMAC;
 
-    //private org.slf4j.Logger logger = LoggerFactory.getLogger(NettyTOMMessageDecoder.class);
+    private org.slf4j.Logger logger = LoggerFactory.getLogger(NettyTOMMessageDecoder.class);
 
     
-    public NettyTOMMessageDecoder(boolean isClient, Map<Integer, NettyClientServerSession> sessionTable, int macLength, ViewController controller, ReentrantReadWriteLock rl, int signatureLength, boolean useMAC) {
+    public NettyTOMMessageDecoder(boolean isClient, Map sessionTable, int macLength, ViewController controller, ReentrantReadWriteLock rl, int signatureLength, boolean useMAC) {
         this.isClient = isClient;
         this.sessionTable = sessionTable;
         this.macSize = macLength;
         this.controller = controller;
-        //this.firstTime = true;
+        this.firstTime = true;
         this.rl = rl;
         this.signatureSize = signatureLength;
         this.useMAC = useMAC;

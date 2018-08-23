@@ -15,31 +15,6 @@ limitations under the License.
  */
 package bftsmart.communication.client.netty;
 
-import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
-import java.io.IOException;
-import java.net.ConnectException;
-import java.net.InetSocketAddress;
-import java.nio.channels.ClosedChannelException;
-import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map.Entry;
-import java.util.Set;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.logging.Level;
-
-import javax.crypto.Mac;
-
-import org.slf4j.LoggerFactory;
-
-import bftsmart.communication.client.CommunicationSystemServerSide;
-import bftsmart.communication.client.RequestReceiver;
-import bftsmart.reconfiguration.ServerViewController;
-import bftsmart.tom.core.messages.TOMMessage;
-import bftsmart.tom.util.Logger;
-import bftsmart.tom.util.TOMUtil;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -53,6 +28,32 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.IOException;
+import java.net.ConnectException;
+import java.net.InetSocketAddress;
+import java.nio.channels.ClosedChannelException;
+import java.security.NoSuchAlgorithmException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map.Entry;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.logging.Level;
+
+import javax.crypto.Mac;
+
+import org.slf4j.LoggerFactory;
+
+import bftsmart.communication.client.CommunicationSystemServerSide;
+import bftsmart.communication.client.RequestReceiver;
+import bftsmart.reconfiguration.ServerViewController;
+import bftsmart.tom.core.messages.TOMMessage;
+import bftsmart.tom.util.Logger;
+import bftsmart.tom.util.TOMUtil;
+
 /**
  *
  * @author Paulo
@@ -61,7 +62,7 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 public class NettyClientServerCommunicationSystemServerSide extends SimpleChannelInboundHandler<TOMMessage> implements CommunicationSystemServerSide {
 
 	private RequestReceiver requestReceiver;
-	private HashMap<Integer, NettyClientServerSession> sessionTable;
+	private HashMap sessionTable;
 	private ReentrantReadWriteLock rl;
 	private ServerViewController controller;
         private boolean closed = false;
@@ -76,7 +77,7 @@ public class NettyClientServerCommunicationSystemServerSide extends SimpleChanne
 		try {
 
 			this.controller = controller;
-			sessionTable = new HashMap<Integer, NettyClientServerSession>();
+			sessionTable = new HashMap();
 			rl = new ReentrantReadWriteLock();
 
 			//Configure the server.
@@ -145,7 +146,7 @@ public class NettyClientServerCommunicationSystemServerSide extends SimpleChanne
             closeChannelAndEventLoop(mainChannel);
                 
             rl.readLock().lock();
-            ArrayList<NettyClientServerSession> sessions = new ArrayList<NettyClientServerSession>(sessionTable.values());
+            ArrayList<NettyClientServerSession> sessions = new ArrayList<>(sessionTable.values());
             rl.readLock().unlock();
             for (NettyClientServerSession ncss : sessions) {
                 
@@ -209,10 +210,10 @@ public class NettyClientServerCommunicationSystemServerSide extends SimpleChanne
                 
 		rl.writeLock().lock();
 		try {
-			Set<Entry<Integer, NettyClientServerSession>> s = sessionTable.entrySet();
-			Iterator<Entry<Integer, NettyClientServerSession>> i = s.iterator();
+			Set s = sessionTable.entrySet();
+			Iterator i = s.iterator();
 			while (i.hasNext()) {
-				Entry<Integer, NettyClientServerSession> m = (Entry<Integer, NettyClientServerSession>) i.next();
+				Entry m = (Entry) i.next();
 				NettyClientServerSession value = (NettyClientServerSession) m.getValue();
 				if (ctx.channel().equals(value.getChannel())) {
 					int key = (Integer) m.getKey();
@@ -339,9 +340,9 @@ public class NettyClientServerCommunicationSystemServerSide extends SimpleChanne
     public int[] getClients() {
         
         rl.readLock().lock();
-        Set<Integer> s = sessionTable.keySet();
+        Set s = sessionTable.keySet();
         int[] clients = new int[s.size()];
-        Iterator<Integer> it = s.iterator();
+        Iterator it = s.iterator();
         int i = 0;
         while (it.hasNext()) {
             

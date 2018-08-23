@@ -16,30 +16,33 @@ limitations under the License.
 package bftsmart.communication.client.netty;
 
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.MessageToByteEncoder;
+
+import java.nio.channels.Channels;
 import java.util.Map;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.crypto.Mac;
 
 import bftsmart.tom.core.messages.TOMMessage;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.MessageToByteEncoder;
 
 
 public class NettyTOMMessageEncoder extends MessageToByteEncoder<TOMMessage> {
     
-    //private boolean isClient;
-    private Map<Integer, NettyClientServerSession> sessionTable;
-
+    private boolean isClient;
+    private Map sessionTable;
+    private int macLength;
     private int signatureLength;
-    //private ReentrantReadWriteLock rl;
+    private ReentrantReadWriteLock rl;
     private boolean useMAC;
 
-    public NettyTOMMessageEncoder(boolean isClient, Map<Integer, NettyClientServerSession> sessionTable, int macLength, ReentrantReadWriteLock rl, int signatureLength, boolean useMAC){
-        //this.isClient = isClient;
-        //this.sessionTable = sessionTable;
-        //this.rl = rl;
+    public NettyTOMMessageEncoder(boolean isClient, Map sessionTable, int macLength, ReentrantReadWriteLock rl, int signatureLength, boolean useMAC){
+        this.isClient = isClient;
+        this.sessionTable = sessionTable;
+        this.macLength = macLength;
+        this.rl = rl;
         this.signatureLength = signatureLength;
         this.useMAC = useMAC;
     }
