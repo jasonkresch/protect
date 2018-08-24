@@ -376,14 +376,14 @@ public class Coordinator {
 
 	}
 
-	public static void main(String[] args) throws Exception {
+	public static void main2(String[] args) throws Exception {
 
 		// Create threshold parameters
 		final int n = 5;
 		final int updateThreshold = 4;
 		final int threshold = 3;
 
-		final Administration administration = new Administration(n, threshold, updateThreshold);
+		final Administration administration = new Administration(n, threshold, updateThreshold, false);
 		final Coordinator coordinator = administration.getCoordinator();
 		
 		// Create T-OPRF client
@@ -410,4 +410,45 @@ public class Coordinator {
 		}
 	}
 
+
+	public static void main(String[] args) throws Exception {
+
+		// Create threshold parameters
+		final int n = 4;
+		final int updateThreshold = 3;
+		final int threshold = 3;
+
+		final Administration administration = new Administration(n, threshold, updateThreshold, true);
+		final Coordinator coordinator = administration.getCoordinator();
+		
+		try {
+			Thread.sleep(5000);
+		} catch (InterruptedException e) {
+			throw new RuntimeException("interrupted", e);
+		}
+		
+		// Create T-OPRF client
+		final PrfClient prfClient = administration.provisionClient();
+
+		// Wrap and unwrap a key
+		final byte[] input = "5UP3R5ECR3T INPUT".getBytes(StandardCharsets.UTF_8);
+		final EcPoint point1 = prfClient.derivePointFromBytes(input);
+		
+		final EcPoint point2 = prfClient.derivePointFromBytes(input);
+		System.out.println("Recovered Output: " + point1);
+		if (!point1.equals(point2)) {
+			throw new RuntimeException("Failed to recover same output");
+		}
+
+		// Heal system and refresh shares
+		coordinator.performUpdatePhases();
+
+		// Ensure we can still unwrap previously wrapped keys
+		final EcPoint point3 = prfClient.derivePointFromBytes(input);
+		System.out.println("Recovered Output " + point3);
+		if (!point1.equals(point3)) {
+			throw new RuntimeException("Failed to recover same output");
+		}
+	}
+	
 }

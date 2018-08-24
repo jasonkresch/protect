@@ -21,7 +21,6 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.ShamirShare;
-import com.ibm.pross.server.channel.AtomicBroadcastChannel;
 import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.SemiPrivateMessage;

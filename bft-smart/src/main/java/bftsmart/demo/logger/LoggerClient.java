@@ -23,7 +23,7 @@ import bftsmart.tom.ServiceProxy;
 import bftsmart.tom.util.Logger;
 
 /**
- * Example client that updates a BFT replicated service (a counter).
+ * Example client that updates a BFT replicated service (a log).
  * 
  * @author alysson
  */

@@ -31,11 +31,10 @@ import bftsmart.tom.ServiceReplica;
 import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
 
 /**
- * Example replica that implements a BFT replicated service (a counter). If the
- * increment > 0 the counter is incremented, otherwise, the counter value is
- * read.
+ * Example replica that implements a BFT replicated service (a logger).
+ * It maintains a consistent state which is the CRC of all messages seen.
  * 
- * @author alysson
+ * @author jresch
  */
 
 public final class LoggerServer extends DefaultSingleRecoverable {

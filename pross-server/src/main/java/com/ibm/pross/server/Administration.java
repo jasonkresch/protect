@@ -12,6 +12,7 @@ import java.security.Security;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -22,6 +23,7 @@ import com.ibm.pross.common.PseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.server.channel.AtomicBroadcastChannel;
+import com.ibm.pross.server.channel.bft.BftAtomicBroadcastChannel;
 import com.ibm.pross.server.channel.local.LocalAtomicBroadcastChannel;
 import com.ibm.pross.server.shareholder.Shareholder;
 
@@ -90,13 +92,17 @@ public class Administration {
 	private final List<PublicKey> shareholderEncryptionKeys = new ArrayList<>();
 	private final List<PublicKey> shareholderVerifyingKeys = new ArrayList<>();
 
-	public Administration(int n, int threshold, int updateThreshold) {
+	public Administration(int n, int threshold, int updateThreshold, boolean useBftChannel) {
 
 		// Set threshold parameters
 		this.configuration = new Configuration(n, threshold, updateThreshold);
 
 		// Create synchronous channel
-		this.channel = new LocalAtomicBroadcastChannel();
+		if (useBftChannel) {
+			this.channel = new BftAtomicBroadcastChannel();
+		} else {
+			this.channel = new LocalAtomicBroadcastChannel();
+		}
 
 		// Create global clock
 		this.clock = new Clock();
@@ -120,6 +126,19 @@ public class Administration {
 		}
 
 		this.coordinator = new Coordinator(shareholders, clock);
+		
+		if (useBftChannel)
+		{
+			System.out.print("Waiting 20 seconds for shareholders to connect...");
+			try {
+				Thread.sleep(20_000);
+			} catch (InterruptedException e) {
+				throw new RuntimeException("interrupted", e);
+			}
+			System.out.print("  done.");
+		}
+		
+		
 		this.coordinator.performDistributedKeyGeneration();
 
 	}
@@ -140,8 +159,7 @@ public class Administration {
 	 * Provisions a new client that can perform T-OPRF operations against the
 	 * shareholders
 	 * 
-	 * @return A new instance of a KeyDerivationClient which uses these
-	 *         shareholders
+	 * @return A new instance of a KeyDerivationClient which uses these shareholders
 	 */
 	public PrfClient provisionClient() {
 

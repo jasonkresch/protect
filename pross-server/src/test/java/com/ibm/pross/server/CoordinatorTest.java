@@ -41,7 +41,7 @@ public class CoordinatorTest {
 		final int updateThreshold = 4;
 		final int threshold = 3;
 
-		final Administration administration = new Administration(n, threshold, updateThreshold);
+		final Administration administration = new Administration(n, threshold, updateThreshold, false);
 		
 		return administration;
 	}
