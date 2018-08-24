@@ -15,7 +15,16 @@ limitations under the License.
 */
 package bftsmart.demo.logger;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInput;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutput;
+import java.io.ObjectOutputStream;
+import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.util.zip.CRC32;
 
 import bftsmart.tom.MessageContext;
 import bftsmart.tom.ServiceReplica;
@@ -31,6 +40,7 @@ import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
 
 public final class LoggerServer extends DefaultSingleRecoverable {
 
+	CRC32 crc32 = new CRC32();
 	private String message = "";
 	private int iterations = 0;
 
@@ -49,10 +59,13 @@ public final class LoggerServer extends DefaultSingleRecoverable {
 	@Override
 	public byte[] appExecuteOrdered(byte[] command, MessageContext msgCtx) {
 		iterations++;
+		
+		crc32.update(command);
 
 		String message = new String(command, StandardCharsets.UTF_8);
 
 		System.out.println("(" + iterations + ") Message was added. Current value = " + message);
+		System.out.println("      Current state: " + crc32.getValue());
 
 		this.message = message;
 
@@ -67,16 +80,47 @@ public final class LoggerServer extends DefaultSingleRecoverable {
 		}
 		new LoggerServer(Integer.parseInt(args[0]));
 	}
+	
+    @Override
+    public void installSnapshot(byte[] state) {
+        try {
+            System.out.println("setState called");
+            ByteArrayInputStream bis = new ByteArrayInputStream(state);
+            ObjectInput in = new ObjectInputStream(bis);
+            
+            long crcState = 0x00000000FFFFFFFF & in.readInt();
+            this.crc32 = new CRC32();
+            
+            Class<?> clazz = this.crc32.getClass();
+            Field field = clazz.getDeclaredField("crc");
+            field.setAccessible(true);
+            field.set(this.crc32, (int) crcState);
+            
+            
+            in.close();
+            bis.close();
+        } catch (Exception e) {
+            System.err.println("[ERROR] Error deserializing state: "
+                    + e.getMessage());
+        }
+    }
 
-	@Override
-	public void installSnapshot(byte[] state) {
-		System.out.println("setState called");
-		this.message = new String(state, StandardCharsets.UTF_8);
-	}
-
-	@Override
-	public byte[] getSnapshot() {
-		System.out.println("getState called");
-		return this.message.getBytes(StandardCharsets.UTF_8);
-	}
+    @Override
+    public byte[] getSnapshot() {
+        try {
+            System.out.println("getState called");
+            ByteArrayOutputStream bos = new ByteArrayOutputStream();
+            ObjectOutput out = new ObjectOutputStream(bos);
+            out.writeInt((int)crc32.getValue());
+            out.flush();
+            bos.flush();
+            out.close();
+            bos.close();
+            return bos.toByteArray();
+        } catch (IOException ioe) {
+            System.err.println("[ERROR] Error serializing state: "
+                    + ioe.getMessage());
+            return "ERROR".getBytes();
+        }
+    }
 }
