@@ -20,6 +20,7 @@ import java.io.ObjectInput;
 import java.io.ObjectOutput;
 
 import bftsmart.communication.SystemMessage;
+import bftsmart.consensus.messages.MessageFactory.PaxosMessageType;
 
 /**
  * This class represents a message used in a epoch of a consensus instance.
@@ -28,7 +29,7 @@ public class ConsensusMessage extends SystemMessage {
 
 	private int number; // consensus ID for this message
 	private int epoch; // Epoch to which this message belongs to
-	private int paxosType; // Message type
+	private PaxosMessageType paxosType; // Message type
 	private byte[] value = null; // Value used when message type is PROPOSE
 	private Object proof; // Proof used when message type is COLLECT
 							// Can be either a MAC vector or a RSA signature
@@ -56,7 +57,7 @@ public class ConsensusMessage extends SystemMessage {
 	 *            This should be null if its a COLLECT message, or the proposed
 	 *            value if it is a PROPOSE message
 	 */
-	public ConsensusMessage(int paxosType, int id, int epoch, int from, byte[] value) {
+	public ConsensusMessage(PaxosMessageType paxosType, int id, int epoch, int from, byte[] value) {
 
 		super(from);
 
@@ -82,7 +83,7 @@ public class ConsensusMessage extends SystemMessage {
 	 * @param from
 	 *            This should be this process ID
 	 */
-	public ConsensusMessage(int type, int id, int epoch, int from) {
+	public ConsensusMessage(PaxosMessageType type, int id, int epoch, int from) {
 
 		this(type, id, epoch, from, null);
 
@@ -96,7 +97,7 @@ public class ConsensusMessage extends SystemMessage {
 
 		out.writeInt(number);
 		out.writeInt(epoch);
-		out.writeInt(paxosType);
+		out.writeInt(paxosType.getValue());
 
 		if (value == null) {
 
@@ -130,7 +131,7 @@ public class ConsensusMessage extends SystemMessage {
 
 		number = in.readInt();
 		epoch = in.readInt();
-		paxosType = in.readInt();
+		paxosType = PaxosMessageType.getPaxosMessageByValue(in.readInt());
 
 		int toRead = in.readInt();
 
@@ -160,9 +161,7 @@ public class ConsensusMessage extends SystemMessage {
 	 * @return Epoch to which this message belongs
 	 */
 	public int getEpoch() {
-
 		return epoch;
-
 	}
 
 	/**
@@ -187,9 +186,7 @@ public class ConsensusMessage extends SystemMessage {
 	 * @return The proof
 	 */
 	public Object getProof() {
-
 		return proof;
-
 	}
 
 	/**
@@ -198,9 +195,7 @@ public class ConsensusMessage extends SystemMessage {
 	 * @return Consensus ID of this message
 	 */
 	public int getNumber() {
-
 		return number;
-
 	}
 
 	/**
@@ -208,32 +203,13 @@ public class ConsensusMessage extends SystemMessage {
 	 * 
 	 * @return This message type
 	 */
-	public int getType() {
-
+	public PaxosMessageType getType() {
 		return paxosType;
-
-	}
-
-	/**
-	 * Returns this message type as a verbose string
-	 * 
-	 * @return Message type
-	 */
-	public String getPaxosVerboseType() {
-		if (paxosType == MessageFactory.PROPOSE)
-			return "PROPOSE";
-		else if (paxosType == MessageFactory.ACCEPT)
-			return "ACCEPT";
-		else if (paxosType == MessageFactory.WRITE)
-			return "WRITE";
-		else
-			return "";
 	}
 
 	@Override
 	public String toString() {
-		return "type=" + getPaxosVerboseType() + ", number=" + getNumber() + ", epoch=" + getEpoch() + ", from="
-				+ getSender();
+		return "type=" + paxosType + ", number=" + getNumber() + ", epoch=" + getEpoch() + ", from=" + getSender();
 	}
 
 }

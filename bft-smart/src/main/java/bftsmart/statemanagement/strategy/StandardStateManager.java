@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
-import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.consensus.messages.MessageFactory.PaxosMessageType;
 import bftsmart.reconfiguration.views.View;
 import bftsmart.statemanagement.ApplicationState;
 import bftsmart.statemanagement.SMMessage;
@@ -244,11 +244,11 @@ public class StandardStateManager extends BaseStateManager {
                                 }
                                 e.addToProof(cm);
 
-                                if (cm.getType() == MessageFactory.ACCEPT) {
+                                if (cm.getType() == PaxosMessageType.ACCEPT) {
                                     e.setAccept(cm.getSender(), cm.getValue());
                                 }
 
-                                else if (cm.getType() == MessageFactory.WRITE) {
+                                else if (cm.getType() == PaxosMessageType.WRITE) {
                                     e.setWrite(cm.getSender(), cm.getValue());
                                 }
 

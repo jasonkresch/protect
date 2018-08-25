@@ -26,7 +26,7 @@ public class BftChannelSender implements ChannelSender {
 
 		// Give some time for everyone to process the message
 		try {
-			Thread.sleep(500);
+			Thread.sleep(1000);
 		} catch (InterruptedException e) {
 			throw new RuntimeException("interrupted", e);
 		}

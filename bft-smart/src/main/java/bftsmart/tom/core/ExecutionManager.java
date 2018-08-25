@@ -30,6 +30,7 @@ import bftsmart.consensus.Decision;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.consensus.messages.MessageFactory.PaxosMessageType;
 import bftsmart.consensus.roles.Acceptor;
 import bftsmart.consensus.roles.Proposer;
 import bftsmart.reconfiguration.ServerViewController;
@@ -273,7 +274,7 @@ public final class ExecutionManager {
 			} else {
 				if (isRetrievingState || msg.getNumber() > (lastConsId + 1)
 						|| (inExec != -1 && inExec < msg.getNumber())
-						|| (inExec == -1 && msg.getType() != MessageFactory.PROPOSE)) { // not propose message for the
+						|| (inExec == -1 && msg.getType() != PaxosMessageType.PROPOSE)) { // not propose message for the
 																						// next consensus
 					Logger.println("(ExecutionManager.checkLimits) Message for consensus " + msg.getNumber()
 							+ " is out of context, adding it to out of context set");
@@ -441,9 +442,9 @@ public final class ExecutionManager {
 
 					if (msg.getEpoch() == epoch.getTimestamp() && Arrays.equals(propHash, msg.getValue())) {
 
-						if (msg.getType() == MessageFactory.WRITE)
+						if (msg.getType() == PaxosMessageType.WRITE)
 							countWrites++;
-						else if (msg.getType() == MessageFactory.ACCEPT)
+						else if (msg.getType() == PaxosMessageType.ACCEPT)
 							countAccepts++;
 					}
 				}
@@ -510,7 +511,7 @@ public final class ExecutionManager {
 	public void addOutOfContextMessage(ConsensusMessage m) {
 		outOfContextLock.lock();
 		/******* BEGIN OUTOFCONTEXT CRITICAL SECTION *******/
-		if (m.getType() == MessageFactory.PROPOSE) {
+		if (m.getType() == PaxosMessageType.PROPOSE) {
 			Logger.println("(ExecutionManager.addOutOfContextMessage) adding " + m);
 			outOfContextProposes.put(m.getNumber(), m);
 		} else {

@@ -438,11 +438,11 @@ public class LCManager {
 	 */
 	public boolean sound(HashSet<CollectData> collects) {
 
-		bftsmart.tom.util.Logger
-				.println("(LCManager.sound) I collected the context from " + collects.size() + " replicas");
-
 		if (collects == null)
 			return false;
+
+		bftsmart.tom.util.Logger
+				.println("(LCManager.sound) I collected the context from " + collects.size() + " replicas");
 
 		HashSet<Integer> timestamps = new HashSet<Integer>();
 		HashSet<byte[]> values = new HashSet<byte[]>();

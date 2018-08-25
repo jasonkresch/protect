@@ -15,15 +15,41 @@ limitations under the License.
 */
 package bftsmart.consensus.messages;
 
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * This class work as a factory of messages used in the paxos protocol.
  */
 public class MessageFactory {
 
 	// constants for messages types
-	public static final int PROPOSE = 44781;
-	public static final int WRITE = 44782;
-	public static final int ACCEPT = 44783;
+	public enum PaxosMessageType {
+		PROPOSE(0), WRITE(1), ACCEPT(2);
+
+		private static Map<Integer, PaxosMessageType> PAXOS_MESSAGE_TYPES = new HashMap<Integer, PaxosMessageType>();
+
+	    static {
+	        for (PaxosMessageType messageType : PaxosMessageType.values()) {
+	        	PAXOS_MESSAGE_TYPES.put(messageType.getValue(), messageType);
+	        }
+	    }
+
+	    public static PaxosMessageType getPaxosMessageByValue(Integer messageValue) {
+	        return PAXOS_MESSAGE_TYPES.get(messageValue);
+	    }
+		
+		private int value;
+
+		private PaxosMessageType(final int value) {
+			this.value = value;
+		}
+		
+		public int getValue()
+		{
+			return this.value;
+		}
+	}
 
 	private int from; // Replica ID of the process which sent this message
 
@@ -55,7 +81,7 @@ public class MessageFactory {
 	 */
 	public ConsensusMessage createPropose(int id, int epoch, byte[] value) {
 
-		return new ConsensusMessage(PROPOSE, id, epoch, from, value);
+		return new ConsensusMessage(PaxosMessageType.PROPOSE, id, epoch, from, value);
 
 	}
 
@@ -73,7 +99,7 @@ public class MessageFactory {
 	 */
 	public ConsensusMessage createWrite(int id, int epoch, byte[] value) {
 
-		return new ConsensusMessage(WRITE, id, epoch, from, value);
+		return new ConsensusMessage(PaxosMessageType.WRITE, id, epoch, from, value);
 
 	}
 
@@ -91,7 +117,7 @@ public class MessageFactory {
 	 */
 	public ConsensusMessage createAccept(int id, int epoch, byte[] value) {
 
-		return new ConsensusMessage(ACCEPT, id, epoch, from, value);
+		return new ConsensusMessage(PaxosMessageType.ACCEPT, id, epoch, from, value);
 
 	}
 

@@ -27,7 +27,7 @@ import bftsmart.consensus.Decision;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.TimestampValuePair;
 import bftsmart.consensus.messages.ConsensusMessage;
-import bftsmart.consensus.messages.MessageFactory;
+import bftsmart.consensus.messages.MessageFactory.PaxosMessageType;
 import bftsmart.consensus.roles.Acceptor;
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.statemanagement.StateManager;
@@ -1252,11 +1252,11 @@ public class Synchronizer {
 			}
 			e.addToProof(cm);
 
-			if (cm.getType() == MessageFactory.ACCEPT) {
+			if (cm.getType() == PaxosMessageType.ACCEPT) {
 				e.setAccept(cm.getSender(), cm.getValue());
 			}
 
-			else if (cm.getType() == MessageFactory.WRITE) {
+			else if (cm.getType() == PaxosMessageType.WRITE) {
 				e.setWrite(cm.getSender(), cm.getValue());
 			}
 
