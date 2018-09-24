@@ -15,11 +15,11 @@ limitations under the License.
 */
 package com.ibm.pross.server.channel.bft;
 
-import com.ibm.pross.common.util.serialization.HexUtil;
 import com.ibm.pross.server.channel.ChannelListener;
 
 import bftsmart.tom.MessageContext;
 import bftsmart.tom.ServiceReplica;
+import bftsmart.tom.server.FIFOExecutable;
 import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
 
 /**
@@ -28,7 +28,7 @@ import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
  * @author jresch
  */
 
-public class BftListenerWrapper extends DefaultSingleRecoverable {
+public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFOExecutable {
 
 	private final ChannelListener listener;
 
@@ -39,26 +39,36 @@ public class BftListenerWrapper extends DefaultSingleRecoverable {
 
 	@Override
 	public byte[] appExecuteUnordered(final byte[] command, final MessageContext msgCtx) {
-		//System.out.println("Received message: " + HexUtil.binToHex(command));
-		this.listener.receiveSerializedMessage(command);
-		return command;
+		throw new RuntimeException("Unused method was invoked!");
 	}
 
 	@Override
 	public byte[] appExecuteOrdered(byte[] command, MessageContext msgCtx) {
-		//System.out.println("Received message: " + HexUtil.binToHex(command));
+		throw new RuntimeException("Unused method was invoked!");
+	}
+
+	@Override
+	public byte[] executeUnorderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
+		throw new RuntimeException("Unused method was invoked!");
+	}
+	
+	@Override
+	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
 		this.listener.receiveSerializedMessage(command);
 		return command;
 	}
+
+
+	
 	
     @Override
     public void installSnapshot(byte[] state) {
-        // Not yet implemented
-    }
+    	throw new RuntimeException("Not yet implemented!");    }
 
     @Override
     public byte[] getSnapshot() {
     	// Not yet implemented
         return new byte[0];
     }
+
 }

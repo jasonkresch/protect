@@ -63,7 +63,7 @@ public class GenerationStateTracker {
 	private final EcPoint[] coefficientPowers;
 
 	enum States {
-		INITALIZED, SENT_UPDATE, RECEIVED_UPDATES, VERIFIED_UPDATES, MADE_ACCUSATIONS, SENT_REBUTTLES, PROCESSED_REBUTTALS, IDENTIFIED_CORRUPTIONS, ACHIEVED_UPDATE_THRESHOLD, PERFORMED_UPDATE;
+		INITALIZED, SENT_UPDATE, RECEIVED_UPDATES, VERIFIED_UPDATES, MADE_ACCUSATIONS, SENT_REBUTTALS, PROCESSED_REBUTTALS, PERFORMED_UPDATE;
 	}
 
 	private volatile States currentState;
@@ -260,7 +260,7 @@ public class GenerationStateTracker {
 	public synchronized void sendRebuttals() {
 
 		if (this.currentState.equals(States.MADE_ACCUSATIONS)) {
-			this.currentState = States.SENT_REBUTTLES;
+			this.currentState = States.SENT_REBUTTALS;
 
 			// Determine if any accusations were made against us, and if so,
 			// send a
@@ -287,7 +287,7 @@ public class GenerationStateTracker {
 
 	public void saveRebuttle(final int sender, final GenerationRebuttal rebuttle) {
 
-		if (!(this.currentState.equals(States.MADE_ACCUSATIONS) || this.currentState.equals(States.SENT_REBUTTLES))) {
+		if (!(this.currentState.equals(States.MADE_ACCUSATIONS) || this.currentState.equals(States.SENT_REBUTTALS))) {
 			throw new IllegalStateException("Must be in State.VERIFIED_UPDATES or States.MADE_ACCUSATIONS");
 		}
 
@@ -300,7 +300,7 @@ public class GenerationStateTracker {
 
 	public synchronized void processRebuttals() {
 
-		if (this.currentState.equals(States.SENT_REBUTTLES)) {
+		if (this.currentState.equals(States.SENT_REBUTTALS)) {
 
 			// For each accusation, see if a rebuttle was received
 			for (Integer accuserId : this.receivedAccusations.keySet()) {
