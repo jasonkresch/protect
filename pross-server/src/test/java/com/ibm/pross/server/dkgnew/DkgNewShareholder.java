@@ -13,6 +13,7 @@ import java.util.SortedMap;
 import java.util.SortedSet;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
@@ -39,16 +40,23 @@ class DkgNewShareholder {
 	public static final EcPoint h = curve.getPointHasher()
 			.hashToCurve("nothing up my sleeve".getBytes(StandardCharsets.UTF_8));
 
-	// The set of shareholders
+	// The set of peer shareholders (we need them for their public encryption keys)
 	private final List<DkgNewShareholder> shareholders;
-	private final FifoAtomicBroadcastChannel channel;
-	private final AtomicInteger messageIndex = new AtomicInteger(0);
 
-	// The index of ourselves (zero is the base index)
+	// Channel related variables
+	private final FifoAtomicBroadcastChannel channel;
+	private final AtomicInteger currentMessageId = new AtomicInteger(0);
+
+	// Our message processing thread
+	private final Thread messageProcessingThread;
+	private final AtomicBoolean stopped = new AtomicBoolean(false);
+
+	// The index of this shareholder (ourself) (zero is the base index)
+	// This shareholder will hold the share at f(index + 1)
 	private final int index;
 
-	// Our own key pair
-	private final KeyPair keyPair;
+	// Our own key pair for receiving encrypted values
+	private final KeyPair encryptionKeyPair;
 
 	// The number of shareholders
 	private final int n;
@@ -63,33 +71,32 @@ class DkgNewShareholder {
 	private final BigInteger[] ourPolynomial1;
 	private final BigInteger[] ourPolynomial2;
 
-	// Shares s and s'
+	// Shares s and s' created from our polynomials
 	private final ShamirShare[] ourShareContributions1;
 	private final ShamirShare[] ourShareContributions2;
 
-	// Pedersen commitment: C
+	// Pedersen commitments: C
 	private final EcPoint[] ourCommitments;
-
-	// Verification vector
-	protected final Boolean[] ourVerificationValues;
-	private final AtomicInteger successCount = new AtomicInteger(0);
 
 	// Received commitments
 	protected final EcPoint[][] receivedCommitments;
-
-	// Received verification vectors
-	protected final Boolean[][] receivedVerifications;
 
 	// Received share contributions
 	protected final ShamirShare[] receivedShareContributions1;
 	protected final ShamirShare[] receivedShareContributions2;
 
-	// Qualified shareholders
-	private volatile boolean isQualSetDefined = false;
-	private volatile boolean stopped = false;
-	private volatile SortedSet<Integer> qualSet;
+	// Our verification vector
+	protected final Boolean[] ourVerificationValues;
+	private final AtomicInteger successCount = new AtomicInteger(0);
 
-	// Constructed Shares
+	// Received verification vectors
+	protected final Boolean[][] receivedVerifications;
+
+	// Qualified shareholders
+	private volatile SortedSet<Integer> qualSet;
+	private volatile boolean isQualSetDefined = false;
+
+	// Constructed Shares (x_i)
 	private volatile ShamirShare share1;
 	private volatile ShamirShare share2;
 
@@ -99,9 +106,8 @@ class DkgNewShareholder {
 	private final SortedSet<Integer> rSet = new TreeSet<>();
 	protected final EcPoint[][] receivedProvenGs;
 	private final SortedSet<Integer> uSet = new TreeSet<>();
-	private final EcPoint[] sharePublicKeys;
+	// private final EcPoint[] sharePublicKeys;
 	private volatile EcPoint secretPublicKey;
-	private volatile boolean isTotalSharePublicKeyDefined = false;
 
 	public DkgNewShareholder(final List<DkgNewShareholder> shareholders, final FifoAtomicBroadcastChannel channel,
 			final int index, final int n, final int k, final int f, final boolean sendValidCommitments) {
@@ -110,7 +116,7 @@ class DkgNewShareholder {
 
 		/** Values unique to ourselves **/
 		this.index = index;
-		this.keyPair = EcKeyGeneration.generateKeyPair();
+		this.encryptionKeyPair = EcKeyGeneration.generateKeyPair();
 
 		/** Public shared configuration parameters **/
 		this.shareholders = shareholders;
@@ -154,9 +160,11 @@ class DkgNewShareholder {
 		this.receivedShareContributions2 = new ShamirShare[n];
 		this.receivedPublicKeyContributions = new EcPoint[n];
 		this.receivedProvenGs = new EcPoint[n][n];
-		this.sharePublicKeys = new EcPoint[n];
+		// this.sharePublicKeys = new EcPoint[n];
 
-		startMainLoop();
+		// Start the shareholder (await and process messages)
+		this.messageProcessingThread = startMainLoop();
+		this.messageProcessingThread.start();
 	}
 
 	private static void verifyConstraints(final int n, final int k, final int f) {
@@ -169,11 +177,13 @@ class DkgNewShareholder {
 		}
 	}
 
-	public void startMainLoop() {
-		final Thread t = new Thread(new Runnable() {
+	public Thread startMainLoop() {
+
+		return new Thread(new Runnable() {
+
 			@Override
 			public void run() {
-				while (DkgNewShareholder.this.stopped == false) {
+				while (DkgNewShareholder.this.stopped.get() == false) {
 					try {
 						synchronized (DkgNewShareholder.this.channel) {
 							DkgNewShareholder.this.channel.wait(1000);
@@ -181,53 +191,80 @@ class DkgNewShareholder {
 					} catch (InterruptedException e) {
 						// Ignore
 					}
-					while (DkgNewShareholder.this.channel.getMessageSize() > DkgNewShareholder.this.messageIndex
+					while (DkgNewShareholder.this.channel.getMessageSize() > DkgNewShareholder.this.currentMessageId
 							.get()) {
-						messageAvailable();
+						messageIsAvailable();
 					}
 				}
 			}
 		}, "Shareholder-Thread-" + this.index);
+	}
 
-		t.start();
+	/**
+	 * A message is available on the queue, get it and deliver it for processing
+	 */
+	private synchronized void messageIsAvailable() {
+		int messageId = this.currentMessageId.getAndIncrement();
+		final Message message = this.channel.getMessage(messageId);
+		deliver(message);
+	}
+
+	/**
+	 * Deliver a message received on the FIFO-AB channel to the correct method
+	 * 
+	 * @param message
+	 */
+	private synchronized void deliver(final Message message) {
+
+		final OpCode opcode;
+		if (message instanceof SemiPrivateMessage) {
+			opcode = ((SemiPrivateMessage) message).getPublicPayload().getOpcode();
+		} else {
+			opcode = ((PublicMessage) message).getPayload().getOpcode();
+		}
+
+		switch (opcode) {
+		case MS:
+			deliverShareContributions((SemiPrivateMessage) message);
+			break;
+		case VV:
+			deliverVerificationtMessage((PublicMessage) message);
+			break;
+		case RB:
+			deliverRebuttalMessage((PublicMessage) message);
+			break;
+		case ZK:
+			deliverProofMessage((PublicMessage) message);
+			break;
+		case BP:
+			deliverBulkProofsMessage((PublicMessage) message);
+			break;
+		default:
+			break;
+		}
 	}
 
 	public void stop() {
-		this.stopped = true;
+
+		this.stopped.set(true);
+
+		// Wake the sleeping threads
+		synchronized (this.channel) {
+			this.channel.notifyAll();
+		}
+
+		try {
+			this.messageProcessingThread.join();
+		} catch (InterruptedException e) {
+			// Interrupted
+		}
 	}
 
-	public PublicKey getEncryptionPublicKey() {
-		return this.keyPair.getPublic();
-	}
-	
-	public EcPoint getSecretPublicKey()
-	{
-		return this.secretPublicKey;
-	}
-
-	public EcPoint getSharePublicKey() {
-		// Sanity check
-		return curve.multiply(g, this.share1.getY());
-		// return getSharePublicKey(this.index);
-	}
-
-	public EcPoint getSharePublicKey(final int index) {
-		// TODO: Not yet implemented
-		return this.sharePublicKeys[index];
-	}
-
-	public SortedSet<Integer> getQualSet() {
-		return this.qualSet;
-	}
-
-	protected ShamirShare getShare1() {
-		return share1;
-	}
-
-	protected ShamirShare getShare2() {
-		return share2;
-	}
-
+	/**
+	 * Send out initial message containing our share contributions (privately
+	 * encrypted to each peer shareholder) and our public Pedersen commitments. This
+	 * will start the DKG-NEW protocol, and it will be driven to completion.
+	 */
 	public void broadcastShareContribtions() {
 
 		// Create map for storing encrypted payloads
@@ -252,6 +289,16 @@ class DkgNewShareholder {
 				new SemiPrivateMessage(this.index, new PedersonCommitments(this.ourCommitments), encryptedPayloads));
 	}
 
+	/**
+	 * Verify that a contribution to our share is consistent with the published
+	 * Pedersen commitments
+	 * 
+	 * @param recipientIndex
+	 * @param share1
+	 * @param share2
+	 * @param commitment
+	 * @return
+	 */
 	private boolean verifyShareConsistency(final int recipientIndex, final ShamirShare share1, final ShamirShare share2,
 			final EcPoint[] commitment) {
 
@@ -271,7 +318,11 @@ class DkgNewShareholder {
 		return expected.equals(sum);
 	}
 
-	// Process Share Contributions and update verification vector
+	/**
+	 * Process Share Contributions and update verification vector
+	 * 
+	 * @param message
+	 */
 	protected synchronized void deliverShareContributions(final SemiPrivateMessage message) {
 
 		final int senderIndex = message.getSenderIndex();
@@ -282,7 +333,8 @@ class DkgNewShareholder {
 
 		// Extract the public and private portions of the payloads
 		final EncryptedPayload encryptedContent = ((SemiPrivateMessage) message).getEncryptedPayload(this.index);
-		final Payload privatePayload = EciesEncryption.decryptPayload(encryptedContent, this.keyPair.getPrivate());
+		final Payload privatePayload = EciesEncryption.decryptPayload(encryptedContent,
+				this.encryptionKeyPair.getPrivate());
 		final Payload publicPayload = ((SemiPrivateMessage) message).getPublicPayload();
 
 		// Get parameters from message
@@ -308,13 +360,21 @@ class DkgNewShareholder {
 		}
 	}
 
-	// Create and broadcast verication vector to all other shareholders
+	/**
+	 * Create and broadcast verication vector to all other shareholders
+	 */
 	private void broadcastVerificationVector() {
 		final Verification payload = new Verification(this.ourVerificationValues);
 		final PublicMessage message = new PublicMessage(this.index, payload);
 		this.channel.broadcast(message);
 	}
 
+	/**
+	 * Process another shareholder's report of their verification vector and work to
+	 * build the QUAL set
+	 * 
+	 * @param message
+	 */
 	protected synchronized void deliverVerificationtMessage(final PublicMessage message) {
 
 		final int senderIndex = message.getSenderIndex();
@@ -327,6 +387,7 @@ class DkgNewShareholder {
 			// Check if we have received an accusation
 			if ((receivedVerificationVector[this.index] != null) && (receivedVerificationVector[this.index] == false)) {
 
+				// Send a rebuttal
 				final Rebuttal rebuttal = new Rebuttal(senderIndex, this.ourShareContributions1[senderIndex],
 						this.ourShareContributions2[senderIndex]);
 				final PublicMessage rebuttalMessage = new PublicMessage(this.index, rebuttal);
@@ -340,6 +401,11 @@ class DkgNewShareholder {
 		}
 	}
 
+	/**
+	 * Process a rebuttal
+	 * 
+	 * @param message
+	 */
 	protected synchronized void deliverRebuttalMessage(final PublicMessage message) {
 
 		// The accused sent the rebuttal
@@ -382,6 +448,77 @@ class DkgNewShareholder {
 		}
 	}
 
+	/**
+	 * Monotonically build up the qual set.
+	 */
+	private synchronized void buildQualSet() {
+
+		if (isQualSetDefined) {
+			return;
+		}
+
+		final SortedSet<Integer> qual = new TreeSet<>();
+
+		for (int j = 0; j < n; j++) {
+			int successes = 0;
+			for (int i = 0; i < n; i++) {
+				if ((this.receivedVerifications[i] != null) && (this.receivedVerifications[i][j] != null)
+						&& (this.receivedVerifications[i][j].equals(Boolean.TRUE))) {
+					successes++;
+				}
+			}
+
+			if (successes > (this.k + this.f)) {
+				qual.add(j);
+			}
+
+			// Check if QUAL is complete
+			if (qual.size() == (this.f + 1)) {
+
+				this.qualSet = Collections.unmodifiableSortedSet(qual);
+
+				// We have determined qual, build a share:
+				BigInteger share1Y = BigInteger.ZERO;
+				BigInteger share2Y = BigInteger.ZERO;
+
+				for (final Integer index : this.qualSet) {
+					share1Y = share1Y.add(this.receivedShareContributions1[index].getY()).mod(curve.getR());
+					share2Y = share2Y.add(this.receivedShareContributions2[index].getY()).mod(curve.getR());
+				}
+
+				this.share1 = new ShamirShare(BigInteger.valueOf(this.index + 1), share1Y);
+				this.share2 = new ShamirShare(BigInteger.valueOf(this.index + 1), share2Y);
+
+				// Broadcast ZKP if we are in QUAL
+				if (qual.contains(this.index)) {
+					broadcastZkp();
+				}
+
+				isQualSetDefined = true;
+				break;
+			}
+		}
+	}
+
+	/**
+	 * Broadcast a ZKP of our ai_0 This method is only called by members of QUAL
+	 */
+	private void broadcastZkp() {
+
+		final ZeroKnowledgeProof proof = ZeroKnowledgeProver.createProof(this.ourPolynomial1[0],
+				this.ourPolynomial2[0]);
+
+		final ZkpPayload payload = new ZkpPayload(proof);
+		final PublicMessage message = new PublicMessage(this.index, payload);
+		this.channel.broadcast(message);
+	}
+
+	/**
+	 * Process a proof sent by a member of qual. This will be used to determine the
+	 * public key y = g^x
+	 * 
+	 * @param message
+	 */
 	protected synchronized void deliverProofMessage(final PublicMessage message) {
 
 		// TODO: For all the non-expected cases, go into an "alert" method to flag the
@@ -406,6 +543,8 @@ class DkgNewShareholder {
 						this.receivedPublicKeyContributions[senderIndex] = proof.getA0();
 						this.proofSet.add(senderIndex);
 
+						// If we have built up a complete R set, broadcast our bulk proof of values
+						// received by members of R
 						if (this.proofSet.size() == (this.qualSet.size() - this.f)) {
 							// Calculate R = QualSet \ ProofSet
 							final SortedSet<Integer> R = new TreeSet<>(this.qualSet);
@@ -422,6 +561,30 @@ class DkgNewShareholder {
 		}
 	}
 
+	/**
+	 * Send our proof for received share contributions from all members of R
+	 */
+	private void broadcastBulkProofs() {
+
+		// Generate proofs of knowledge for each in R
+		SortedMap<Integer, ZeroKnowledgeProof> proofs = new TreeMap<>();
+		for (final Integer i : this.rSet) {
+			final BigInteger s1 = this.receivedShareContributions1[i].getY();
+			final BigInteger s2 = this.receivedShareContributions2[i].getY();
+
+			proofs.put(i, ZeroKnowledgeProver.createProof(s1, s2));
+		}
+
+		final ZkpBulkPayload payload = new ZkpBulkPayload(proofs);
+		final PublicMessage message = new PublicMessage(this.index, payload);
+		this.channel.broadcast(message);
+	}
+
+	/**
+	 * Process a bulk proof message
+	 * 
+	 * @param message
+	 */
 	protected synchronized void deliverBulkProofsMessage(final PublicMessage message) {
 
 		// Get the sender index
@@ -449,7 +612,7 @@ class DkgNewShareholder {
 
 					// Verify proof
 					if (!ZeroKnowledgeProver.verifyProof(Dji, proof)) {
-						return;
+						return; // Ignore this shareholder, his proof doesn't check out
 					}
 				}
 
@@ -463,8 +626,9 @@ class DkgNewShareholder {
 				// Add sender to set j
 				uSet.add(j);
 
+				// Once there is a reconstruction threshold, we can solve for the public key
 				if (uSet.size() == this.k) {
-					solvePublicKeys();
+					solvePublicKey();
 				}
 			}
 
@@ -472,7 +636,12 @@ class DkgNewShareholder {
 		}
 	}
 
-	private void solvePublicKeys() {
+	/**
+	 * Determine the overall Public Key associated with the distributed secret "x",
+	 * where y = g^x This is done by interpolating each of the values y_i = g^x_i,
+	 * and then summing the g^x_i for all i in Qual
+	 */
+	private void solvePublicKey() {
 
 		// Use interpolation of the K published values in set U to recover the public
 		// keys.
@@ -483,143 +652,92 @@ class DkgNewShareholder {
 				final DerivationResult result = new DerivationResult(BigInteger.valueOf(k + 1), Gs);
 				shareholderContributions.add(result);
 			}
-			
+
 			// Derive the public key contribution (helps if never received)
 			final EcPoint publicKeyContribution = Polynomials.interpolateExponents(shareholderContributions, this.k, 0);
 			this.receivedPublicKeyContributions[i] = publicKeyContribution;
 		}
-		
+
 		// We can now interpolate the total public key for the secret
 		EcPoint totalPublicKey = EcPoint.pointAtInfinity;
-		for (final Integer i : this.qualSet)
-		{
+		for (final Integer i : this.qualSet) {
 			totalPublicKey = curve.addPoints(totalPublicKey, this.receivedPublicKeyContributions[i]);
 		}
+
 		this.secretPublicKey = totalPublicKey;
-		
-		this.isTotalSharePublicKeyDefined = true;
-
 	}
 
-	private synchronized void buildQualSet() {
-
-		if (isQualSetDefined) {
-			return;
-		}
-
-		final SortedSet<Integer> qual = new TreeSet<>();
-
-		for (int j = 0; j < n; j++) {
-			int successes = 0;
-			for (int i = 0; i < n; i++) {
-				if ((this.receivedVerifications[i] != null) && (this.receivedVerifications[i][j] != null)
-						&& (this.receivedVerifications[i][j].equals(Boolean.TRUE))) {
-					successes++;
-				}
-			}
-
-			if (successes > (this.k + this.f)) {
-				qual.add(j);
-			}
-
-			if (qual.size() == (this.f + 1)) {
-
-				this.qualSet = Collections.unmodifiableSortedSet(qual);
-
-				// We have determined qual, build a share:
-				BigInteger share1Y = BigInteger.ZERO;
-				BigInteger share2Y = BigInteger.ZERO;
-
-				for (final Integer index : this.qualSet) {
-					share1Y = share1Y.add(this.receivedShareContributions1[index].getY()).mod(curve.getR());
-					share2Y = share2Y.add(this.receivedShareContributions2[index].getY()).mod(curve.getR());
-				}
-
-				this.share1 = new ShamirShare(BigInteger.valueOf(this.index + 1), share1Y);
-				this.share2 = new ShamirShare(BigInteger.valueOf(this.index + 1), share2Y);
-
-				// Broadcast ZKP if we are in QUAL
-				if (qual.contains(this.index)) {
-					broadcastZkp();
-				}
-
-				isQualSetDefined = true;
-				break;
-			}
-		}
-
+	/**
+	 * Returns the public encryption key for this shareholder which can be used by
+	 * others to send confidential messages to this shareholder
+	 * 
+	 * @return
+	 */
+	public PublicKey getEncryptionPublicKey() {
+		return this.encryptionKeyPair.getPublic();
 	}
 
-	private void broadcastZkp() {
-
-		final ZeroKnowledgeProof proof = ZeroKnowledgeProver.createProof(this.ourPolynomial1[0],
-				this.ourPolynomial2[0]);
-
-		final ZkpPayload payload = new ZkpPayload(proof);
-		final PublicMessage message = new PublicMessage(this.index, payload);
-		this.channel.broadcast(message);
+	/**
+	 * Returns the public key of the secret: y = g^x
+	 * 
+	 * @return
+	 */
+	public EcPoint getSecretPublicKey() {
+		return this.secretPublicKey;
 	}
 
-	private void broadcastBulkProofs() {
-
-		// Generate proofs of knowledge for each in R
-		SortedMap<Integer, ZeroKnowledgeProof> proofs = new TreeMap<>();
-		for (final Integer i : this.rSet) {
-			final BigInteger s1 = this.receivedShareContributions1[i].getY();
-			final BigInteger s2 = this.receivedShareContributions2[i].getY();
-
-			proofs.put(i, ZeroKnowledgeProver.createProof(s1, s2));
-		}
-
-		final ZkpBulkPayload payload = new ZkpBulkPayload(proofs);
-		final PublicMessage message = new PublicMessage(this.index, payload);
-		this.channel.broadcast(message);
+	/**
+	 * Returns the public key of the share for this shareholder: y_i = g^x_i
+	 * 
+	 * @return
+	 */
+	public EcPoint getSharePublicKey() {
+		// Sanity check
+		return curve.multiply(g, this.share1.getY());
+		// return getSharePublicKey(this.index);
 	}
 
-	private synchronized void deliver(final Message message) {
-
-		// int messageId = this.messageIndex.get();
-		// System.out.println("Shareholder [" + this.index + "] received #" +
-		// messageId);
-
-		final OpCode opcode;
-		if (message instanceof SemiPrivateMessage) {
-			opcode = ((SemiPrivateMessage) message).getPublicPayload().getOpcode();
-		} else {
-			opcode = ((PublicMessage) message).getPayload().getOpcode();
-		}
-
-		switch (opcode) {
-		case MS:
-			deliverShareContributions((SemiPrivateMessage) message);
-			break;
-		case VV:
-			deliverVerificationtMessage((PublicMessage) message);
-			break;
-		case RB:
-			deliverRebuttalMessage((PublicMessage) message);
-			break;
-		case ZK:
-			deliverProofMessage((PublicMessage) message);
-			break;
-		case BP:
-			deliverBulkProofsMessage((PublicMessage) message);
-			break;
-		default:
-			break;
-		}
-
-		// System.out.println("Shareholder [" + this.index + "] finished processing
-		// message #" + messageId);
-
+	public EcPoint getSharePublicKey(final int index) {
+		throw new RuntimeException("Not yet implemented");
+		// return this.sharePublicKeys[index];
 	}
 
-	private synchronized void messageAvailable() {
-		int messageId = this.messageIndex.getAndIncrement();
-		final Message message = this.channel.getMessage(messageId);
-		deliver(message);
+	/**
+	 * Return the set of shareholders who have contributed to the secret x
+	 * 
+	 * (Only used in tests)
+	 * 
+	 * @return
+	 */
+	protected SortedSet<Integer> getQualSet() {
+		return this.qualSet;
 	}
 
+	/**
+	 * Return the secret share of this shareholder for g^s
+	 * 
+	 * (Only used in tests)
+	 * 
+	 * @return
+	 */
+	protected ShamirShare getShare1() {
+		return share1;
+	}
+
+	/**
+	 * Return the secret share of this shareholder for h^s
+	 * 
+	 * (Only used in tests)
+	 * 
+	 * @return
+	 */
+	protected ShamirShare getShare2() {
+		return share2;
+	}
+
+	/**
+	 * Wait until this shareholder has established the set of qualified shareholders
+	 */
 	public void waitForQual() {
 		while (this.isQualSetDefined == false) {
 			try {
@@ -629,9 +747,12 @@ class DkgNewShareholder {
 			}
 		}
 	}
-	
+
+	/**
+	 * Wait until this shareholder has constructed the public key: y = g^x
+	 */
 	public void waitForPublicKeys() {
-		while (this.isTotalSharePublicKeyDefined == false) {
+		while (this.secretPublicKey != null) {
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e) {

@@ -94,6 +94,11 @@ public class DkgNewTest {
 			System.out.println(shareholders.get(i).getSecretPublicKey());
 			Assert.assertEquals(publicKey, shareholders.get(i).getSecretPublicKey());
 		}
+		
+		// Stop shareholder threads
+		for (int i = 0; i < n; i++) {
+			shareholders.get(i).stop();
+		}
 	}
 
 	@Test
@@ -165,6 +170,11 @@ public class DkgNewTest {
 			System.out.println("For i = " + i);
 			System.out.println(shareholders.get(i).getSecretPublicKey());
 			Assert.assertEquals(publicKey, shareholders.get(i).getSecretPublicKey());
+		}
+		
+		// Stop shareholder threads
+		for (int i = 0; i < n; i++) {
+			shareholders.get(i).stop();
 		}
 	}
 
@@ -244,7 +254,28 @@ public class DkgNewTest {
 			System.out.println(shareholders.get(i).getSecretPublicKey());
 			Assert.assertEquals(publicKey, shareholders.get(i).getSecretPublicKey());
 		}
+		
+		// Stop shareholder threads
+		for (int i = 0; i < n; i++) {
+			shareholders.get(i).stop();
+		}
 
 	}
 
+	// TODO: Test a valid rebuttal being sent to get back into the qual set
+	
+	// TODO: Test a member of the qual set not sending his y_i = g^x_i
+	
+	// TODO: Don't start enough shareholders
+	
+	// TODO: Start only enough shareholders
+	
+	// TODO: Have maximum number of faults
+	
+	// TODO: Have some shareholders crash at different stages
+	
+	// TODO: Make test with random crashes (up to maximum), try many iterations (or enumerate them all)
+	
+	// TODO: Once every edge/corner case, ensure complete code coverage
+	
 }
