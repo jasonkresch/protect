@@ -36,8 +36,15 @@ public interface Payload extends Serializable {
 		RECONSTRUCTION_CONTRIBUTION, // Contribution
 
 		// PROSS: Dynamic rekey operation
-		DYNAMIC_REKEY; // New public keys
+		DYNAMIC_REKEY, // New public keys
 
+		
+		// NEW-DKG:
+		MS, // Penderson Commitment and Shares
+		VV, // Verification Vector
+		RB, // Rebuttal
+		ZK, // Zero Knowledge
+		BP; // Bulk Proofs
 	}
 
 	public OpCode getOpcode();

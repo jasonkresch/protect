@@ -132,7 +132,7 @@ public class Polynomials {
 	 *         the input point with the secret
 	 * @throws IllegalArgumentException
 	 */
-	public static EcPoint interpolateExponents(final List<DerivationResult> responses, final int threshold)
+	public static EcPoint interpolateExponents(final List<DerivationResult> responses, final int threshold, final int xPosition)
 			throws IllegalArgumentException {
 
 		if (responses.size() < threshold) {
@@ -149,14 +149,13 @@ public class Polynomials {
 		}
 
 		// Interpolate polynomial
-		System.out.print(" " + Arrays.toString(xCoords));
 		EcPoint sum = null;
 		for (int i = 0; i < threshold; i++) {
 			final DerivationResult toprfResponse = responses.get(i);
 
 			final BigInteger j = toprfResponse.getIndex();
 			final EcPoint outputShare = toprfResponse.getDerivedSharePoint();
-			final BigInteger L_ij = Polynomials.interpolatePartial(xCoords, BigInteger.ZERO, j, r);
+			final BigInteger L_ij = Polynomials.interpolatePartial(xCoords, BigInteger.valueOf(xPosition), j, r);
 
 			final EcPoint product = CommonConfiguration.CURVE.multiply(outputShare, L_ij);
 

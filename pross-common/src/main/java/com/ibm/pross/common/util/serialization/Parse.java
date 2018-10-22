@@ -15,6 +15,8 @@ import java.math.BigInteger;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+
 public class Parse {
 
 	/**
@@ -41,6 +43,34 @@ public class Parse {
 		}
 	}
 
+	/**
+	 * Generates a deterministic serialization of a group of EC Points
+	 * 
+	 * @param integers
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] concatenate(EcPoint... points) {
+		try {
+			ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			DataOutputStream dos = new DataOutputStream(bos);
+			for (EcPoint p : points) {
+				byte[] encoded1 = p.getX().toByteArray();
+				dos.writeInt(encoded1.length);
+				dos.write(encoded1);
+				
+				byte[] encoded2 = p.getY().toByteArray();
+				dos.writeInt(encoded2.length);
+				dos.write(encoded2);
+			}
+			dos.flush();
+			bos.flush();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
 	/**
 	 * Generates a deterministic serialization of a group of byte arrays
 	 * 

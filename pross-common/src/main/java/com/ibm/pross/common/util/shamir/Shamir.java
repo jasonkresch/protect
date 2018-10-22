@@ -73,6 +73,24 @@ public class Shamir {
 		}
 		return feldmanValues;
 	}
+	
+	/**
+	 * Generate's Feldman Verifiable Secret Sharing values, which represent a
+	 * generator raised to the power of the coefficients of the secret sharing
+	 * polynomial used to generate shares, taking a base of the exponent as an input:
+	 * 
+	 * @param coefficients
+	 * @param base
+	 * @return
+	 */
+	public static EcPoint[] generateFeldmanValues(final BigInteger[] coefficients, final EcPoint base) {
+
+		final EcPoint[] feldmanValues = new EcPoint[coefficients.length];
+		for (int i = 0; i < coefficients.length; i++) {
+			feldmanValues[i] = curve.multiply(base, coefficients[i]);
+		}
+		return feldmanValues;
+	}
 
 	/**
 	 * Generates Shamir Secret shares from the polynomial defined by the

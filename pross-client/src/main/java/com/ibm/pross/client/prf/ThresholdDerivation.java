@@ -56,8 +56,6 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 
 	protected EcPoint computePublicKey(PseudoRandomFunction[] shareholders) {
 
-		System.out.print("Solving for public key...");
-
 		// Use interpolation to derive the public key of the overall secret
 		// This is the public key of the overall secret (which is thresholdized)
 
@@ -72,9 +70,7 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 			}
 		}
 
-		final EcPoint totalPublicKey = Polynomials.interpolateExponents(results, threshold);
-
-		System.out.println(" done.");
+		final EcPoint totalPublicKey = Polynomials.interpolateExponents(results, threshold, 0);
 
 		return totalPublicKey;
 	}
@@ -111,7 +107,7 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 
 		// Randomize which shareholders are used
 		final List<DerivationResult> ranomizedList = new ArrayList<>(new HashSet<>(results));
-		final EcPoint totalResult = Polynomials.interpolateExponents(ranomizedList, threshold);
+		final EcPoint totalResult = Polynomials.interpolateExponents(ranomizedList, threshold, 0);
 		System.out.println(" done.");
 
 		return totalResult;
