@@ -31,7 +31,7 @@ public class DkgNewTest {
 		final FifoAtomicBroadcastChannel channel = new FifoAtomicBroadcastChannel();
 
 		// Define parameters
-		final int n = 8;
+		final int n = 7;
 		final int k = 3;
 		final int f = 2;
 
@@ -97,7 +97,7 @@ public class DkgNewTest {
 		
 		// Stop shareholder threads
 		for (int i = 0; i < n; i++) {
-			shareholders.get(i).stop();
+			//shareholders.get(i).stop();
 		}
 	}
 
@@ -108,7 +108,7 @@ public class DkgNewTest {
 		final FifoAtomicBroadcastChannel channel = new FifoAtomicBroadcastChannel();
 
 		// Define parameters
-		final int n = 8;
+		final int n = 7;
 		final int k = 3;
 		final int f = 2;
 
@@ -185,7 +185,7 @@ public class DkgNewTest {
 		final FifoAtomicBroadcastChannel channel = new FifoAtomicBroadcastChannel();
 
 		// Define parameters
-		final int n = 8;
+		final int n = 7;
 		final int k = 3;
 		final int f = 2;
 

@@ -172,8 +172,8 @@ class DkgNewShareholder {
 			throw new IllegalArgumentException("F must be less than K");
 		}
 
-		if (!(k < (n - 2 * f))) {
-			throw new IllegalArgumentException("K must be less than N - 2F");
+		if (!(k <= (n - 2 * f))) {
+			throw new IllegalArgumentException("K must be less than or equal to N - 2F");
 		}
 	}
 
@@ -290,35 +290,6 @@ class DkgNewShareholder {
 	}
 
 	/**
-	 * Verify that a contribution to our share is consistent with the published
-	 * Pedersen commitments
-	 * 
-	 * @param recipientIndex
-	 * @param share1
-	 * @param share2
-	 * @param commitment
-	 * @return
-	 */
-	private boolean verifyShareConsistency(final int recipientIndex, final ShamirShare share1, final ShamirShare share2,
-			final EcPoint[] commitment) {
-
-		// Expected value (g^s * h^s')
-		final EcPoint Gs1 = curve.multiply(g, share1.getY());
-		final EcPoint Hs2 = curve.multiply(h, share2.getY());
-		final EcPoint expected = curve.addPoints(Gs1, Hs2);
-
-		// Verify consistency against public commitment
-		final BigInteger j = BigInteger.valueOf(recipientIndex + 1);
-		EcPoint sum = EcPoint.pointAtInfinity;
-		for (int i = 0; i < this.k; i++) {
-			final EcPoint term = curve.multiply(commitment[i], j.pow(i));
-			sum = curve.addPoints(sum, term);
-		}
-
-		return expected.equals(sum);
-	}
-
-	/**
 	 * Process Share Contributions and update verification vector
 	 * 
 	 * @param message
@@ -359,9 +330,38 @@ class DkgNewShareholder {
 			// Someone sent us something incorrect, they will be reported
 		}
 	}
+	
+	/**
+	 * Verify that a contribution to our share is consistent with the published
+	 * Pedersen commitments
+	 * 
+	 * @param recipientIndex
+	 * @param share1
+	 * @param share2
+	 * @param commitment
+	 * @return
+	 */
+	private boolean verifyShareConsistency(final int recipientIndex, final ShamirShare share1, final ShamirShare share2,
+			final EcPoint[] commitment) {
+
+		// Expected value (g^s * h^s')
+		final EcPoint Gs1 = curve.multiply(g, share1.getY());
+		final EcPoint Hs2 = curve.multiply(h, share2.getY());
+		final EcPoint expected = curve.addPoints(Gs1, Hs2);
+
+		// Verify consistency against public commitment
+		final BigInteger j = BigInteger.valueOf(recipientIndex + 1);
+		EcPoint sum = EcPoint.pointAtInfinity;
+		for (int i = 0; i < this.k; i++) {
+			final EcPoint term = curve.multiply(commitment[i], j.pow(i));
+			sum = curve.addPoints(sum, term);
+		}
+
+		return expected.equals(sum);
+	}
 
 	/**
-	 * Create and broadcast verication vector to all other shareholders
+	 * Create and broadcast verfication vector to all other shareholders
 	 */
 	private void broadcastVerificationVector() {
 		final Verification payload = new Verification(this.ourVerificationValues);
@@ -752,7 +752,7 @@ class DkgNewShareholder {
 	 * Wait until this shareholder has constructed the public key: y = g^x
 	 */
 	public void waitForPublicKeys() {
-		while (this.secretPublicKey != null) {
+		while (this.secretPublicKey == null) {
 			try {
 				Thread.sleep(10);
 			} catch (InterruptedException e) {
