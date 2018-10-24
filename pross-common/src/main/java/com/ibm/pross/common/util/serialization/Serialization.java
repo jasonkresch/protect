@@ -39,15 +39,13 @@ public class Serialization {
 	 * 
 	 * @param input
 	 * @return
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
 	 */
-	public static Object deserialize(byte[] input) {
-		try {
+	public static Object deserialize(byte[] input) throws IOException, ClassNotFoundException {
 			final ByteArrayInputStream bis = new ByteArrayInputStream(input);
 			final ObjectInputStream ois = new ObjectInputStream(bis);
 			return ois.readObject();
-		} catch (IOException | ClassNotFoundException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 }

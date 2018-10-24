@@ -6,6 +6,7 @@
 
 package com.ibm.pross.server.messages;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
@@ -74,28 +75,22 @@ public class EciesEncryption {
 	}
 
 	public static Payload decryptPayload(final EncryptedPayload encryptedPayload,
-			final PrivateKey recipientPrivateKey) {
+			final PrivateKey recipientPrivateKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Get the combined ciphertext
 		byte[] ciphertext = encryptedPayload.getEncryptedBytes();
 
-		try {
+		// Decrypt the content
+		final byte[] decryptedBytes = decrypt(ciphertext, recipientPrivateKey);
 
-			// Decrypt the content
-			final byte[] decryptedBytes = decrypt(ciphertext, recipientPrivateKey);
-
-			// Deserialize and return payload
-			final Payload payload = (Payload) Serialization.deserialize(decryptedBytes);
-			return payload;
-
-		} catch (GeneralSecurityException e) {
-			throw new IllegalArgumentException(e);
-		}
+		// Deserialize and return payload
+		final Payload payload = (Payload) Serialization.deserialize(decryptedBytes);
+		return payload;
 
 	}
 
 	public static Payload decryptPayload(final EncryptedPayload encryptedPayload, final byte[] rebuttalEvidence,
-			final PublicKey recipientPublicKey) throws IllegalArgumentException {
+			final PublicKey recipientPublicKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Get the combined ciphertext
 		byte[] ciphertext = encryptedPayload.getEncryptedBytes();
@@ -103,17 +98,19 @@ public class EciesEncryption {
 		// Use the r value to get the shared secret and decrypt
 		final BigInteger r = new BigInteger(rebuttalEvidence);
 
-		try {
 			// Decrypt the content
 			final byte[] decryptedBytes = decrypt(ciphertext, r, recipientPublicKey);
 
 			// Deserialize and return payload
-			final Payload payload = (Payload) Serialization.deserialize(decryptedBytes);
-			return payload;
-
-		} catch (GeneralSecurityException e) {
-			throw new IllegalArgumentException(e);
-		}
+			final Object o = Serialization.deserialize(decryptedBytes);
+			if (o instanceof Payload)
+			{
+				return (Payload) o;
+			}
+			else
+			{
+				throw new IOException("Received invalid class serialization");
+			}
 	}
 
 	public static BigInteger generateR() {

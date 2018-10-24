@@ -8,9 +8,13 @@ package com.ibm.pross.server;
 
 import static org.junit.Assert.fail;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Assert;
@@ -27,14 +31,14 @@ public class CoordinatorTest {
 	public static Administration DEFAULT_ADMINISTRATION;
 	
 	@BeforeClass
-	public static void setupBeforeClass() throws NoSuchAlgorithmException
+	public static void setupBeforeClass() throws NoSuchAlgorithmException, BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException
 	{
 		Security.addProvider(new BouncyCastleProvider());
 		CommonConfiguration.CURVE.getPointHasher().hashToCurve(new byte[1]);
 		DEFAULT_ADMINISTRATION = createDefaultAdministration();
 	}
 	
-	private static Administration createDefaultAdministration()
+	private static Administration createDefaultAdministration() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException
 	{
 		// Create threshold parameters
 		final int n = 5;

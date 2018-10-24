@@ -6,6 +6,7 @@
 
 package com.ibm.pross.server.shareholder.state;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.util.AbstractMap.SimpleEntry;
@@ -16,6 +17,9 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
@@ -415,7 +419,7 @@ public class RefreshStateTracker {
 		}
 	}
 
-	public ShamirShare attemptShareUpdate(final ShamirShare share, final PrivateKey decryptionKey) {
+	public ShamirShare attemptShareUpdate(final ShamirShare share, final PrivateKey decryptionKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 		if (this.currentState == States.PROCESSED_REBUTTALS) {
 
 			// Filter all remaining messages based on our updated accusations

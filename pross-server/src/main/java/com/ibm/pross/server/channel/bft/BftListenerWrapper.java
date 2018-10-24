@@ -15,6 +15,11 @@ limitations under the License.
 */
 package com.ibm.pross.server.channel.bft;
 
+import java.io.IOException;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+
 import com.ibm.pross.server.channel.ChannelListener;
 
 import bftsmart.tom.MessageContext;
@@ -54,7 +59,12 @@ public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFO
 	
 	@Override
 	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
-		this.listener.receiveSerializedMessage(command);
+		try {
+			this.listener.receiveSerializedMessage(command);
+		} catch (ClassNotFoundException | BadPaddingException | IllegalBlockSizeException | IOException e) {
+			e.printStackTrace();
+			return null;
+		}
 		return command;
 	}
 

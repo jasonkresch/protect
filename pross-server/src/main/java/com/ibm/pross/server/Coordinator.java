@@ -6,12 +6,16 @@
 
 package com.ibm.pross.server;
 
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.security.Security;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicLong;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -44,8 +48,12 @@ public class Coordinator {
 	 * At the end, all properly behaving shareholders are initialized with a
 	 * share of the secret and knowledge of all other shareholder's share public
 	 * keys, as well as the public key y corresponding to the secret x.
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws BadPaddingException 
 	 */
-	public void performDistributedKeyGeneration() {
+	public void performDistributedKeyGeneration() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Begin
 
@@ -221,10 +229,14 @@ public class Coordinator {
 
 	/**
 	 * From section 4.3 of PROSS paper
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws BadPaddingException 
 	 * 
 	 * @throws Exception
 	 */
-	private void reconstructAll() {
+	private void reconstructAll() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Reconstruction
 
@@ -291,10 +303,14 @@ public class Coordinator {
 
 	/**
 	 * From section 3.2 of PROSS paper
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws BadPaddingException 
 	 * 
 	 * @throws Exception
 	 */
-	protected void refreshAllShares() {
+	protected void refreshAllShares() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Begin new time period
 		this.clock.advanceTime();

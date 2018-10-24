@@ -6,6 +6,7 @@
 
 package com.ibm.pross.server.shareholder;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.KeyPair;
 import java.security.PublicKey;
@@ -16,6 +17,9 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.PseudoRandomFunction;
@@ -149,11 +153,15 @@ public class Shareholder implements PseudoRandomFunction, ChannelListener {
 	 * Processes a message from a channel we have registered with
 	 * 
 	 * @param message
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws BadPaddingException 
 	 * 
 	 * @see ChannelListener
 	 */
 	@Override
-	public void receiveSerializedMessage(final byte[] serializedMessage) {
+	public void receiveSerializedMessage(final byte[] serializedMessage) throws ClassNotFoundException, IOException, BadPaddingException, IllegalBlockSizeException {
 		SignedMessage signedMessage = (SignedMessage) Serialization.deserialize(serializedMessage);
 		this.process(signedMessage);
 	}
@@ -172,8 +180,12 @@ public class Shareholder implements PseudoRandomFunction, ChannelListener {
 	 * Process a signed message received from a channel we have registered with
 	 * 
 	 * @param message
+	 * @throws IOException 
+	 * @throws ClassNotFoundException 
+	 * @throws IllegalBlockSizeException 
+	 * @throws BadPaddingException 
 	 */
-	protected void process(final SignedMessage signedMessage) {
+	protected void process(final SignedMessage signedMessage) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Get the message
 		final Message message = signedMessage.getMessage();
@@ -454,7 +466,7 @@ public class Shareholder implements PseudoRandomFunction, ChannelListener {
 	}
 
 	// Step 7 of refresh
-	public boolean attemptShareUpdate() {
+	public boolean attemptShareUpdate() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 		// Get existing state that track this operation's phases
 		final long currentTime = this.clock.getTime();
 		final RefreshStateTracker stateTracker = this.refreshStates.get(currentTime);
@@ -587,7 +599,7 @@ public class Shareholder implements PseudoRandomFunction, ChannelListener {
 	}
 
 	// step 7 of refresh
-	public void attemptCreateAndSendShareUpdate() {
+	public void attemptCreateAndSendShareUpdate() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 		// Get existing state that track this operation's phases
 		final long currentTime = this.clock.getTime();
 		final ReconstructionStateTracker stateTracker = this.reconstructionStates.get(currentTime);
@@ -703,7 +715,7 @@ public class Shareholder implements PseudoRandomFunction, ChannelListener {
 	}
 
 	// Step 7 of generation
-	public boolean attemptShareGeneration() {
+	public boolean attemptShareGeneration() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Get our share
 		final ShamirShare generatedShare = this.generationState

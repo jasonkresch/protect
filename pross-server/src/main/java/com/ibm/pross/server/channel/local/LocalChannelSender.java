@@ -1,6 +1,10 @@
 package com.ibm.pross.server.channel.local;
 
+import java.io.IOException;
 import java.util.List;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.server.channel.ChannelListener;
@@ -29,7 +33,11 @@ public class LocalChannelSender implements ChannelSender {
 			byte[] serializedMessage = Serialization.serializeClass(message);
 	
 			for (final ChannelListener listener : this.registeredListeners) {
-				listener.receiveSerializedMessage(serializedMessage);
+				try {
+					listener.receiveSerializedMessage(serializedMessage);
+				} catch (ClassNotFoundException | BadPaddingException | IllegalBlockSizeException | IOException e) {
+					e.printStackTrace();
+				}
 			}
 		}
 

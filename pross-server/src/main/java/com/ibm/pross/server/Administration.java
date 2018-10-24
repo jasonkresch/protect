@@ -6,6 +6,7 @@
 
 package com.ibm.pross.server;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PublicKey;
 import java.security.Security;
@@ -13,6 +14,9 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
@@ -92,7 +96,7 @@ public class Administration {
 	private final List<PublicKey> shareholderEncryptionKeys = new ArrayList<>();
 	private final List<PublicKey> shareholderVerifyingKeys = new ArrayList<>();
 
-	public Administration(int n, int threshold, int updateThreshold, boolean useBftChannel) {
+	public Administration(int n, int threshold, int updateThreshold, boolean useBftChannel) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Set threshold parameters
 		this.configuration = new Configuration(n, threshold, updateThreshold);

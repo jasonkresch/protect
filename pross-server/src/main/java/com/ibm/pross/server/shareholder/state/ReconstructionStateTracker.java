@@ -6,6 +6,7 @@
 
 package com.ibm.pross.server.shareholder.state;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.security.PrivateKey;
 import java.util.Arrays;
@@ -16,6 +17,9 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
+
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
@@ -318,7 +322,7 @@ public class ReconstructionStateTracker {
 
 	}
 
-	public synchronized void attemptCreateAndSendShareUpdate(final ShamirShare share, final PrivateKey decryptionKey) {
+	public synchronized void attemptCreateAndSendShareUpdate(final ShamirShare share, final PrivateKey decryptionKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 		if (this.currentState == States.PROCESSED_REBUTTALS) {
 
 			for (final ReconstructShareStateTracker reconstructShareState : this.reconstructionStates.values()) {

@@ -1,5 +1,6 @@
 package com.ibm.pross.server.dkgnew;
 
+import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.KeyPair;
@@ -16,6 +17,11 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.crypto.BadPaddingException;
+import javax.crypto.IllegalBlockSizeException;
+
+import org.bouncycastle.crypto.InvalidCipherTextException;
+
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.EcKeyGeneration;
@@ -24,6 +30,16 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
+import com.ibm.pross.server.dkgnew.exceptions.BadRebuttalException;
+import com.ibm.pross.server.dkgnew.exceptions.DuplicateMessageReceivedException;
+import com.ibm.pross.server.dkgnew.exceptions.ErrorConditionException;
+import com.ibm.pross.server.dkgnew.exceptions.InconsistentShareException;
+import com.ibm.pross.server.dkgnew.exceptions.InvalidBulkProofException;
+import com.ibm.pross.server.dkgnew.exceptions.InvalidCiphertextException;
+import com.ibm.pross.server.dkgnew.exceptions.InvalidVerificationVectorException;
+import com.ibm.pross.server.dkgnew.exceptions.InvalidZeroKnowledgeProofException;
+import com.ibm.pross.server.dkgnew.exceptions.StateViolationException;
+import com.ibm.pross.server.dkgnew.exceptions.UnrecognizedMessageTypeException;
 import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
@@ -43,7 +59,10 @@ class DkgNewShareholder {
 	// The set of peer shareholders (we need them for their public encryption keys)
 	private final List<DkgNewShareholder> shareholders;
 
-	// Channel related variables
+	// Error log (useful for testing and for identifying problem shareholders)
+	protected final AlertLog alertLog = new AlertLog();
+
+	// Channel-related variables
 	private final FifoAtomicBroadcastChannel channel;
 	private final AtomicInteger currentMessageId = new AtomicInteger(0);
 
@@ -183,7 +202,7 @@ class DkgNewShareholder {
 
 			@Override
 			public void run() {
-				while (DkgNewShareholder.this.stopped.get() == false) {
+				while (!DkgNewShareholder.this.stopped.get()) {
 					try {
 						synchronized (DkgNewShareholder.this.channel) {
 							DkgNewShareholder.this.channel.wait(1000);
@@ -212,6 +231,8 @@ class DkgNewShareholder {
 	/**
 	 * Deliver a message received on the FIFO-AB channel to the correct method
 	 * 
+	 * If any error condition occurs, an entry will be added to the alert log
+	 * 
 	 * @param message
 	 */
 	private synchronized void deliver(final Message message) {
@@ -223,24 +244,28 @@ class DkgNewShareholder {
 			opcode = ((PublicMessage) message).getPayload().getOpcode();
 		}
 
-		switch (opcode) {
-		case MS:
-			deliverShareContributions((SemiPrivateMessage) message);
-			break;
-		case VV:
-			deliverVerificationtMessage((PublicMessage) message);
-			break;
-		case RB:
-			deliverRebuttalMessage((PublicMessage) message);
-			break;
-		case ZK:
-			deliverProofMessage((PublicMessage) message);
-			break;
-		case BP:
-			deliverBulkProofsMessage((PublicMessage) message);
-			break;
-		default:
-			break;
+		try {
+			switch (opcode) {
+			case MS:
+				deliverShareContributions((SemiPrivateMessage) message);
+				break;
+			case VV:
+				deliverVerificationtMessage((PublicMessage) message);
+				break;
+			case RB:
+				deliverRebuttalMessage((PublicMessage) message);
+				break;
+			case ZK:
+				deliverProofMessage((PublicMessage) message);
+				break;
+			case BP:
+				deliverBulkProofsMessage((PublicMessage) message);
+				break;
+			default:
+				throw new UnrecognizedMessageTypeException();
+			}
+		} catch (final ErrorConditionException e) {
+			this.alertLog.reportError(this.index, message.getSenderIndex(), e.getErrorCondition());
 		}
 	}
 
@@ -293,19 +318,29 @@ class DkgNewShareholder {
 	 * Process Share Contributions and update verification vector
 	 * 
 	 * @param message
+	 * @throws DuplicateMessageReceivedException
+	 * @throws InvalidCipherTextException
+	 * @throws InconsistentShareException
 	 */
-	protected synchronized void deliverShareContributions(final SemiPrivateMessage message) {
+	protected synchronized void deliverShareContributions(final SemiPrivateMessage message)
+			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException {
 
 		final int senderIndex = message.getSenderIndex();
 		if (this.ourVerificationValues[senderIndex] != null) {
-			// We have already received a message for this sender
-			return;
+			throw new DuplicateMessageReceivedException("duplicate share contribution");
 		}
 
 		// Extract the public and private portions of the payloads
 		final EncryptedPayload encryptedContent = ((SemiPrivateMessage) message).getEncryptedPayload(this.index);
-		final Payload privatePayload = EciesEncryption.decryptPayload(encryptedContent,
-				this.encryptionKeyPair.getPrivate());
+		if (encryptedContent == null) {
+			throw new InvalidCiphertextException("no share contribution provided");
+		}
+		final Payload privatePayload;
+		try {
+			privatePayload = EciesEncryption.decryptPayload(encryptedContent, this.encryptionKeyPair.getPrivate());
+		} catch (BadPaddingException | IllegalBlockSizeException | ClassNotFoundException | IOException e) {
+			throw new InvalidCiphertextException("bad share contribution", e);
+		}
 		final Payload publicPayload = ((SemiPrivateMessage) message).getPublicPayload();
 
 		// Get parameters from message
@@ -328,9 +363,10 @@ class DkgNewShareholder {
 
 		} else {
 			// Someone sent us something incorrect, they will be reported
+			throw new InconsistentShareException();
 		}
 	}
-	
+
 	/**
 	 * Verify that a contribution to our share is consistent with the published
 	 * Pedersen commitments
@@ -344,13 +380,37 @@ class DkgNewShareholder {
 	private boolean verifyShareConsistency(final int recipientIndex, final ShamirShare share1, final ShamirShare share2,
 			final EcPoint[] commitment) {
 
+		// Verify commitment values have a correct size
+		if (commitment.length != this.k) {
+			return false;
+		}
+
+		// Check that each point is on the curve and is not a point at infinity or has a
+		// null x coordinate
+		for (EcPoint point : commitment) {
+			if ((!curve.isPointOnCurve(point)) || (EcPoint.pointAtInfinity.equals(point)) || (point.getX() == null)) {
+				return false;
+			}
+		}
+
+		// Ensure that share index is correct
+		final BigInteger j = BigInteger.valueOf(recipientIndex + 1);
+		if ((!share1.getX().equals(j)) || (!share2.getX().equals(j))) {
+			return false;
+		}
+
+		// Ensure that share y value is in correct range of 0 to R-1
+		if ((!share1.getY().equals(share1.getY().mod(curve.getR())))
+				|| (!share2.getY().equals(share2.getY().mod(curve.getR())))) {
+			return false;
+		}
+
 		// Expected value (g^s * h^s')
 		final EcPoint Gs1 = curve.multiply(g, share1.getY());
 		final EcPoint Hs2 = curve.multiply(h, share2.getY());
 		final EcPoint expected = curve.addPoints(Gs1, Hs2);
 
 		// Verify consistency against public commitment
-		final BigInteger j = BigInteger.valueOf(recipientIndex + 1);
 		EcPoint sum = EcPoint.pointAtInfinity;
 		for (int i = 0; i < this.k; i++) {
 			final EcPoint term = curve.multiply(commitment[i], j.pow(i));
@@ -361,7 +421,7 @@ class DkgNewShareholder {
 	}
 
 	/**
-	 * Create and broadcast verfication vector to all other shareholders
+	 * Create and broadcast verification vector to all other shareholders
 	 */
 	private void broadcastVerificationVector() {
 		final Verification payload = new Verification(this.ourVerificationValues);
@@ -374,14 +434,21 @@ class DkgNewShareholder {
 	 * build the QUAL set
 	 * 
 	 * @param message
+	 * @throws DuplicateMessageReceivedException
+	 * @throws InvalidVerificationVectorException
 	 */
-	protected synchronized void deliverVerificationtMessage(final PublicMessage message) {
+	protected synchronized void deliverVerificationtMessage(final PublicMessage message)
+			throws DuplicateMessageReceivedException, InvalidVerificationVectorException {
 
 		final int senderIndex = message.getSenderIndex();
 
 		if (this.receivedVerifications[senderIndex] == null) {
 			// Save received verification
 			final Boolean[] receivedVerificationVector = ((Verification) message.getPayload()).getVerificationVector();
+			if (receivedVerificationVector.length != this.n) {
+				throw new InvalidVerificationVectorException();
+			}
+
 			this.receivedVerifications[senderIndex] = receivedVerificationVector;
 
 			// Check if we have received an accusation
@@ -397,7 +464,7 @@ class DkgNewShareholder {
 			buildQualSet();
 
 		} else {
-			// Ignore duplicate messages from same sender
+			throw new DuplicateMessageReceivedException("duplicate verification vector");
 		}
 	}
 
@@ -405,8 +472,11 @@ class DkgNewShareholder {
 	 * Process a rebuttal
 	 * 
 	 * @param message
+	 * @throws InconsistentShareException
+	 * @throws BadPaddingException
 	 */
-	protected synchronized void deliverRebuttalMessage(final PublicMessage message) {
+	protected synchronized void deliverRebuttalMessage(final PublicMessage message)
+			throws InconsistentShareException, BadRebuttalException {
 
 		// The accused sent the rebuttal
 		final int accusedIndex = message.getSenderIndex();
@@ -415,36 +485,51 @@ class DkgNewShareholder {
 		final Rebuttal rebuttal = ((Rebuttal) (((PublicMessage) message).getPayload()));
 		final int accuserIndex = rebuttal.getAccuserIndex();
 
+		if (accuserIndex < 0 || accuserIndex > this.n) {
+			throw new BadRebuttalException("invalid accuser index");
+		}
+
 		if (this.receivedVerifications[accuserIndex] != null) {
 
 			// Load received verification
 			final Boolean[] receivedVerificationVector = this.receivedVerifications[accuserIndex];
 
-			if (this.receivedCommitments[accusedIndex] != null) {
+			if (receivedVerificationVector[accusedIndex].equals(Boolean.FALSE)) {
 
-				// Loaded received commitments
-				final EcPoint[] commitments = this.receivedCommitments[accusedIndex];
+				if (this.receivedCommitments[accusedIndex] != null) {
 
-				final ShamirShare share1 = rebuttal.getShare1();
-				final ShamirShare share2 = rebuttal.getShare2();
+					// Loaded received commitments
+					final EcPoint[] commitments = this.receivedCommitments[accusedIndex];
 
-				// Test if the received share is valid
-				if (verifyShareConsistency(accuserIndex, share1, share2, commitments)) {
-					// If we made accusation, and it is good, use the new result
-					if (accuserIndex == this.index) {
-						this.receivedShareContributions1[accusedIndex] = share1;
-						this.receivedShareContributions2[accusedIndex] = share2;
+					final ShamirShare share1 = rebuttal.getShare1();
+					final ShamirShare share2 = rebuttal.getShare2();
+
+					// Test if the received share is valid
+					if (verifyShareConsistency(accuserIndex, share1, share2, commitments)) {
+
+						// If we made accusation, and the rebuttal is good, use the new result
+						if (accuserIndex == this.index) {
+							this.receivedShareContributions1[accusedIndex] = share1;
+							this.receivedShareContributions2[accusedIndex] = share2;
+						}
+
+						// Update the table of received verifications
+						receivedVerificationVector[accusedIndex] = true;
+
+						buildQualSet();
+
+					} else {
+						// Rebuttal is not valid, ignore it
+						throw new InconsistentShareException("Rebuttal failed share consistency checks");
 					}
-
-					// Also, update the table of received verifications
-					receivedVerificationVector[accusedIndex] = true;
-
-					buildQualSet();
-
 				} else {
-					// Rebuttal is not valid, ignore it
+					throw new BadRebuttalException("rebuttal received without any accusation");
 				}
+			} else {
+				throw new BadRebuttalException("rebuttal received before any commitments made by accused");
 			}
+		} else {
+			throw new BadRebuttalException("rebuttal received before any accusation made");
 		}
 	}
 
@@ -453,12 +538,11 @@ class DkgNewShareholder {
 	 */
 	private synchronized void buildQualSet() {
 
-		if (isQualSetDefined) {
+		if (this.isQualSetDefined) {
 			return;
 		}
 
 		final SortedSet<Integer> qual = new TreeSet<>();
-
 		for (int j = 0; j < n; j++) {
 			int successes = 0;
 			for (int i = 0; i < n; i++) {
@@ -477,7 +561,7 @@ class DkgNewShareholder {
 
 				this.qualSet = Collections.unmodifiableSortedSet(qual);
 
-				// We have determined qual, build a share:
+				// We have determined qual, build our share of the secret
 				BigInteger share1Y = BigInteger.ZERO;
 				BigInteger share2Y = BigInteger.ZERO;
 
@@ -494,7 +578,7 @@ class DkgNewShareholder {
 					broadcastZkp();
 				}
 
-				isQualSetDefined = true;
+				this.isQualSetDefined = true;
 				break;
 			}
 		}
@@ -518,12 +602,12 @@ class DkgNewShareholder {
 	 * public key y = g^x
 	 * 
 	 * @param message
+	 * @throws DuplicateMessageReceivedException
+	 * @throws StateViolationException
+	 * @throws InvalidZeroKnowledgeProofException
 	 */
-	protected synchronized void deliverProofMessage(final PublicMessage message) {
-
-		// TODO: For all the non-expected cases, go into an "alert" method to flag the
-		// unexpected/erroneous behavior. E.g. someone sent message at wrong time, or
-		// who shouldn't have, or sent a wrong value.
+	protected synchronized void deliverProofMessage(final PublicMessage message)
+			throws DuplicateMessageReceivedException, StateViolationException, InvalidZeroKnowledgeProofException {
 
 		// Get the sender index
 		final int senderIndex = message.getSenderIndex();
@@ -552,12 +636,18 @@ class DkgNewShareholder {
 							rSet.addAll(R);
 							broadcastBulkProofs();
 						}
-
 					} else {
 						// Proof failed
+						throw new InvalidZeroKnowledgeProofException("bad ZKP from memeber of QUAL");
 					}
+				} else {
+					throw new DuplicateMessageReceivedException("duplicate ZKP received");
 				}
+			} else {
+				throw new StateViolationException("ZKP sent by someone without commitments");
 			}
+		} else {
+			throw new StateViolationException("ZKP sent by someone not in QUAL");
 		}
 	}
 
@@ -567,7 +657,7 @@ class DkgNewShareholder {
 	private void broadcastBulkProofs() {
 
 		// Generate proofs of knowledge for each in R
-		SortedMap<Integer, ZeroKnowledgeProof> proofs = new TreeMap<>();
+		final SortedMap<Integer, ZeroKnowledgeProof> proofs = new TreeMap<>();
 		for (final Integer i : this.rSet) {
 			final BigInteger s1 = this.receivedShareContributions1[i].getY();
 			final BigInteger s2 = this.receivedShareContributions2[i].getY();
@@ -581,58 +671,71 @@ class DkgNewShareholder {
 	}
 
 	/**
-	 * Process a bulk proof message
+	 * Process a bulk proof message, with goal of building the public key of the
+	 * secret
 	 * 
 	 * @param message
+	 * @throws StateViolationException
+	 * @throws InvalidBulkProofException
 	 */
-	protected synchronized void deliverBulkProofsMessage(final PublicMessage message) {
+	protected synchronized void deliverBulkProofsMessage(final PublicMessage message)
+			throws StateViolationException, InvalidBulkProofException {
 
-		// Get the sender index
-		final int j = message.getSenderIndex();
+		if (this.secretPublicKey == null) {
 
-		// Ensure we received a valid set of commitments from this sender
-		if (this.receivedCommitments[j] != null) {
+			// Get the sender index
+			final int j = message.getSenderIndex();
 
-			// The accuser is indicated in the rebuttal message
-			final ZkpBulkPayload bulkProofs = ((ZkpBulkPayload) (((PublicMessage) message).getPayload()));
+			// Ensure we received a valid set of commitments from this sender
+			if (this.receivedCommitments[j] != null) {
 
-			SortedMap<Integer, ZeroKnowledgeProof> proofs = bulkProofs.getProofs();
+				// The accuser is indicated in the rebuttal message
+				final ZkpBulkPayload bulkProofs = ((ZkpBulkPayload) (((PublicMessage) message).getPayload()));
 
-			// Ensure their set of R matches ours
-			if (proofs.keySet().equals(this.rSet)) {
+				final SortedMap<Integer, ZeroKnowledgeProof> proofs = bulkProofs.getProofs();
 
-				// Verify each proof
-				for (final Entry<Integer, ZeroKnowledgeProof> entry : proofs.entrySet()) {
+				// Ensure their set of R matches ours
+				if (proofs.keySet().equals(this.rSet)) {
 
-					final int i = entry.getKey();
-					final ZeroKnowledgeProof proof = entry.getValue();
+					// Verify each proof
+					for (final Entry<Integer, ZeroKnowledgeProof> entry : proofs.entrySet()) {
 
-					// Expected public key from committed feldman values
-					final EcPoint Dji = Shamir.computeSharePublicKey(this.receivedCommitments[i], j + 1);
+						final int i = entry.getKey();
+						final ZeroKnowledgeProof proof = entry.getValue();
 
-					// Verify proof
-					if (!ZeroKnowledgeProver.verifyProof(Dji, proof)) {
-						return; // Ignore this shareholder, his proof doesn't check out
+						// Expected public key from committed feldman values
+						final EcPoint Dji = Shamir.computeSharePublicKey(this.receivedCommitments[i], j + 1);
+
+						// Verify proof
+						if (!ZeroKnowledgeProver.verifyProof(Dji, proof)) {
+							// Ignore this shareholder, his proof doesn't check out
+							throw new InvalidBulkProofException("bad proof of committed value");
+						}
 					}
-				}
 
-				// Store proofs
-				for (final Entry<Integer, ZeroKnowledgeProof> entry : proofs.entrySet()) {
-					final int i = entry.getKey();
-					final ZeroKnowledgeProof proof = entry.getValue();
-					this.receivedProvenGs[i][j] = proof.getA0();
-				}
+					// Store proofs (but only if all of them have been validated)
+					for (final Entry<Integer, ZeroKnowledgeProof> entry : proofs.entrySet()) {
+						final int i = entry.getKey();
+						final ZeroKnowledgeProof proof = entry.getValue();
+						this.receivedProvenGs[i][j] = proof.getA0();
+					}
 
-				// Add sender to set j
-				uSet.add(j);
+					// Add sender to set j
+					uSet.add(j);
 
-				// Once there is a reconstruction threshold, we can solve for the public key
-				if (uSet.size() == this.k) {
-					solvePublicKey();
+					// Once there is a reconstruction threshold, we can solve for the public key
+					if (uSet.size() == this.k) {
+						solvePublicKey();
+					}
+				} else {
+					throw new InvalidBulkProofException("inconsistent set R");
 				}
+			} else {
+				throw new StateViolationException("Bulk ZKP sent by someone without commitments");
 			}
-
-			// Attempt key recovery
+		} else {
+			// We already built the public key, ignore this message
+			// TODO: In the future, extend to alert on duplicate bulk proof messages
 		}
 	}
 
@@ -641,7 +744,7 @@ class DkgNewShareholder {
 	 * where y = g^x This is done by interpolating each of the values y_i = g^x_i,
 	 * and then summing the g^x_i for all i in Qual
 	 */
-	private void solvePublicKey() {
+	private synchronized void solvePublicKey() {
 
 		// Use interpolation of the K published values in set U to recover the public
 		// keys.
@@ -668,6 +771,15 @@ class DkgNewShareholder {
 	}
 
 	/**
+	 * Returns the unique index of this shareholder
+	 * 
+	 * @return
+	 */
+	public int getIndex() {
+		return this.index;
+	}
+
+	/**
 	 * Returns the public encryption key for this shareholder which can be used by
 	 * others to send confidential messages to this shareholder
 	 * 
@@ -680,6 +792,10 @@ class DkgNewShareholder {
 	/**
 	 * Returns the public key of the secret: y = g^x
 	 * 
+	 * This method will return null if called before completion of the DKG protocol
+	 * 
+	 * @see waitForPublicKeys()
+	 * 
 	 * @return
 	 */
 	public EcPoint getSecretPublicKey() {
@@ -689,12 +805,21 @@ class DkgNewShareholder {
 	/**
 	 * Returns the public key of the share for this shareholder: y_i = g^x_i
 	 * 
+	 * This method will return null if called before DKG protocol has built the qual
+	 * set
+	 * 
+	 * @see waitForQual();
+	 * 
 	 * @return
 	 */
 	public EcPoint getSharePublicKey() {
-		// Sanity check
-		return curve.multiply(g, this.share1.getY());
-		// return getSharePublicKey(this.index);
+		if (this.share1 != null) {
+			// Sanity check
+			return curve.multiply(g, this.share1.getY());
+			// return getSharePublicKey(this.index);
+		} else {
+			return null;
+		}
 	}
 
 	public EcPoint getSharePublicKey(final int index) {
@@ -760,5 +885,8 @@ class DkgNewShareholder {
 			}
 		}
 	}
+
+	// TODO: Catch all instances of casting (check instance of) or catch
+	// ClassCastException
 
 }

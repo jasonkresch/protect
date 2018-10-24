@@ -2,9 +2,11 @@ package com.ibm.pross.server.dkgnew;
 
 import java.math.BigInteger;
 import java.security.Security;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -16,6 +18,7 @@ import org.junit.Test;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.ShamirShare;
+import com.ibm.pross.server.dkgnew.AlertLog.ErrorCondition;
 
 public class DkgNewTest {
 
@@ -24,6 +27,20 @@ public class DkgNewTest {
 		Security.addProvider(new BouncyCastleProvider());
 	}
 
+	private static void printErrors(final List<DkgNewShareholder> shareholders)
+	{
+		for (DkgNewShareholder shareholder : shareholders)
+		{
+			System.out.println("Errors reported by shareholder with index = " + shareholder.getIndex() + ":");
+			for (Entry<SimpleEntry<Integer, Integer>, ErrorCondition> alert : shareholder.alertLog.getAlerts().entrySet())
+			{
+				int reportedShareholder = alert.getKey().getValue();
+				ErrorCondition error = alert.getValue();
+				System.out.println("   Shareholder[" + reportedShareholder + "] committed a " + error + " error");
+			}
+		}
+	}
+	
 	@Test
 	public void testPedersenValidationAllGood() throws InterruptedException {
 
@@ -97,8 +114,10 @@ public class DkgNewTest {
 		
 		// Stop shareholder threads
 		for (int i = 0; i < n; i++) {
-			//shareholders.get(i).stop();
+			shareholders.get(i).stop();
 		}
+		
+		printErrors(shareholders);
 	}
 
 	@Test
@@ -176,6 +195,8 @@ public class DkgNewTest {
 		for (int i = 0; i < n; i++) {
 			shareholders.get(i).stop();
 		}
+		
+		printErrors(shareholders);
 	}
 
 	@Test
@@ -260,6 +281,7 @@ public class DkgNewTest {
 			shareholders.get(i).stop();
 		}
 
+		printErrors(shareholders);
 	}
 
 	// TODO: Test a valid rebuttal being sent to get back into the qual set
