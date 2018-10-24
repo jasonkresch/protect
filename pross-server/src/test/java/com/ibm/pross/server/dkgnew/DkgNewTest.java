@@ -6,7 +6,6 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map.Entry;
 import java.util.Set;
 import java.util.SortedSet;
 
@@ -32,9 +31,9 @@ public class DkgNewTest {
 		for (DkgNewShareholder shareholder : shareholders)
 		{
 			System.out.println("Errors reported by shareholder with index = " + shareholder.getIndex() + ":");
-			for (Entry<SimpleEntry<Integer, Integer>, ErrorCondition> alert : shareholder.alertLog.getAlerts().entrySet())
+			for (SimpleEntry<Integer, ErrorCondition> alert : shareholder.alertLog.getAlerts())
 			{
-				int reportedShareholder = alert.getKey().getValue();
+				int reportedShareholder = alert.getKey();
 				ErrorCondition error = alert.getValue();
 				System.out.println("   Shareholder[" + reportedShareholder + "] committed a " + error + " error");
 			}
