@@ -20,8 +20,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
-import org.bouncycastle.crypto.InvalidCipherTextException;
-
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.EcKeyGeneration;
@@ -181,9 +179,7 @@ class DkgNewShareholder {
 		this.receivedProvenGs = new EcPoint[n][n];
 		// this.sharePublicKeys = new EcPoint[n];
 
-		// Start the shareholder (await and process messages)
-		this.messageProcessingThread = startMainLoop();
-		this.messageProcessingThread.start();
+		this.messageProcessingThread = createMessageProcessingThread(this.channel);
 	}
 
 	private static void verifyConstraints(final int n, final int k, final int f) {
@@ -196,23 +192,24 @@ class DkgNewShareholder {
 		}
 	}
 
-	public Thread startMainLoop() {
+	public Thread createMessageProcessingThread(final FifoAtomicBroadcastChannel channel) {
 
 		return new Thread(new Runnable() {
 
 			@Override
 			public void run() {
 				while (!DkgNewShareholder.this.stopped.get()) {
+
+					while (channel.getMessageCount() > DkgNewShareholder.this.currentMessageId.get()) {
+						messageIsAvailable();
+					}
+
 					try {
-						synchronized (DkgNewShareholder.this.channel) {
-							DkgNewShareholder.this.channel.wait(1000);
+						synchronized (channel) {
+							channel.wait(1000);
 						}
 					} catch (InterruptedException e) {
 						// Ignore
-					}
-					while (DkgNewShareholder.this.channel.getMessageSize() > DkgNewShareholder.this.currentMessageId
-							.get()) {
-						messageIsAvailable();
 					}
 				}
 			}
@@ -269,19 +266,32 @@ class DkgNewShareholder {
 		}
 	}
 
+	public void start(boolean sendContributions) {
+		if (this.stopped.compareAndSet(false, false)) {
+			if (sendContributions) {
+				// First broadcast our commitment and share contributions to the channel
+				broadcastShareContribtions();
+			}
+			
+			// Start the shareholder (await and process messages)
+			this.messageProcessingThread.start();
+		}
+	}
+
 	public void stop() {
 
-		this.stopped.set(true);
+		if (this.stopped.compareAndSet(false, true)) {
 
-		// Wake the sleeping threads
-		synchronized (this.channel) {
-			this.channel.notifyAll();
-		}
+			// Wake the sleeping threads
+			synchronized (this.channel) {
+				this.channel.notifyAll();
+			}
 
-		try {
-			this.messageProcessingThread.join();
-		} catch (InterruptedException e) {
-			// Interrupted
+			try {
+				this.messageProcessingThread.join();
+			} catch (InterruptedException e) {
+				// Interrupted
+			}
 		}
 	}
 
@@ -290,7 +300,7 @@ class DkgNewShareholder {
 	 * encrypted to each peer shareholder) and our public Pedersen commitments. This
 	 * will start the DKG-NEW protocol, and it will be driven to completion.
 	 */
-	public void broadcastShareContribtions() {
+	private void broadcastShareContribtions() {
 
 		// Create map for storing encrypted payloads
 		final NavigableMap<Integer, EncryptedPayload> encryptedPayloads = new TreeMap<>();
@@ -319,7 +329,7 @@ class DkgNewShareholder {
 	 * 
 	 * @param message
 	 * @throws DuplicateMessageReceivedException
-	 * @throws InvalidCipherTextException
+	 * @throws InvalidCiphertextException
 	 * @throws InconsistentShareException
 	 */
 	protected synchronized void deliverShareContributions(final SemiPrivateMessage message)

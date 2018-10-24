@@ -8,12 +8,8 @@ import com.ibm.pross.server.messages.Message;
 
 public class FifoAtomicBroadcastChannel {
 
-	private final List<DkgNewShareholder> registeredShareholders = new ArrayList<>();
 	private final List<Message> messageLog = Collections.synchronizedList(new ArrayList<>());
-	
-	public synchronized void registerShareholder(final DkgNewShareholder shareholder) {
-		this.registeredShareholders.add(shareholder);
-	}
+
 
 	public synchronized void broadcast(final Message message) {
 
@@ -27,7 +23,7 @@ public class FifoAtomicBroadcastChannel {
 		return messageLog.get(messageIndex);
 	}
 	
-	public int getMessageSize()
+	public int getMessageCount()
 	{
 		synchronized (this.messageLog)
 		{

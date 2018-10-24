@@ -57,12 +57,11 @@ public class DkgNewTest {
 		for (int i = 0; i < n; i++) {
 			final DkgNewShareholder shareholder = new DkgNewShareholder(shareholders, channel, i, n, k, f, true);
 			shareholders.add(shareholder);
-			channel.registerShareholder(shareholder);
 		}
 
 		// Broadcast messages
 		for (int i = 0; i < n; i++) {
-			shareholders.get(i).broadcastShareContribtions();
+			shareholders.get(i).start(true);
 		}
 
 		// Wait messages
@@ -136,12 +135,12 @@ public class DkgNewTest {
 		for (int i = 0; i < n; i++) {
 			final DkgNewShareholder shareholder = new DkgNewShareholder(shareholders, channel, i, n, k, f, true);
 			shareholders.add(shareholder);
-			channel.registerShareholder(shareholder);
 		}
 
 		// Broadcast messages
+		shareholders.get(0).start(false);
 		for (int i = 1; i < n; i++) {
-			shareholders.get(i).broadcastShareContribtions();
+			shareholders.get(i).start(true);
 		}
 
 		// Wait messages
@@ -215,18 +214,16 @@ public class DkgNewTest {
 		// Create bad shareholder
 		final DkgNewShareholder badShareholder = new DkgNewShareholder(shareholders, channel, 0, n, k, f, false);
 		shareholders.add(badShareholder);
-		channel.registerShareholder(badShareholder);
 
 		// Create good shareholders
 		for (int i = 1; i < n; i++) {
 			final DkgNewShareholder shareholder = new DkgNewShareholder(shareholders, channel, i, n, k, f, true);
 			shareholders.add(shareholder);
-			channel.registerShareholder(shareholder);
 		}
 
 		// Broadcast messages
 		for (DkgNewShareholder shareholder : shareholders) {
-			shareholder.broadcastShareContribtions();
+			shareholder.start(true);
 		}
 
 		// Wait messages
