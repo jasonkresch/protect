@@ -4,3 +4,6 @@
 target/
 .metadata/
 .recommenders
+*.tmp
+*.dat
+currentView
