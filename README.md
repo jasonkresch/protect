@@ -1,5 +1,5 @@
-# pross
-Proactive Secret Sharing and Distributed Key Generation
+# protect
+A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
