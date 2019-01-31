@@ -8,6 +8,7 @@ package com.ibm.pross.server.messages.payloads.reconstruction;
 
 import java.util.Set;
 import java.util.SortedSet;
+import java.util.UUID;
 
 import com.ibm.pross.server.messages.Payload;
 
@@ -15,6 +16,9 @@ public class ReconstructionAccusations implements Payload {
 
 	private static final long serialVersionUID = -8282949906116353394L;
 
+	// FIXME: Remove this when set hashcode and equality are fixed
+	private final UUID messageId = UUID.randomUUID();
+	
 	private final long updateTime;
 	private final int corruptShareholder;
 	private final SortedSet<Integer> accused;
@@ -48,5 +52,33 @@ public class ReconstructionAccusations implements Payload {
 		return "ReconstructionAccusations [updateTime=" + updateTime + ", corruptShareholder=" + corruptShareholder
 				+ ", accused=" + accused + "]";
 	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((messageId == null) ? 0 : messageId.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ReconstructionAccusations other = (ReconstructionAccusations) obj;
+		if (messageId == null) {
+			if (other.messageId != null)
+				return false;
+		} else if (!messageId.equals(other.messageId))
+			return false;
+		return true;
+	}
+
+
+	
 
 }

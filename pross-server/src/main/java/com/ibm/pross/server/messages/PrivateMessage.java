@@ -9,6 +9,8 @@ package com.ibm.pross.server.messages;
 import java.io.Serializable;
 import java.security.PublicKey;
 
+import com.ibm.pross.server.util.EciesEncryption;
+
 public class PrivateMessage implements Message, Serializable {
 
 	private static final long serialVersionUID = 7376913964960269028L;
@@ -66,4 +68,36 @@ public class PrivateMessage implements Message, Serializable {
 		return (index == this.recipientIndex);
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((encryptedPayload == null) ? 0 : encryptedPayload.hashCode());
+		result = prime * result + recipientIndex;
+		result = prime * result + senderIndex;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		PrivateMessage other = (PrivateMessage) obj;
+		if (encryptedPayload == null) {
+			if (other.encryptedPayload != null)
+				return false;
+		} else if (!encryptedPayload.equals(other.encryptedPayload))
+			return false;
+		if (recipientIndex != other.recipientIndex)
+			return false;
+		if (senderIndex != other.senderIndex)
+			return false;
+		return true;
+	}
+
+	
 }

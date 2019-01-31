@@ -44,7 +44,11 @@ public interface Payload extends Serializable {
 		VV, // Verification Vector
 		RB, // Rebuttal
 		ZK, // Zero Knowledge
-		BP; // Bulk Proofs
+		BP, // Bulk Proofs
+		
+		// AVSS
+		PS, // Public Sharing
+		BFT_CERTIFICATION; // Certification of message sent over BFT
 	}
 
 	public OpCode getOpcode();

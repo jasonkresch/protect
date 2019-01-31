@@ -8,12 +8,12 @@ package com.ibm.pross.common.util.shamir;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
+import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 
@@ -39,7 +39,7 @@ public class Polynomials {
 		BigInteger y = BigInteger.ZERO;
 		BigInteger exponent = BigInteger.ZERO;
 		for (int i = 0; i < coefficients.length; i++) {
-			BigInteger xTerm = x.modPow(exponent, m);
+			BigInteger xTerm = Exponentiation.modPow(x,  exponent,  m);
 			y = y.add(coefficients[i].multiply(xTerm));
 			exponent = exponent.add(BigInteger.ONE);
 		}

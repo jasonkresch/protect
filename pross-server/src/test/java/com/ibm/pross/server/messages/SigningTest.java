@@ -21,10 +21,10 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.server.messages.EcDsaSigning;
 import com.ibm.pross.server.messages.MessageSignature;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.payloads.refresh.RefreshAccusations;
+import com.ibm.pross.server.util.EcDsaSigning;
 
 public class SigningTest {
 

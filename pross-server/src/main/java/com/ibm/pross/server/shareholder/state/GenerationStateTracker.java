@@ -27,7 +27,6 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.channel.ChannelSender;
-import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
@@ -38,6 +37,7 @@ import com.ibm.pross.server.messages.payloads.dkg.GenerationAccusations;
 import com.ibm.pross.server.messages.payloads.dkg.GenerationRebuttal;
 import com.ibm.pross.server.messages.payloads.dkg.GenerationVssPublicPayload;
 import com.ibm.pross.server.shareholder.Shareholder;
+import com.ibm.pross.server.util.EciesEncryption;
 
 public class GenerationStateTracker {
 

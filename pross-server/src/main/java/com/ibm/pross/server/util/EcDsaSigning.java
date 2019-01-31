@@ -4,8 +4,9 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.server.messages;
+package com.ibm.pross.server.util;
 
+import java.io.Serializable;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
@@ -14,14 +15,20 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 
+import org.bouncycastle.crypto.signers.ECDSASigner;
+import org.bouncycastle.crypto.signers.HMacDSAKCalculator;
+
+import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.serialization.Serialization;
+import com.ibm.pross.server.messages.MessageSignature;
 
 public class EcDsaSigning {
 
 	// TODO: Look up how to do RSA-PSS, might need BouncyCastle
-	private final static String DEFAULT_ALGORITHM = "SHA256withECDSA";
+	private final static String DEFAULT_ALGORITHM = CommonConfiguration.SIGNATURE_ALGORITHM;
 
-	public static boolean verifySignature(final Message message, final MessageSignature signature,
+	public static boolean verifySignature(final Serializable message, final MessageSignature signature,
 			final PublicKey senderPublicKey) {
 
 		try {
@@ -43,8 +50,13 @@ public class EcDsaSigning {
 		}
 	}
 
-	public static MessageSignature createSignature(final Message message, final PrivateKey senderSigningKey) {
+	public static MessageSignature createSignature(final Serializable message, final PrivateKey senderSigningKey) {
 
+		// Generate signautres 
+		//HMacDSAKCalculator kCalculator = new HMacDSAKCalculator()
+		//ECDSASigner signer = new ECDSASigner(kCalculator);
+		
+		
 		try {
 			// Create signing context
 			final Signature signingContext = Signature.getInstance(DEFAULT_ALGORITHM, "BC");

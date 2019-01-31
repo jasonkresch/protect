@@ -4,7 +4,7 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.common.util.crypto;
+package com.ibm.pross.common.util.crypto.ecc;
 
 import java.math.BigInteger;
 import java.security.InvalidAlgorithmParameterException;
@@ -17,8 +17,6 @@ import java.security.spec.ECGenParameterSpec;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.util.crypto.ecc.EcCurve;
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 
 public class EcKeyGeneration {
 

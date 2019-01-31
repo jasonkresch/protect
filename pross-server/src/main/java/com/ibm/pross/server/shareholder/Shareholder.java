@@ -23,8 +23,8 @@ import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.PseudoRandomFunction;
-import com.ibm.pross.common.util.crypto.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
+import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.common.util.shamir.ShamirShare;
@@ -33,7 +33,6 @@ import com.ibm.pross.server.Clock;
 import com.ibm.pross.server.channel.AtomicBroadcastChannel;
 import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
-import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
@@ -55,6 +54,7 @@ import com.ibm.pross.server.shareholder.state.GenerationStateTracker;
 import com.ibm.pross.server.shareholder.state.ReconstructionStateTracker;
 import com.ibm.pross.server.shareholder.state.RefreshStateTracker;
 import com.ibm.pross.server.shareholder.state.RekeyingStateTracker;
+import com.ibm.pross.server.util.EciesEncryption;
 
 public class Shareholder implements PseudoRandomFunction, ChannelListener {
 

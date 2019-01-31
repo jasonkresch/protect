@@ -54,4 +54,37 @@ public class ReconstructionRebuttal implements Payload {
 				+ ", accuser=" + accuser + ", rebuttalEvidence=" + Arrays.toString(rebuttalEvidence) + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + accuser;
+		result = prime * result + corruptShareholder;
+		result = prime * result + Arrays.hashCode(rebuttalEvidence);
+		result = prime * result + (int) (updateTime ^ (updateTime >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ReconstructionRebuttal other = (ReconstructionRebuttal) obj;
+		if (accuser != other.accuser)
+			return false;
+		if (corruptShareholder != other.corruptShareholder)
+			return false;
+		if (!Arrays.equals(rebuttalEvidence, other.rebuttalEvidence))
+			return false;
+		if (updateTime != other.updateTime)
+			return false;
+		return true;
+	}
+
+	
+	
 }

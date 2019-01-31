@@ -15,7 +15,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import com.ibm.pross.common.util.crypto.EcKeyGeneration;
+import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.server.messages.payloads.rekey.DynamicRekey;
 import com.ibm.pross.server.shareholder.Shareholder;
 

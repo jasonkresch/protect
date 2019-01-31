@@ -7,6 +7,7 @@
 package com.ibm.pross.server.messages;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Represents the encryption of a content object
@@ -36,4 +37,34 @@ public class EncryptedPayload implements Serializable {
 		return encryptedBytes.clone();
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((algorithm == null) ? 0 : algorithm.hashCode());
+		result = prime * result + Arrays.hashCode(encryptedBytes);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		EncryptedPayload other = (EncryptedPayload) obj;
+		if (algorithm == null) {
+			if (other.algorithm != null)
+				return false;
+		} else if (!algorithm.equals(other.algorithm))
+			return false;
+		if (!Arrays.equals(encryptedBytes, other.encryptedBytes))
+			return false;
+		return true;
+	}
+
+	
+	
 }

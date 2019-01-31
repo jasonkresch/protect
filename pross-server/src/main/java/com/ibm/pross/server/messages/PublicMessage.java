@@ -49,4 +49,38 @@ public class PublicMessage implements Message, Serializable {
 		return true;
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((payload == null) ? 0 : payload.hashCode());
+		result = prime * result + senderIndex;
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		PublicMessage other = (PublicMessage) obj;
+		if (payload == null) {
+			if (other.payload != null)
+				return false;
+		} else if (!payload.equals(other.payload))
+			return false;
+		if (senderIndex != other.senderIndex)
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "PublicMessage [senderIndex=" + senderIndex + ", payload=" + payload + "]";
+	}
+
+	
 }

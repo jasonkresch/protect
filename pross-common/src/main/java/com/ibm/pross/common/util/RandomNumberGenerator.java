@@ -56,6 +56,23 @@ public class RandomNumberGenerator {
 	}
 
 	/**
+	 * Generates a cryptographically secure big integer chosen from the range (1 ..
+	 * m - 1) inclusive, which is guaranted to be co-prime with m. This is required
+	 * in some applications.
+	 * 
+	 * @param m
+	 * @return
+	 */
+	public static BigInteger generateRandomCoprimeInRange(final BigInteger m) {
+		while (true) {
+			final BigInteger x = RandomNumberGenerator.generateRandomPositiveInteger(m);
+			if (x.gcd(m).equals(BigInteger.ONE)) {
+				return x;
+			}
+		}
+	}
+
+	/**
 	 * Generates a cryptographically secure random byte array
 	 * 
 	 * @param bitLength
@@ -69,16 +86,14 @@ public class RandomNumberGenerator {
 	}
 
 	/**
-	 * Generates an array of big integer of the specified size and for the
-	 * specified range
+	 * Generates an array of big integer of the specified size and for the specified
+	 * range
 	 * 
 	 * @param size
 	 *            Size of the list to create
 	 * @param max
-	 *            Maximum range on the size of the randomly selected big
-	 *            integers
-	 * @return Array of big integers, each on the range of (0, max - 1),
-	 *         inclusive
+	 *            Maximum range on the size of the randomly selected big integers
+	 * @return Array of big integers, each on the range of (0, max - 1), inclusive
 	 */
 	public static BigInteger[] generateRandomArray(int size, BigInteger max) {
 		BigInteger list[] = new BigInteger[size];

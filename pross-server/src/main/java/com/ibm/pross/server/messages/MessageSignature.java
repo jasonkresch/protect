@@ -7,6 +7,7 @@
 package com.ibm.pross.server.messages;
 
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Represents the serialization of a digital signature which accompanies a
@@ -32,4 +33,35 @@ public class MessageSignature implements Serializable {
 		return signatureBytes;
 	}
 
+	@Override
+	public String toString() {
+		return "[MessageSignature]";
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((algorithm == null) ? 0 : algorithm.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		MessageSignature other = (MessageSignature) obj;
+		if (algorithm == null) {
+			if (other.algorithm != null)
+				return false;
+		} else if (!algorithm.equals(other.algorithm))
+			return false;
+		return true;
+	}
+
+	
 }

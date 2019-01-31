@@ -9,6 +9,7 @@ package com.ibm.pross.common.util.crypto.ecc;
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 
+import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 
 /**
@@ -51,17 +52,17 @@ public abstract class PointHasher {
 	}
 
 	/**
-	 * Determines if a is a quadratic residue modulo prime p, that is, is a =
-	 * x^2 mod p, for some x.
+	 * Determines if a is a quadratic residue modulo prime p, that is, is a = x^2
+	 * mod p, for some x.
 	 * 
-	 * This uses using Euler's criterion which states that a^((p-1)/2 = 1 mod p,
-	 * if a is a quadratic residue See also:
+	 * This uses using Euler's criterion which states that a^((p-1)/2 = 1 mod p, if
+	 * a is a quadratic residue See also:
 	 * https://en.wikipedia.org/wiki/Euler%27s_criterion
 	 *
 	 * @param a
 	 */
 	protected boolean isQuadraticResidue(BigInteger a) {
-		BigInteger result = a.modPow(this.quadResideTestExponent, this.curve.getP());
+		BigInteger result = Exponentiation.modPow(a, this.quadResideTestExponent, this.curve.getP());
 		return result.equals(BigInteger.ONE);
 	}
 
@@ -73,15 +74,14 @@ public abstract class PointHasher {
 	 * @param a
 	 */
 	protected BigInteger squareRoot(BigInteger a) {
-		return a.modPow(this.squareRootExponent, this.curve.getP());
+		return Exponentiation.modPow(a, this.squareRootExponent, this.curve.getP());
 	}
 
 	/**
 	 * Hashes to a point on the curve given a string
 	 * 
 	 * @param input
-	 *            Input used to deterministically map to a random point on the
-	 *            curve
+	 *            Input used to deterministically map to a random point on the curve
 	 * @return A point on the elliptic curve
 	 */
 	public EcPoint hashToCurve(final String input) {
@@ -92,8 +92,7 @@ public abstract class PointHasher {
 	 * Hashes to a point on the curve given a binary input
 	 * 
 	 * @param input
-	 *            Input used to deterministically map to a random point on the
-	 *            curve
+	 *            Input used to deterministically map to a random point on the curve
 	 * @param clientSecret
 	 *            An optional client-provided secret. If used, the same client
 	 *            secret must be supplied in the future.
@@ -107,8 +106,7 @@ public abstract class PointHasher {
 	 * Hashes to a point on the curve given a binary input
 	 * 
 	 * @param input
-	 *            Input used to deterministically map to a random point on the
-	 *            curve
+	 *            Input used to deterministically map to a random point on the curve
 	 * @return A point on the elliptic curve
 	 */
 	public EcPoint hashToCurve(final byte[] input) {
@@ -119,8 +117,7 @@ public abstract class PointHasher {
 	 * Hashes to a point on the curve given a binary input
 	 * 
 	 * @param input
-	 *            Input used to deterministically map to a random point on the
-	 *            curve
+	 *            Input used to deterministically map to a random point on the curve
 	 * @param clientSecret
 	 *            An optional client-provided secret. If used, the same client
 	 *            secret must be supplied in the future.
@@ -147,19 +144,18 @@ public abstract class PointHasher {
 		BigInteger iterationCounter = BigInteger.ONE;
 
 		// Use HKDF to derive a a random T value
-		
+
 		while (true) {
 			final byte[] tBytes = hkdf.createKey(iterationCounter.toByteArray(), bytesToGenerate);
 			final BigInteger t = (new BigInteger(1, tBytes)).shiftRight(extraBits);
-			
-			if (t.compareTo(p) < 0)
-			{
+
+			if (t.compareTo(p) < 0) {
 				return createPointFromInteger(t);
 			}
-			
+
 			// Note: it is exceedingly rare that we ever get to this point
 			iterationCounter = iterationCounter.add(BigInteger.ONE);
-		}	
+		}
 	}
 
 	/**

@@ -7,6 +7,7 @@
 package com.ibm.pross.common;
 
 import com.ibm.pross.common.util.crypto.ecc.EcCurveBc;
+import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 
 /**
@@ -35,4 +36,13 @@ public class CommonConfiguration {
 	// This implementation is significantly faster
 	public static final EcCurve CURVE = EcCurveBc.createByName(EcCurve.secp256r1.getName());
 
+	// Generators (from hashing)
+	public static final EcPoint g = CURVE.getPointHasher().hashToCurve(new byte[] { 0x01 });
+	public static final EcPoint h = CURVE.getPointHasher().hashToCurve(new byte[] { 0x02 });
+
+	// Default hash algorithm
+	public static final String HASH_ALGORITHM = "SHA-512";
+	
+	// Default signature algorithm
+	public final static String SIGNATURE_ALGORITHM = "SHA512withECDSA";
 }

@@ -41,4 +41,30 @@ public class RefreshVssPublicPayload implements Payload {
 		return "RefreshVssPublicPayload [updateTime=" + updateTime + ", feldmanValues=" + Arrays.toString(feldmanValues) + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + Arrays.hashCode(feldmanValues);
+		result = prime * result + (int) (updateTime ^ (updateTime >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		RefreshVssPublicPayload other = (RefreshVssPublicPayload) obj;
+		if (!Arrays.equals(feldmanValues, other.feldmanValues))
+			return false;
+		if (updateTime != other.updateTime)
+			return false;
+		return true;
+	}
+
+	
 }

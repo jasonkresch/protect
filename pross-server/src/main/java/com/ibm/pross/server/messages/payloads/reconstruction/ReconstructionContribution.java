@@ -39,4 +39,33 @@ public class ReconstructionContribution implements Payload {
 		return "ReconstructionContribution [updateTime=" + updateTime + ", shareUpdate=" + shareUpdate + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((shareUpdate == null) ? 0 : shareUpdate.hashCode());
+		result = prime * result + (int) (updateTime ^ (updateTime >>> 32));
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ReconstructionContribution other = (ReconstructionContribution) obj;
+		if (shareUpdate == null) {
+			if (other.shareUpdate != null)
+				return false;
+		} else if (!shareUpdate.equals(other.shareUpdate))
+			return false;
+		if (updateTime != other.updateTime)
+			return false;
+		return true;
+	}
+
+	
 }

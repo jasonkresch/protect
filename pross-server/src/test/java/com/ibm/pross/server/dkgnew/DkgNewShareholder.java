@@ -22,8 +22,8 @@ import javax.crypto.IllegalBlockSizeException;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
-import com.ibm.pross.common.util.crypto.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
+import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.Shamir;
@@ -38,11 +38,11 @@ import com.ibm.pross.server.dkgnew.exceptions.InvalidVerificationVectorException
 import com.ibm.pross.server.dkgnew.exceptions.InvalidZeroKnowledgeProofException;
 import com.ibm.pross.server.dkgnew.exceptions.StateViolationException;
 import com.ibm.pross.server.dkgnew.exceptions.UnrecognizedMessageTypeException;
-import com.ibm.pross.server.messages.EciesEncryption;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.Payload.OpCode;
+import com.ibm.pross.server.util.EciesEncryption;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.SemiPrivateMessage;
 

@@ -4,7 +4,7 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.server.messages;
+package com.ibm.pross.server.util;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -34,6 +34,8 @@ import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.crypto.kdf.EntropyExtractor;
 import com.ibm.pross.common.util.serialization.Parse;
 import com.ibm.pross.common.util.serialization.Serialization;
+import com.ibm.pross.server.messages.EncryptedPayload;
+import com.ibm.pross.server.messages.Payload;
 
 /**
  * Implements public key cryptography based on elliptic curves

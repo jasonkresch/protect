@@ -40,4 +40,31 @@ public class GenerationRebuttal implements Payload {
 		return "GenerationRebuttal [accuser=" + accuser + ", rebuttalEvidence=" + Arrays.toString(rebuttalEvidence) + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + accuser;
+		result = prime * result + Arrays.hashCode(rebuttalEvidence);
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		GenerationRebuttal other = (GenerationRebuttal) obj;
+		if (accuser != other.accuser)
+			return false;
+		if (!Arrays.equals(rebuttalEvidence, other.rebuttalEvidence))
+			return false;
+		return true;
+	}
+	
+	
+
 }

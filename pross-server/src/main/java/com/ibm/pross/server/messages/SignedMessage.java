@@ -10,6 +10,8 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
+import com.ibm.pross.server.util.EcDsaSigning;
+
 /**
  * A signed message is a message object (either public or a private message)
  * with an accompanying signature
@@ -75,4 +77,36 @@ public class SignedMessage implements Serializable {
 		return "SignedMessage [message=" + message + ", signature=" + signature + "]";
 	}
 
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((message == null) ? 0 : message.hashCode());
+		result = prime * result + ((signature == null) ? 0 : signature.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		SignedMessage other = (SignedMessage) obj;
+		if (message == null) {
+			if (other.message != null)
+				return false;
+		} else if (!message.equals(other.message))
+			return false;
+		if (signature == null) {
+			if (other.signature != null)
+				return false;
+		} else if (!signature.equals(other.signature))
+			return false;
+		return true;
+	}
+
+	
 }
