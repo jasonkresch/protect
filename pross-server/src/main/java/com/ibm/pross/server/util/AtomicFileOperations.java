@@ -20,6 +20,7 @@ public class AtomicFileOperations {
 
 		// Create a temporary file in the same directory as the desination file
 		final File parentDirectory = destinationFile.getParentFile();
+		parentDirectory.mkdirs();
 		final File tempFile = new File(parentDirectory,
 				destinationFile.getName() + UUID.randomUUID().toString() + ".tmp");
 

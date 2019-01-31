@@ -5,6 +5,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * Equivalent to a "FairLossLink". Will attempt to deliver a message with a non-zero probability of success over TCP/IP.
@@ -16,6 +18,8 @@ public class MessageSender {
 	private final String remoteHost;
 	private final int remotePort;
 
+	public static ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
+	
 	public MessageSender(final String remoteHost, final int remotePort) {
 		this.remoteHost = remoteHost;
 		this.remotePort = remotePort;
@@ -29,7 +33,8 @@ public class MessageSender {
 	public void attemptMessageDelivery(final byte[] message) {
 
 		// Sending is done in a thread as it may timeout
-		final Thread sendThread = new Thread() {
+		FIXED_THREAD_POOL.execute(new Runnable() {
+			@Override
 			public void run() {
 				try {
 					// Connect to server
@@ -54,9 +59,7 @@ public class MessageSender {
 					// Ignored
 				}
 			}
-		};
-
-		sendThread.start();
+		});
 	}
 
 }

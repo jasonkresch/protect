@@ -19,6 +19,7 @@ public class PublicKeyManager {
 		// Check message signature
 		
 		// Check message ID within min and max
+		return false;
 	}
 	
 }

@@ -4,7 +4,7 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.server.messages;
+package com.ibm.pross.server.util;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;

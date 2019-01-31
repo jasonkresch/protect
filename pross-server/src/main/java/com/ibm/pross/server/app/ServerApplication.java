@@ -101,9 +101,8 @@ public class ServerApplication {
 		shareholder.waitForPublicKeys();
 		shareholder.stop();
 
-		System.out.println("Created share: " + shareholder.getShare1().getY());
-
-
+		System.err.println("Created share: " + shareholder.getShare1().getY());
+		System.err.println("Done!");
 	}
 	
 	public static void main(final String[] args)

@@ -110,7 +110,7 @@ public class MessageDeliveryManager {
 		try {
 			AtomicFileOperations.atomicWrite(saveLocation, messageStateTracker);
 		} catch (IOException e) {
-			throw new RuntimeException("Failed to persist state to disk");
+			throw new RuntimeException("Failed to persist state to disk:" + e);
 		}
 	}
 
