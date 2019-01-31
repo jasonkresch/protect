@@ -67,18 +67,7 @@ public class ServerApplication {
 		this.chainBuilder.setMessageManager(messageManager);
 		
 		
-		Thread.sleep(25_000);
-		
-		//if (serverIndex <= 2) {
-		//	// Send message to everyone
-		//	final Payload payload = new VssPrivatePayload(new ShamirShare(BigInteger.ONE, BigInteger.valueOf(serverIndex)));
-		//	final Message message = new PublicMessage(serverIndex, payload);
-		//	final SignedMessage signedMessage = new SignedMessage(message, keyLoader.getSigningKey());
-		//	
-		//	chainBuilder.send(signedMessage);
-		//}
-		
-		
+		Thread.sleep(15_000);
 		
 		
 		// Create DKG shareholder
@@ -86,12 +75,11 @@ public class ServerApplication {
 		// Define parameters
 		final int n = configuration.getNumServers();
 		final int k = configuration.getMaxSafetyFaults() + 1;
-		final int f = configuration.getMaxSafetyFaults();
+		final int f = configuration.getMaxLivenessFaults();
 
 		// Create shareholder
 		
-	    //final DkgNewShareholder shareholder = new DkgNewShareholder(keyLoader, this.chainBuilder, serverIndex, 5, 2, 1, true);
-		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, 5, 2, 1, true);
+		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f, true);
 		shareholder.start(true);
 		shareholder.waitForQual();
 
@@ -102,6 +90,7 @@ public class ServerApplication {
 		shareholder.stop();
 
 		System.err.println("Created share: " + shareholder.getShare1().getY());
+		System.err.println("Share public key: " + shareholder.getSecretPublicKey());
 		System.err.println("Done!");
 	}
 	

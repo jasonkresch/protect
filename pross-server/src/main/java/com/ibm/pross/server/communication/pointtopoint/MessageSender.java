@@ -18,7 +18,7 @@ public class MessageSender {
 	private final String remoteHost;
 	private final int remotePort;
 
-	public static ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(10);
+	public static ExecutorService FIXED_THREAD_POOL = Executors.newFixedThreadPool(50);
 	
 	public MessageSender(final String remoteHost, final int remotePort) {
 		this.remoteHost = remoteHost;

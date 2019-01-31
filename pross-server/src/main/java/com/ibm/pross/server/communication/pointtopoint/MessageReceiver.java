@@ -19,8 +19,8 @@ public class MessageReceiver {
 	// Constants
 	public static long MAX_MESSAGE_SIZE = 1_000_000; // 1 MB;
 	static final int TIMEOUT = 30_000; // 30 seconds;
-	static final int NUM_PROCESSING_THREADS = 10;
-	static final int MESSAGE_QUEUE_CAPACITY = 100;
+	static final int NUM_PROCESSING_THREADS = 50;
+	static final int MESSAGE_QUEUE_CAPACITY = 500;
 	static final boolean DEBUG_MODE = false;
 
 	// Member fields

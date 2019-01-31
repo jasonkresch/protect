@@ -107,7 +107,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		// Check if Opt-BFT quorum has been met
 		if (messageVotes.size() == this.optQuorum)
 		{
-			System.err.println("QUORUM MET, added to Opt-BFT Chain: " + bftMessage);
+			System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " + bftMessage);
 			this.optChain.put(messagePosition, bftMessage);
 			this.notifyAll();
 		}
