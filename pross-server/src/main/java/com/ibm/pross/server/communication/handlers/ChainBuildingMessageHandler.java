@@ -77,7 +77,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	public void handleMessage(final Message message) {
 
 		// TODO: Implement stuff here
-		System.out.println("OPT BFT --- Received unique authenticated message: " + message);
+		System.out.println("OPT BFT --- Received unique authenticated message: " /*+ message*/);
 
 		// Count votes for messages in a given position
 		if (message instanceof PublicMessage) {
@@ -107,7 +107,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		// Check if Opt-BFT quorum has been met
 		if (messageVotes.size() == this.optQuorum)
 		{
-			System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " + bftMessage);
+			System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " /*+ bftMessage*/);
 			this.optChain.put(messagePosition, bftMessage);
 			this.notifyAll();
 		}
@@ -136,7 +136,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			return;
 		}
 		
-		System.out.println("Received authenticated message over BFT channel: " + bftMessage);
+		System.out.println("Received authenticated message over BFT channel: " /*+ bftMessage*/);
 		
 		// Add BFT message to the BFT chain
 		final long messagePosition = this.bftChain.size();

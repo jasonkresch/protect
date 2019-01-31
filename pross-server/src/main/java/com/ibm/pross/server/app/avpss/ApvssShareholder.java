@@ -169,6 +169,7 @@ public class ApvssShareholder {
 	private synchronized void messageIsAvailable() {
 		int messageId = this.currentMessageId.getAndIncrement();
 		final Message message = this.channel.getMessage(messageId);
+		System.out.println("DKG app processing message #" + messageId);
 		deliver(message);
 	}
 

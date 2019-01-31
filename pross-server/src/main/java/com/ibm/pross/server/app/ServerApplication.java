@@ -67,7 +67,7 @@ public class ServerApplication {
 		this.chainBuilder.setMessageManager(messageManager);
 		
 		
-		Thread.sleep(15_000);
+		Thread.sleep(10_000);
 		
 		
 		// Create DKG shareholder
