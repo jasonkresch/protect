@@ -19,6 +19,8 @@ import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
 import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProof;
 import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofGenerator;
 import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofVerifier;
+import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
+import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProver;
 
 public class PedersenEqRangeProofTest {
 
@@ -67,7 +69,7 @@ public class PedersenEqRangeProofTest {
 		long e2 = System.nanoTime();
 		System.out.println("Done. Took: " + ((e2 - s2) / 1_000_000.0) + " ms");
 		System.out.println();
-		
+
 		// Encrypt other value
 		final BigInteger r2 = RandomNumberGenerator.generateRandomCoprimeInRange(n);
 		final BigInteger Eb = PaillierCipher.encrypt(publicKey, share2, r2);
@@ -83,7 +85,8 @@ public class PedersenEqRangeProofTest {
 		// Generating zero knowledge proof
 		System.out.println("Generating zero knowledge proof...");
 		long s4 = System.nanoTime();
-		final PedersenEqRangeProof proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea, Eb, S);
+		final PedersenEqRangeProof proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea,
+				Eb, S);
 		long e4 = System.nanoTime();
 		System.out.println("Done. Took: " + ((e4 - s4) / 1_000_000.0) + " ms");
 		System.out.println();
@@ -124,7 +127,99 @@ public class PedersenEqRangeProofTest {
 		System.out.println("Result: " + decryptedShare2);
 		Assert.assertEquals(share2, decryptedShare2);
 		System.out.println();
-		
+
+	}
+
+	@Test
+	public void testProofPerformance() {
+
+		// Generate encryption key
+		final PaillierKeyGenerator keyGenerator = new PaillierKeyGenerator(2048);
+		final PaillierKeyPair keyPair = keyGenerator.generate();
+		final PaillierPublicKey publicKey = keyPair.getPublicKey();
+
+		final BigInteger share1 = RandomNumberGenerator.generateRandomInteger(curve.getR());
+		final BigInteger share2 = RandomNumberGenerator.generateRandomInteger(curve.getR());
+
+		// Encrypt share
+		final BigInteger n = publicKey.getN();
+
+		// Encrypt first share
+		final BigInteger r1 = RandomNumberGenerator.generateRandomCoprimeInRange(n);
+		final BigInteger Ea = PaillierCipher.encrypt(publicKey, share1, r1);
+
+		// Encrypt second share
+		final BigInteger r2 = RandomNumberGenerator.generateRandomCoprimeInRange(n);
+		final BigInteger Eb = PaillierCipher.encrypt(publicKey, share2, r2);
+
+		// Create commitment
+		final EcPoint S = curve.addPoints(curve.multiply(g, share1), curve.multiply(h, share2));
+
+		// Warm up
+		PedersenEqRangeProof proof = null;
+		for (int i = 0; i < 20; i++) {
+			proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea, Eb, S);
+		}
+		System.out.println("ZKP size: " + proof.getSize());
+
+		// Do test
+		long timeNs = 0;
+		final int iterations = 1000;
+		for (int i = 0; i < iterations; i++) {
+			final long start = System.nanoTime();
+			proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea, Eb, S);
+			final long end = System.nanoTime();
+			timeNs += (end - start);
+		}
+
+		System.out.println("Total time (ms): " + timeNs / (((long) iterations) * 1_000_000.0));
+	}
+
+	@Test
+	public void testVerifyPerformance() {
+
+		// Generate encryption key
+		final PaillierKeyGenerator keyGenerator = new PaillierKeyGenerator(2048);
+		final PaillierKeyPair keyPair = keyGenerator.generate();
+		final PaillierPublicKey publicKey = keyPair.getPublicKey();
+		final PaillierPrivateKey privateKey = keyPair.getPrivateKey();
+
+		final BigInteger share1 = RandomNumberGenerator.generateRandomInteger(curve.getR());
+		final BigInteger share2 = RandomNumberGenerator.generateRandomInteger(curve.getR());
+
+		// Encrypt share
+		final BigInteger n = publicKey.getN();
+
+		// Encrypt first share
+		final BigInteger r1 = RandomNumberGenerator.generateRandomCoprimeInRange(n);
+		final BigInteger Ea = PaillierCipher.encrypt(publicKey, share1, r1);
+
+		// Encrypt second share
+		final BigInteger r2 = RandomNumberGenerator.generateRandomCoprimeInRange(n);
+		final BigInteger Eb = PaillierCipher.encrypt(publicKey, share2, r2);
+
+		// Create commitment
+		final EcPoint S = curve.addPoints(curve.multiply(g, share1), curve.multiply(h, share2));
+
+		// Warm up
+		PedersenEqRangeProof proof = null;
+		for (int i = 0; i < 20; i++) {
+			proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea, Eb, S);
+		}
+		System.out.println("ZKP size: " + proof.getSize());
+
+		// Do test
+		long timeNs = 0;
+		final int iterations = 1000;
+		for (int i = 0; i < iterations; i++) {
+			proof = PedersenEqRangeProofGenerator.generate(publicKey, share1, share2, r1, r2, Ea, Eb, S);
+			final long start = System.nanoTime();
+			PedersenEqRangeProofVerifier.isValid(proof, Ea, Eb, S, publicKey);
+			final long end = System.nanoTime();
+			timeNs += (end - start);
+		}
+
+		System.out.println("Total time (ms): " + timeNs / (((long) iterations) * 1_000_000.0));
 	}
 
 }

@@ -138,6 +138,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		
 		System.out.println("Received authenticated message over BFT channel: " /*+ bftMessage*/);
 		
+		
 		// Add BFT message to the BFT chain
 		final long messagePosition = this.bftChain.size();
 		this.bftChain.put(messagePosition, bftMessage);
@@ -150,6 +151,12 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		// Broadcast our signature of this message and its position over point-to-point links
 		this.messageManager.broadcast(publicMessage);
 		
+
+		
+		// Fix this: (can simulate skipping the Certification Layer)
+		// Add message straight to the opt chain and signal
+		//this.optChain.putIfAbsent(new Long(this.optChain.size()), bftMessage);
+		//this.notifyAll();
 	}
 
 	@Override

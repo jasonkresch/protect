@@ -96,6 +96,9 @@ public class ApvssShareholder {
 	// Used to misbehave
 	private final boolean sendValidCommitments;
 	
+	// Used to time operation
+	private volatile long startTime;
+	
 	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
 			final int n, final int k, final int f, final boolean sendValidCommitments) {
 
@@ -206,6 +209,9 @@ public class ApvssShareholder {
 
 	public void start(boolean sendContributions) {
 		if (this.stopped.compareAndSet(false, false)) {
+			
+			this.startTime = System.nanoTime();
+			
 			if (sendContributions) {
 				// First broadcast our commitment and share contributions to the channel
 				broadcastPublicSharing();
@@ -468,6 +474,9 @@ public class ApvssShareholder {
 		for (int i = 0; i < this.n; i++) {
 			this.sharePublicKeys[i] = Polynomials.interpolateExponents(provenShareKeys, this.k, i);
 		}
+		
+		final long endTime = System.nanoTime();
+		System.err.println("Internal: shareholder: time took =" + (((double)(endTime - startTime)) / 1_000_000.0));
 	}
 
 	/**

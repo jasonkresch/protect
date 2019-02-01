@@ -8,17 +8,24 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
+import com.ibm.pross.common.util.RandomNumberGenerator;
+import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyGenerator;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyPair;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
+import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProof;
+import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofGenerator;
+import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofVerifier;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 
 public class PublicSharingTest {
 
-	// TODO: Also implement negative test cases, invalid commitments, invalid encryptions
-	
+	// TODO: Also implement negative test cases, invalid commitments, invalid
+	// encryptions
+
 	@Test
 	public void testVerifyAllShares() {
 		fail("Not yet implemented");
@@ -100,4 +107,84 @@ public class PublicSharingTest {
 
 		System.out.println("Public sharing: " + sharing);
 	}
+
+	@Test
+	public void testProofPerformance() {
+
+		final int keyLength = 2048;
+		final int n = 11;
+		final int t = ((n - 1) / 2) + 1;
+
+		// Generate shareholder public keys
+		final PaillierKeyPair[] keyPairs = new PaillierKeyPair[n];
+		final PaillierPublicKey[] publicKeys = new PaillierPublicKey[n];
+		final PaillierPrivateKey[] privateKeys = new PaillierPrivateKey[n];
+		final PaillierKeyGenerator generator = new PaillierKeyGenerator(keyLength);
+		for (int i = 0; i < n; i++) {
+			keyPairs[i] = generator.generate();
+			publicKeys[i] = keyPairs[i].getPublicKey();
+			privateKeys[i] = keyPairs[i].getPrivateKey();
+		}
+
+		// Warm up
+		final PublicSharingGenerator pvssDealer = new PublicSharingGenerator(n, t);
+		PublicSharing sharing = null;
+		for (int i = 0; i < 20; i++) {
+			sharing = pvssDealer.shareSecret(BigInteger.valueOf(1), publicKeys);
+		}
+		System.out.println("Sharing size: " + sharing.getSize());
+
+		// Do test
+		long timeNs = 0;
+		final int iterations = 1000;
+		for (int i = 0; i < iterations; i++) {
+			final long start = System.nanoTime();
+			pvssDealer.shareRandomSecret(publicKeys);
+			final long end = System.nanoTime();
+			timeNs += (end - start);
+		}
+
+		System.out.println("Total time (ms): " + timeNs / (((long) iterations) * 1_000_000.0));
+	}
+
+	@Test
+	public void testVerifyPerformance() {
+
+		final int keyLength = 2048;
+		final int n = 11;
+		final int t = ((n - 1) / 2) + 1;
+
+		// Generate shareholder public keys
+		final PaillierKeyPair[] keyPairs = new PaillierKeyPair[n];
+		final PaillierPublicKey[] publicKeys = new PaillierPublicKey[n];
+		final PaillierPrivateKey[] privateKeys = new PaillierPrivateKey[n];
+		final PaillierKeyGenerator generator = new PaillierKeyGenerator(keyLength);
+		for (int i = 0; i < n; i++) {
+			keyPairs[i] = generator.generate();
+			publicKeys[i] = keyPairs[i].getPublicKey();
+			privateKeys[i] = keyPairs[i].getPrivateKey();
+		}
+
+		// Warm up
+		final PublicSharingGenerator pvssDealer = new PublicSharingGenerator(n, t);
+		PublicSharing sharing = null;
+		for (int i = 0; i < 20; i++) {
+			sharing = pvssDealer.shareSecret(BigInteger.valueOf(1), publicKeys);
+		}
+		System.out.println("Sharing size: " + sharing.getSize());
+
+		// Do test
+		long timeNs = 0;
+		final int iterations = 1000;
+		for (int i = 0; i < iterations; i++) {
+			sharing = pvssDealer.shareRandomSecret(publicKeys);
+			final long start = System.nanoTime();
+			sharing.verifyAllShares(publicKeys);
+			final long end = System.nanoTime();
+			timeNs += (end - start);
+		}
+
+		System.out.println("Total time (ms): " + timeNs / (((long) iterations) * 1_000_000.0));
+	}
+
 }

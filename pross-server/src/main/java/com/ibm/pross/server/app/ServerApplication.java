@@ -77,9 +77,13 @@ public class ServerApplication {
 		final int k = configuration.getMaxSafetyFaults() + 1;
 		final int f = configuration.getMaxLivenessFaults();
 
+		final long start = System.nanoTime();
+		System.err.println("Starting shareholder: t=" + start);
+		
 		// Create shareholder
 		
 		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f, true);
+		//if (serverIndex != 3)
 		shareholder.start(true);
 		shareholder.waitForQual();
 
@@ -87,6 +91,10 @@ public class ServerApplication {
 		
 		// Wait for completion
 		shareholder.waitForPublicKeys();
+		
+		final long end = System.nanoTime();
+		System.err.println("Completed shareholder: time took =" + (((double)(end - start)) / 1_000_000.0));
+		
 		shareholder.stop();
 
 		System.err.println("Created share: " + shareholder.getShare1().getY());

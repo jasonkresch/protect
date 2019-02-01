@@ -12,6 +12,7 @@ import java.security.KeyPair;
 import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
+import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -20,6 +21,11 @@ import com.ibm.pross.common.CommonConfiguration;
 
 public class EcKeyGeneration {
 
+	static
+	{
+		Security.addProvider(new BouncyCastleProvider());
+	}
+	
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	final public static BigInteger r = curve.getR();
