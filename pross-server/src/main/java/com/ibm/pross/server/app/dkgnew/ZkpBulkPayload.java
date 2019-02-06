@@ -6,7 +6,7 @@ import java.util.UUID;
 
 import com.ibm.pross.server.messages.Payload;
 
-class ZkpBulkPayload implements Payload, Serializable {
+class ZkpBulkPayload extends Payload implements Serializable {
 
 	private static final long serialVersionUID = 7424142805101187480L;
 	

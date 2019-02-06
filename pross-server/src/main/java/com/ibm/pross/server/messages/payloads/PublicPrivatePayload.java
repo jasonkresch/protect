@@ -8,7 +8,7 @@ package com.ibm.pross.server.messages.payloads;
 
 import com.ibm.pross.server.messages.Payload;
 
-public class PublicPrivatePayload implements Payload {
+public class PublicPrivatePayload extends Payload {
 
 	private static final long serialVersionUID = 412885741324918495L;
 

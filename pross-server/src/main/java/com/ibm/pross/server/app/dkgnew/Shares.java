@@ -5,7 +5,7 @@ import java.io.Serializable;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.messages.Payload;
 
-class Shares implements Payload, Serializable {
+class Shares extends Payload implements Serializable {
 
 	private static final long serialVersionUID = 9158773360597029949L;
 

@@ -10,7 +10,9 @@ public class PaillierPublicKey implements Serializable, PublicKey {
 
 	private final BigInteger n;
 	private final BigInteger g;
-	private final BigInteger nSquared;
+	
+	// Don't serialize
+	private volatile transient BigInteger nSquared;
 
 	public PaillierPublicKey(final BigInteger n, final BigInteger g) {
 		this(n, g, n.multiply(n));

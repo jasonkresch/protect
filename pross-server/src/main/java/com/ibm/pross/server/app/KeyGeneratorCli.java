@@ -7,6 +7,7 @@ import java.math.BigInteger;
 import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
+import java.security.KeyPairGenerator;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -23,11 +24,14 @@ import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 
-import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyGenerator;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyPair;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
+
+import net.i2p.crypto.eddsa.EdDSAPrivateKey;
+import net.i2p.crypto.eddsa.EdDSAPublicKey;
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
  * Used to generate key pairs for servers
@@ -37,6 +41,7 @@ public class KeyGeneratorCli {
 	public static void main(String[] args) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
 
 		Security.addProvider(new BouncyCastleProvider());
+		Security.addProvider(new EdDSASecurityProvider());
 		
 		// Check usage
 		if (args.length < 2)
@@ -47,10 +52,14 @@ public class KeyGeneratorCli {
 		final int keyIndex = Integer.parseInt(args[1]);
 		
 		// Generate EC Key Pair
-		final KeyPair signingKeyPair = EcKeyGeneration.generateKeyPair();
+		//final KeyPair signingKeyPair = EcKeyGeneration.generateKeyPair();
+		
+		// Generate Ed25519 Key Pair
+		final KeyPairGenerator keyGen = KeyPairGenerator.getInstance(EdDSASecurityProvider.PROVIDER_NAME);
+		final KeyPair signingKeyPair = keyGen.generateKeyPair();
 		
 		// Generate Paillier Key Pair
-		final PaillierKeyGenerator encryptionKeyGenerator = new PaillierKeyGenerator();
+		final PaillierKeyGenerator encryptionKeyGenerator = new PaillierKeyGenerator(2048);
 		final PaillierKeyPair paillierKeyPair = encryptionKeyGenerator.generate();
 		final KeyPair encryptionKeyPair = convertFromPaillier(paillierKeyPair);
 
@@ -82,6 +91,10 @@ public class KeyGeneratorCli {
 			description = "EC PRIVATE KEY";
 		} else if (key instanceof ECPublicKey) {
 			description = "EC PUBLIC KEY";
+		} else if (key instanceof EdDSAPrivateKey) {
+			description = "ED25519 PRIVATE KEY";
+		} else if (key instanceof EdDSAPublicKey) {
+			description = "ED25519 PUBLIC KEY";
 		} else if (key instanceof PrivateKey) {
 			description = "PRIVATE KEY";
 		} else if (key instanceof PublicKey) {

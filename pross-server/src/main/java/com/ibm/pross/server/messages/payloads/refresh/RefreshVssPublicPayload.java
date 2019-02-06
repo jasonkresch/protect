@@ -11,7 +11,7 @@ import java.util.Arrays;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.server.messages.Payload;
 
-public class RefreshVssPublicPayload implements Payload {
+public class RefreshVssPublicPayload extends Payload {
 
 	private static final long serialVersionUID = 1184713778927118310L;
 

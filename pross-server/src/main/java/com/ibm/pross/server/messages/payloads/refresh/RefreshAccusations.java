@@ -12,7 +12,7 @@ import java.util.UUID;
 
 import com.ibm.pross.server.messages.Payload;
 
-public class RefreshAccusations implements Payload {
+public class RefreshAccusations extends Payload {
 
 	private static final long serialVersionUID = -1008668768935824766L;
 

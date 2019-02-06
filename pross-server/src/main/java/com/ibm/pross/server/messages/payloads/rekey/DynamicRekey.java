@@ -14,7 +14,7 @@ import java.util.UUID;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.server.messages.Payload;
 
-public class DynamicRekey implements Payload {
+public class DynamicRekey extends Payload {
 
 	private static final long serialVersionUID = 1710761352037203847L;
 

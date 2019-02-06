@@ -21,7 +21,7 @@ public class Serialization {
 	 * @param object
 	 * @return
 	 */
-	public static byte[] serializeClass(final Serializable object) {
+	public static byte[] serializeClass2(final Serializable object) {
 		try {
 			final ByteArrayOutputStream bos = new ByteArrayOutputStream();
 			final ObjectOutputStream oos = new ObjectOutputStream(bos);
@@ -42,7 +42,7 @@ public class Serialization {
 	 * @throws IOException 
 	 * @throws ClassNotFoundException 
 	 */
-	public static Object deserialize(byte[] input) throws IOException, ClassNotFoundException {
+	public static Object deserialize2(byte[] input) throws IOException, ClassNotFoundException {
 			final ByteArrayInputStream bis = new ByteArrayInputStream(input);
 			final ObjectInputStream ois = new ObjectInputStream(bis);
 			return ois.readObject();

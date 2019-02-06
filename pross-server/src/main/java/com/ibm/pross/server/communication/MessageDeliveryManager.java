@@ -13,16 +13,16 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.server.communication.handlers.MessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 import com.ibm.pross.server.communication.pointtopoint.MessageSender;
 import com.ibm.pross.server.configuration.KeyLoader;
-import com.ibm.pross.server.messages.Message;
+import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
 import com.ibm.pross.server.util.AtomicFileOperations;
+import com.ibm.pross.server.util.MessageSerializer;
 
 /**
  * Tracks all of the connections related to a server
@@ -41,7 +41,8 @@ public class MessageDeliveryManager {
 	private final Timer timer = new Timer(true);
 
 	public MessageDeliveryManager(final List<InetSocketAddress> serverAddresses, final int myIndex,
-			final KeyLoader keyLoader, final File saveLocation, final MessageHandler messageHandler, final MessageReceiver messageReceiver) {
+			final KeyLoader keyLoader, final File saveLocation, final MessageHandler messageHandler,
+			final MessageReceiver messageReceiver) {
 
 		this.myIndex = myIndex;
 		this.keyLoader = keyLoader;
@@ -59,7 +60,7 @@ public class MessageDeliveryManager {
 
 		// Stubbornly send known messages until the recipient is a confirmed witness
 		this.timer.scheduleAtFixedRate(new StubbornSendTask(), RESEND_DELAY, RESEND_DELAY);
-		
+
 		// Start thread to process messages from the messageReceiver
 		final Thread messageReceiveProcessingThread = new Thread(new Runnable() {
 			@Override
@@ -67,25 +68,27 @@ public class MessageDeliveryManager {
 				while (true) {
 					final byte[] rawMessage = messageReceiver.awaitNextMessage();
 					try {
-						final Object object = Serialization.deserialize(rawMessage);
+						final Object object = MessageSerializer.deserializeSignedRelayedMessage(rawMessage);
 						if (object instanceof SignedRelayedMessage) {
-							
-							final SignedRelayedMessage signedRelayedMessage = (SignedRelayedMessage) object;				
-							//System.out.println("RAW Opt BFT --- Received signed relay message: " + signedRelayedMessage);
-							
+
+							final SignedRelayedMessage signedRelayedMessage = (SignedRelayedMessage) object;
+							// System.out.println("RAW Opt BFT --- Received signed relay message: " +
+							// signedRelayedMessage);
+
 							// Validate it, and process if necessary
 							receive(signedRelayedMessage);
 						}
 					} catch (Throwable ignored) {
 					}
-				}				
+				}
 			}
 		});
 		messageReceiveProcessingThread.start();
 	}
 
 	/**
-	 * Load message tracking state from disk (failing that, start with an empty state)
+	 * Load message tracking state from disk (failing that, start with an empty
+	 * state)
 	 * 
 	 * @param numEntities
 	 * @param myIndex
@@ -103,6 +106,7 @@ public class MessageDeliveryManager {
 
 	/**
 	 * Save messafe tracking state to disk
+	 * 
 	 * @param messageStateTracker
 	 * @param saveLocation
 	 */
@@ -120,7 +124,7 @@ public class MessageDeliveryManager {
 		public void run() {
 			final Map<SignedMessage, Set<Integer>> pendingConfirmations = messageStateTracker
 					.determineMessagesNotKnownByAll();
-			
+
 			for (final Entry<SignedMessage, Set<Integer>> entry : pendingConfirmations.entrySet()) {
 				final SignedMessage signedMessage = entry.getKey();
 				final Set<Integer> recipients = entry.getValue();
@@ -143,19 +147,25 @@ public class MessageDeliveryManager {
 		if (!signedRelayedMessage.isSignatureValid(relayerPublicKey)) {
 			// Signature is bad, this could have come from anyone/anything
 			// TODO: Log this but don't report a confirmed problem
+			System.err.println("Bad relayer signature");
 			return;
 		}
 
 		// Confirm inner signed message signature before proceeding
-		final PublicKey originatorPublicKey = this.keyLoader.getVerificationKey(originatorId);
-		if (!signedMessage.isSignatureValid(originatorPublicKey)) {
-			// TODO: Warn about this, the relayer did not perform necessary checks before
-			// passing message on
-			return;
+		// Unless it is an acknowledgement, which means we have seen it already
+		// TODO: Figure out this optimization
+		if (!isAcknowledgement) {
+			final PublicKey originatorPublicKey = this.keyLoader.getVerificationKey(originatorId);
+			if (!signedMessage.isSignatureValid(originatorPublicKey)) {
+				// TODO: Warn about this, the relayer did not perform necessary checks before
+				// passing message on
+				System.err.println("Bad originator signature");
+				return;
+			}
 		}
 
 		// Process signed message
-		receive(relayerId, signedMessage);
+		receive(relayerId, isAcknowledgement, signedMessage);
 
 		// Send a message acknowledgement (but only if this message is itself not an
 		// acknowledgement)
@@ -164,9 +174,9 @@ public class MessageDeliveryManager {
 		}
 	}
 
-	private void receive(final int relayerId, final SignedMessage signedMessage) {
+	private void receive(final int relayerId, final boolean isAcknowledgement, final SignedMessage signedMessage) {
 		// Record the signed message
-		boolean isNew = this.messageStateTracker.recordMessage(relayerId, signedMessage);
+		boolean isNew = this.messageStateTracker.recordMessage(relayerId, isAcknowledgement, signedMessage);
 
 		// Persist the state of message state tracker to disk
 		// We must do this before sending an acknowledgement
@@ -189,7 +199,7 @@ public class MessageDeliveryManager {
 	 * 
 	 * @param signedMessage
 	 */
-	public void broadcast(final Message message) {
+	public void broadcast(final PublicMessage message) {
 		final SignedMessage signedMessage = new SignedMessage(message, keyLoader.getSigningKey());
 		this.broadcast(signedMessage);
 	}
@@ -200,21 +210,20 @@ public class MessageDeliveryManager {
 	 * @param signedMessage
 	 */
 	public void broadcast(final SignedMessage signedMessage) {
-		this.receive(this.myIndex, signedMessage);
+		this.receive(this.myIndex, false, signedMessage);
 	}
 
 	/**
 	 * Attempt one time to deliver a message to each recipient
 	 * 
-	 * @param recipients
-	 *            The set of recipients (by their id) to deliver the message to
-	 * @param signedMessage
-	 *            The signed message to deliver
+	 * @param recipients    The set of recipients (by their id) to deliver the
+	 *                      message to
+	 * @param signedMessage The signed message to deliver
 	 */
 	private void sendOnce(final Set<Integer> recipients, final SignedMessage signedMessage) {
 		// Create SignedRelayedMessage
 		final SignedRelayedMessage signedRelayedMessage = createSignedRelayedMessage(signedMessage, false);
-		final byte[] messageContent = Serialization.serializeClass(signedRelayedMessage);
+		final byte[] messageContent = MessageSerializer.serializeSignedRelayedMessage(signedRelayedMessage);
 
 		// Send to each recipient
 		for (final Integer recipientIndex : recipients) {
@@ -225,7 +234,7 @@ public class MessageDeliveryManager {
 	private void sendAcknowledgement(final int recipientIndex, final SignedMessage signedMessage) {
 		// Create Acknowledgement of a received signedMessage
 		final SignedRelayedMessage signedRelayedMessage = createSignedRelayedMessage(signedMessage, true);
-		final byte[] messageContent = Serialization.serializeClass(signedRelayedMessage);
+		final byte[] messageContent = MessageSerializer.serializeSignedRelayedMessage(signedRelayedMessage);
 
 		// Send acknowledgement (so they can validate us as a witness and stop sending
 		// to us
@@ -243,6 +252,4 @@ public class MessageDeliveryManager {
 		return messageHandler;
 	}
 
-	
-	
 }

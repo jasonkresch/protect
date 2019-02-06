@@ -2,6 +2,7 @@ package com.ibm.pross.server.communication.handlers;
 
 import java.io.IOException;
 import java.security.PublicKey;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -10,7 +11,6 @@ import java.util.concurrent.ConcurrentSkipListSet;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
-import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.server.app.avpss.channel.FifoAtomicBroadcastChannel;
 import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
@@ -22,6 +22,7 @@ import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.payloads.optbft.CertificationPayload;
+import com.ibm.pross.server.util.MessageSerializer;
 
 /**
  * Connects the BFT layer to the Certified Opt chain
@@ -83,11 +84,11 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		if (message instanceof PublicMessage) {
 			final PublicMessage publicMessage = (PublicMessage) message;
 			final Payload payload = publicMessage.getPayload();
-			if (payload instanceof CertificationPayload)
+			if (payload.getOpcode() == Payload.OpCode.BFT_CERTIFICATION)
 			{
-				final CertificationPayload certificationPayload = (CertificationPayload) payload;
-				final long messagePosition = certificationPayload.getMessagePosition();
-				final SignedMessage bftMessage = certificationPayload.getBftMessage();
+				final SimpleEntry<Long, SignedMessage> data = (SimpleEntry<Long, SignedMessage>) payload.getData();
+				final long messagePosition = data.getKey();
+				final SignedMessage bftMessage = data.getValue();
 				recordVote(messagePosition, bftMessage, message.getSenderIndex());
 			}
 		}
@@ -126,7 +127,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			throws ClassNotFoundException, IOException, BadPaddingException, IllegalBlockSizeException {
 
 		// Deserialize the signed message sent as a TOM over the BFT Layer
-		final SignedMessage bftMessage = (SignedMessage) Serialization.deserialize(serializedMessage);
+		final SignedMessage bftMessage = MessageSerializer.deserializeSignedMessage(serializedMessage);
 		
 		// Ensure it has a valid signature
 		final PublicKey senderPublicKey = keyLoader.getVerificationKey(bftMessage.getMessage().getSenderIndex());
@@ -166,7 +167,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 
 	public void send(final Message message)
 	{
-		final SignedMessage signedMessage = new SignedMessage(message, keyLoader.getSigningKey());
+		final SignedMessage signedMessage = new SignedMessage((PublicMessage) message, keyLoader.getSigningKey());
 		this.sender.broadcast(signedMessage);
 	}
 	

@@ -281,8 +281,7 @@ public class ApvssShareholder {
 		}
 
 		// Extract the payload
-		final PublicSharingPayload publicSharingPayload = (PublicSharingPayload) message.getPayload();
-		final PublicSharing publicSharing = publicSharingPayload.getPublicSharing();
+		final PublicSharing publicSharing = (PublicSharing) message.getPayload().getData();
 
 		// Save it
 		this.receivedSharings[senderIndex - 1] = publicSharing;
@@ -424,8 +423,7 @@ public class ApvssShareholder {
 		}
 
 		// The accuser is indicated in the rebuttal message
-		final ZkpPayload zkp = ((ZkpPayload) (((PublicMessage) message).getPayload()));
-		final ZeroKnowledgeProof proof = zkp.getProof();
+		final ZeroKnowledgeProof proof = (ZeroKnowledgeProof) message.getPayload().getData();
 
 		// Ignore this proof, we've already received enough
 		if (this.qualifiedProofs.size() < this.k) {

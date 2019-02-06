@@ -11,7 +11,7 @@ import java.util.Arrays;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.server.messages.Payload;
 
-public class ReconstructionDetectCorrupt implements Payload {
+public class ReconstructionDetectCorrupt extends Payload {
 
 	private static final long serialVersionUID = -2536029408832984608L;
 

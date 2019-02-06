@@ -9,7 +9,7 @@ package com.ibm.pross.server.messages.payloads;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.messages.Payload;
 
-public class VssPrivatePayload implements Payload {
+public class VssPrivatePayload extends Payload {
 
 	private static final long serialVersionUID = -2962821141936322572L;
 

@@ -57,6 +57,7 @@ public class KeyLoader {
 	private static Key deserializeKey(final PemObject pemObject)
 			throws NoSuchAlgorithmException, InvalidKeySpecException {
 
+		final KeyFactory edKeyFactory = KeyFactory.getInstance("EdDSA");
 		final KeyFactory ecKeyFactory = KeyFactory.getInstance("ECDSA");
 		final KeyFactory rsaKeyFactory = KeyFactory.getInstance("RSA");
 
@@ -73,6 +74,14 @@ public class KeyLoader {
 			return ecKeyFactory.generatePrivate(new PKCS8EncodedKeySpec(pemObject.getContent()));
 		case "EC PUBLIC KEY":
 			return ecKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+		case "ED25519 PRIVATE KEY":
+			return edKeyFactory.generatePrivate(new PKCS8EncodedKeySpec(pemObject.getContent()));
+		case "ED25519 PUBLIC KEY":
+			return edKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+		case "PRIVATE KEY":
+			return edKeyFactory.generatePrivate(new PKCS8EncodedKeySpec(pemObject.getContent()));
+		case "PUBLIC KEY":
+			return edKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
 		default:
 			throw new IllegalArgumentException("Unrecognized type");
 		}

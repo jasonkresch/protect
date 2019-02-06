@@ -36,7 +36,7 @@ public class SignedMessage implements Serializable {
 	 * @param message
 	 * @param senderSigningKey
 	 */
-	public SignedMessage(final Message message, final PrivateKey senderSigningKey) {
+	public SignedMessage(final PublicMessage message, final PrivateKey senderSigningKey) {
 		this(message, EcDsaSigning.createSignature(message, senderSigningKey));
 	}
 
@@ -69,7 +69,7 @@ public class SignedMessage implements Serializable {
 	 * @return
 	 */
 	public boolean isSignatureValid(final PublicKey senderPublicKey) {
-		return EcDsaSigning.verifySignature(this.message, this.signature, senderPublicKey);
+		return EcDsaSigning.verifySignature((PublicMessage) this.message, this.signature, senderPublicKey);
 	}
 
 	@Override

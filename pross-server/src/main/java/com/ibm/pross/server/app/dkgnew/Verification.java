@@ -5,7 +5,7 @@ import java.util.Arrays;
 
 import com.ibm.pross.server.messages.Payload;
 
-class Verification implements Payload, Serializable {
+class Verification extends Payload implements Serializable {
 
 	private static final long serialVersionUID = 3964665948810948554L;
 	

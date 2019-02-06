@@ -6,7 +6,7 @@ import java.util.Arrays;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.server.messages.Payload;
 
-class PedersonCommitments implements Payload, Serializable {
+class PedersonCommitments extends Payload implements Serializable {
 
 	private static final long serialVersionUID = -3413167967781971330L;
 	private final EcPoint[] commitments;

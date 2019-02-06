@@ -62,7 +62,7 @@ public class EciesEncryption {
 	public static EncryptedPayload encrypt(final Payload payload, final PublicKey recipientPublicKey) {
 
 		// Serialize the content
-		final byte[] contentBytes = Serialization.serializeClass(payload);
+		final byte[] contentBytes = MessageSerializer.serializePayload(payload);
 
 		// Generate r (we save this as it is needed for rebuttals
 		final BigInteger r = generateR();
@@ -86,7 +86,7 @@ public class EciesEncryption {
 		final byte[] decryptedBytes = decrypt(ciphertext, recipientPrivateKey);
 
 		// Deserialize and return payload
-		final Payload payload = (Payload) Serialization.deserialize(decryptedBytes);
+		final Payload payload = MessageSerializer.deserializePayload(decryptedBytes);
 		return payload;
 
 	}
@@ -104,7 +104,7 @@ public class EciesEncryption {
 			final byte[] decryptedBytes = decrypt(ciphertext, r, recipientPublicKey);
 
 			// Deserialize and return payload
-			final Object o = Serialization.deserialize(decryptedBytes);
+			final Object o = MessageSerializer.deserializePayload(decryptedBytes);
 			if (o instanceof Payload)
 			{
 				return (Payload) o;

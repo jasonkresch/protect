@@ -8,7 +8,9 @@ package com.ibm.pross.server.messages;
 
 import java.io.Serializable;
 
-public interface Payload extends Serializable {
+public class Payload implements Serializable {
+
+	private static final long serialVersionUID = 5006028177758309022L;
 
 	public enum OpCode {
 
@@ -38,19 +40,65 @@ public interface Payload extends Serializable {
 		// PROSS: Dynamic rekey operation
 		DYNAMIC_REKEY, // New public keys
 
-		
 		// NEW-DKG:
 		MS, // Penderson Commitment and Shares
 		VV, // Verification Vector
 		RB, // Rebuttal
 		ZK, // Zero Knowledge
 		BP, // Bulk Proofs
-		
+
 		// AVSS
 		PS, // Public Sharing
 		BFT_CERTIFICATION; // Certification of message sent over BFT
 	}
 
-	public OpCode getOpcode();
+	private final OpCode opCode;
+	private final Object data;
+
+	public Payload(final OpCode opCode, final Object data) {
+		this.opCode = opCode;
+		this.data = data;
+	}
+
+	public OpCode getOpcode() {
+		return this.opCode;
+	}
+
+	public Object getData() {
+		return this.data;
+	}
+
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((data == null) ? 0 : data.hashCode());
+		result = prime * result + ((opCode == null) ? 0 : opCode.hashCode());
+		return result;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		Payload other = (Payload) obj;
+		if (data == null) {
+			if (other.data != null)
+				return false;
+		} else if (!data.equals(other.data))
+			return false;
+		if (opCode != other.opCode)
+			return false;
+		return true;
+	}
+
+	@Override
+	public String toString() {
+		return "Payload [opCode=" + opCode + ", data=" + data + "]";
+	}
 
 }

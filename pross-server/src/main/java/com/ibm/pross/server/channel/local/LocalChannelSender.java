@@ -6,15 +6,15 @@ import java.util.List;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
-import com.ibm.pross.common.util.serialization.Serialization;
 import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.messages.SignedMessage;
+import com.ibm.pross.server.util.MessageSerializer;
 
 public class LocalChannelSender implements ChannelSender {
 
 	private final List<ChannelListener> registeredListeners;
-	
+
 	public LocalChannelSender(final List<ChannelListener> registeredListeners) {
 		this.registeredListeners = registeredListeners;
 	}
@@ -27,11 +27,10 @@ public class LocalChannelSender implements ChannelSender {
 	@Override
 	public void broadcast(final SignedMessage message) {
 
-		synchronized (this.registeredListeners)
-		{
+		synchronized (this.registeredListeners) {
 			// Serialize message to bytes
-			byte[] serializedMessage = Serialization.serializeClass(message);
-	
+			byte[] serializedMessage = MessageSerializer.serializeSignedMessage(message);
+
 			for (final ChannelListener listener : this.registeredListeners) {
 				try {
 					listener.receiveSerializedMessage(serializedMessage);

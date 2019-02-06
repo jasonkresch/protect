@@ -53,6 +53,7 @@ public class MessageStateTracker implements Serializable {
 	 * @param senderId
 	 *            The authenticated sender of this message (not necessarily the
 	 *            originator but who relayed it to us).
+	 * @param isAcknowledgement 
 	 * 
 	 * @param acknowledgement
 	 *            Set to true when this message is sent as an acknowledgement of a
@@ -67,11 +68,17 @@ public class MessageStateTracker implements Serializable {
 	 * @return True if this message has never before been seen. This can be used to
 	 *         trigger relayed broadcasts.
 	 */
-	public synchronized boolean recordMessage(final int senderId, final SignedMessage signedMessage) {
+	public synchronized boolean recordMessage(final int senderId, final boolean isAcknowledgement, final SignedMessage signedMessage) {
 
 		// Ensure the sender id is within allowed range
 		if (senderId < 1 || senderId > this.numEntites) {
 			throw new IllegalArgumentException("Sender ID is in invalid range. Was: " + senderId);
+		}
+		
+		// Ensure we know about the message if it is an acknowledgement
+		if (isAcknowledgement && (!this.knownMessages.containsKey(signedMessage)))
+		{
+			return false;
 		}
 
 		// Attempt to insert a new set containing everyone

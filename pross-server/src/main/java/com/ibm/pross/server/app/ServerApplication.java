@@ -18,11 +18,15 @@ import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 import com.ibm.pross.server.configuration.Configuration;
 import com.ibm.pross.server.configuration.ConfigurationLoader;
 import com.ibm.pross.server.configuration.KeyLoader;
+import com.ibm.pross.server.util.EcDsaSigning;
+
+import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class ServerApplication {
 
 	static {
 		Security.addProvider(new BouncyCastleProvider());
+		Security.addProvider(new EdDSASecurityProvider());
 	}
 
 	public static String CONFIG_FILENAME = "common.config";
@@ -100,6 +104,8 @@ public class ServerApplication {
 		System.err.println("Created share: " + shareholder.getShare1().getY());
 		System.err.println("Share public key: " + shareholder.getSecretPublicKey());
 		System.err.println("Done!");
+		
+		System.out.print("Signatures generated: " + EcDsaSigning.signCount.get() + ", verified: " + EcDsaSigning.verCount.get());
 	}
 	
 	public static void main(final String[] args)

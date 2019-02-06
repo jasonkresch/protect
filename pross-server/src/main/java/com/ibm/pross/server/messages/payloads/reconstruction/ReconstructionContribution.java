@@ -9,7 +9,7 @@ package com.ibm.pross.server.messages.payloads.reconstruction;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.messages.Payload;
 
-public class ReconstructionContribution implements Payload {
+public class ReconstructionContribution extends Payload {
 
 	private static final long serialVersionUID = 3484871732240190747L;
 

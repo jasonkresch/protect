@@ -10,7 +10,7 @@ import java.util.Arrays;
 
 import com.ibm.pross.server.messages.Payload;
 
-public class RefreshRebuttal implements Payload {
+public class RefreshRebuttal extends Payload {
 
 	private static final long serialVersionUID = -5936514281060059359L;
 
