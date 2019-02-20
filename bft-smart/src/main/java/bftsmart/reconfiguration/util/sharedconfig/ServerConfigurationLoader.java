@@ -8,15 +8,16 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
-public class ConfigurationLoader {
+public class ServerConfigurationLoader {
 	
 	public static final String NUM_SERVERS_KEY = "num_servers";
+	public static final String MAX_BFT_FAULTS_KEY = "max_bft_faults";
 	public static final String RECONSTRUCT_THRESHOLD_KEY = "reconstruction_threshold";
 	public static final String MAX_SAFETY_FAULTS_KEY = "max_safety_faults";
 	public static final String MAX_LIVENESS_FAULTS_KEY = "max_liveness_faults";
 	public static final String NUM_SERVERS_KEY_PREFIX = "server.";
 	
-	public static HostConfiguration load(final File configFile) throws IOException {
+	public static ServerConfiguration load(final File configFile) throws IOException {
 
 		final Properties properties = new Properties();
 
@@ -27,6 +28,7 @@ public class ConfigurationLoader {
 
 		// Parse the parameters
 		final int numServers = Integer.parseInt(properties.getProperty(NUM_SERVERS_KEY));
+		final int maxBftFaults = Integer.parseInt(properties.getProperty(MAX_BFT_FAULTS_KEY));
 		final int reconstructionThreshold = Integer.parseInt(properties.getProperty(RECONSTRUCT_THRESHOLD_KEY));
 		final int maxSafetyFaults = Integer.parseInt(properties.getProperty(MAX_SAFETY_FAULTS_KEY));
 		final int maxLivenessFaults = Integer.parseInt(properties.getProperty(MAX_LIVENESS_FAULTS_KEY));
@@ -44,7 +46,7 @@ public class ConfigurationLoader {
 
 		inputStream.close();
 
-		return new HostConfiguration(numServers, reconstructionThreshold, maxSafetyFaults, maxLivenessFaults, serverAddresses);
+		return new ServerConfiguration(numServers, maxBftFaults, reconstructionThreshold, maxSafetyFaults, maxLivenessFaults, serverAddresses);
 	}
 
 }

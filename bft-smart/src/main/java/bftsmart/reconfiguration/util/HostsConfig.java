@@ -21,13 +21,15 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import bftsmart.reconfiguration.util.sharedconfig.ConfigurationLoader;
-import bftsmart.reconfiguration.util.sharedconfig.HostConfiguration;
+import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
+import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 public class HostsConfig {
 
 	private Map<Integer, Config> servers = new HashMap<Integer, Config>();
 
+	private ServerConfiguration serverConfig;
+	
 	/** Creates a new instance of ServersConfig 
 	 * @param hostsFileName */
 	public HostsConfig(String configHome, String hostsFileName) {
@@ -44,10 +46,10 @@ public class HostsConfig {
 			
 			File serverFile = new File(new File(configHome), "server");
 			File hostFile = new File(serverFile, hostsFileName);
-			final HostConfiguration commonConfig = ConfigurationLoader.load(hostFile);
+			this.serverConfig = ServerConfigurationLoader.load(hostFile);
 
 			int id = 0;
-			for (InetSocketAddress server : commonConfig.getServerAddresses()) {
+			for (InetSocketAddress server : serverConfig.getServerAddresses()) {
 				add(id++, server.getHostString(), server.getPort()+200);
 			}
 		} catch (IOException e) {
@@ -111,6 +113,11 @@ public class HostsConfig {
 			return new InetSocketAddress(c.port);
 		}
 		return null;
+	}
+	
+	public ServerConfiguration getServerConfiguration()
+	{
+		return this.serverConfig;
 	}
 
 	public class Config {

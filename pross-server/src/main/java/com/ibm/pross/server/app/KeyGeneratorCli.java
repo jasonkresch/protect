@@ -48,6 +48,7 @@ public class KeyGeneratorCli {
 		// Check usage
 		if (args.length < 2) {
 			System.err.println("USAGE: key-path index");
+			System.exit(1);
 		}
 		final File keyPath = new File(args[0]);
 		final int keyIndex = Integer.parseInt(args[1]);

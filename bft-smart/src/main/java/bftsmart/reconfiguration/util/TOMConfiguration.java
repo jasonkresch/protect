@@ -80,15 +80,10 @@ public class TOMConfiguration extends Configuration {
 	protected void init() {
 		super.init();
 		try {
-			n = Integer.parseInt(configs.remove("system.servers.num").toString());
-			String s = (String) configs.remove("system.servers.f");
-			if (s == null) {
-				f = (int) Math.ceil((n - 1) / 3);
-			} else {
-				f = Integer.parseInt(s);
-			}
+			n = this.hosts.getServerConfiguration().getNumServers();
+			f = this.hosts.getServerConfiguration().getMaxBftFaults();
 
-			s = (String) configs.remove("system.shutdownhook");
+			String s = (String) configs.remove("system.shutdownhook");
 			shutdownHookEnabled = (s != null) ? Boolean.parseBoolean(s) : false;
 
 			s = (String) configs.remove("system.totalordermulticast.period");

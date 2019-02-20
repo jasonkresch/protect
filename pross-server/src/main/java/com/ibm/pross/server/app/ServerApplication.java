@@ -24,8 +24,8 @@ import com.ibm.pross.server.communication.MessageDeliveryManager;
 import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 
-import bftsmart.reconfiguration.util.sharedconfig.ConfigurationLoader;
-import bftsmart.reconfiguration.util.sharedconfig.HostConfiguration;
+import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
+import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
@@ -40,7 +40,7 @@ public class ServerApplication {
 	public static String KEYS_DIRECTORY = "keys";
 	public static String SAVE_DIRECTORY = "state";
 
-	private final HostConfiguration configuration;
+	private final ServerConfiguration configuration;
 	private final KeyLoader keyLoader;
 	private final ChainBuildingMessageHandler chainBuilder;
 
@@ -62,7 +62,7 @@ public class ServerApplication {
 
 		// Load configuration
 		final File configFile = new File(baseDirectory, CONFIG_FILENAME);
-		this.configuration = ConfigurationLoader.load(configFile);
+		this.configuration = ServerConfigurationLoader.load(configFile);
 		System.out.println(this.configuration);
 
 		// Load keys
@@ -148,7 +148,7 @@ public class ServerApplication {
 		
 		// Configure logging
 		BasicConfigurator.configure();
-		List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
+		final List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
 		loggers.add(LogManager.getRootLogger());
 		for ( Logger logger : loggers ) {
 		    logger.setLevel(Level.OFF);

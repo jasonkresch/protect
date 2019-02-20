@@ -9,6 +9,7 @@ package com.ibm.pross.common.util.shamir;
 import static org.junit.Assert.fail;
 
 import java.math.BigInteger;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -18,6 +19,7 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
@@ -252,9 +254,39 @@ public class ShamirTest {
 
 		// Attempt to recover coefficients from points
 		final BigInteger[] recoveredCoefficients = Polynomials.interpolateCoefficients(shareSet, threshold);
-		System.out.println("Recovered Coefficients: " + Arrays.toString(coefficients));
+		System.out.println("Recovered Coefficients: " + Arrays.toString(recoveredCoefficients));
 		
 		Assert.assertArrayEquals(coefficients, recoveredCoefficients);
+	}
+	
+	@Test
+	public void testInterpolateCoefficientsExponents()
+	{
+		int n = 9;
+		int threshold = 5;
+
+		// Create coefficients
+		final BigInteger[] coefficients = Shamir.generateCoefficients(threshold);
+		final EcPoint[] feldmanCoefficients = Shamir.generateFeldmanValues(coefficients, CommonConfiguration.h);
+		System.out.println("Original Feldman Coefficients:  " + Arrays.toString(feldmanCoefficients));
+
+		// Create shares
+		final ShamirShare[] shares = Shamir.generateShares(coefficients, n);
+		final Set<ShamirShare> shareSet = new HashSet<>(Arrays.asList(shares));
+		
+		// Create derivation results
+		List<DerivationResult> results = new ArrayList<>();
+		for (ShamirShare share : shareSet)
+		{
+			final EcPoint derivedSharePoint = curve.multiply(CommonConfiguration.h, share.getY());
+			results.add(new DerivationResult(share.getX(), derivedSharePoint));
+		}
+
+		// Attempt to recover coefficients from points
+		final EcPoint[] recoveredCoefficients = Polynomials.interpolateCoefficientsExponents(results, threshold);
+		System.out.println("Recovered Feldman Coefficients: " + Arrays.toString(recoveredCoefficients));
+		
+		Assert.assertArrayEquals(feldmanCoefficients, recoveredCoefficients);
 	}
 
 }

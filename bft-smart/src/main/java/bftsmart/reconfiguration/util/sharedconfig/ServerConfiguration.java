@@ -8,17 +8,19 @@ import java.util.List;
 /**
  * Represents the configuration state of the system of servers
  */
-public class HostConfiguration {
+public class ServerConfiguration {
 
-	private final int numServers;
-	private final int reconstructionThreshold;
-	private final int maxSafetyFaults;
-	private final int maxLivenessFaults;
+	private final int numServers; // N
+	private final int maxBftFaults; // F
+	private final int reconstructionThreshold; // K
+	private final int maxSafetyFaults; // t_S
+	private final int maxLivenessFaults; // t_L
 	private final List<InetSocketAddress> serverAddresses;
 
-	public HostConfiguration(final int numServers, final int reconstructionThreshold, final int maxSafetyFaults,
-			final int maxLivenessFaults, List<InetSocketAddress> serverAddresses) {
+	public ServerConfiguration(final int numServers, final int maxBftFaults, final int reconstructionThreshold,
+			final int maxSafetyFaults, final int maxLivenessFaults, List<InetSocketAddress> serverAddresses) {
 		this.numServers = numServers;
+		this.maxBftFaults = maxBftFaults;
 		this.reconstructionThreshold = reconstructionThreshold;
 		this.maxSafetyFaults = maxSafetyFaults;
 		this.maxLivenessFaults = maxLivenessFaults;
@@ -31,6 +33,10 @@ public class HostConfiguration {
 
 	public int getNumServers() {
 		return numServers;
+	}
+
+	public int getMaxBftFaults() {
+		return maxBftFaults;
 	}
 
 	public int getReconstructionThreshold() {
@@ -49,6 +55,7 @@ public class HostConfiguration {
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + maxBftFaults;
 		result = prime * result + maxLivenessFaults;
 		result = prime * result + maxSafetyFaults;
 		result = prime * result + numServers;
@@ -65,7 +72,9 @@ public class HostConfiguration {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		HostConfiguration other = (HostConfiguration) obj;
+		ServerConfiguration other = (ServerConfiguration) obj;
+		if (maxBftFaults != other.maxBftFaults)
+			return false;
 		if (maxLivenessFaults != other.maxLivenessFaults)
 			return false;
 		if (maxSafetyFaults != other.maxSafetyFaults)
@@ -84,9 +93,9 @@ public class HostConfiguration {
 
 	@Override
 	public String toString() {
-		return "Configuration [numServers=" + numServers + ", reconstructionThreshold=" + reconstructionThreshold
-				+ ", maxSafetyFaults=" + maxSafetyFaults + ", maxLivenessFaults=" + maxLivenessFaults
-				+ ", serverAddresses=" + serverAddresses + "]";
+		return "ServerConfiguration [numServers=" + numServers + ", maxBftFaults=" + maxBftFaults
+				+ ", reconstructionThreshold=" + reconstructionThreshold + ", maxSafetyFaults=" + maxSafetyFaults
+				+ ", maxLivenessFaults=" + maxLivenessFaults + ", serverAddresses=" + serverAddresses + "]";
 	}
 
 }

@@ -40,8 +40,6 @@ public class Configuration {
 
 	protected static String hostsFileName = "common.config";
 
-	protected boolean defaultKeys = false;
-
 	public Configuration(int procId) {
 		processId = procId;
 		init();
@@ -85,13 +83,6 @@ public class Configuration {
 				channelsBlocking = (s.equalsIgnoreCase("true")) ? true : false;
 			}
 
-			s = (String) configs.remove("system.communication.defaultkeys");
-			if (s == null) {
-				defaultKeys = false;
-			} else {
-				defaultKeys = (s.equalsIgnoreCase("true")) ? true : false;
-			}
-
 			s = (String) configs.remove("system.diffie-hellman.p");
 			if (s == null) {
 				String pHexString = "FFFFFFFF FFFFFFFF C90FDAA2 2168C234 C4C6628B 80DC1CD1"
@@ -114,10 +105,6 @@ public class Configuration {
 			System.err.println("Wrong system.config file format.");
 			e.printStackTrace(System.out);
 		}
-	}
-
-	public boolean useDefaultKeys() {
-		return defaultKeys;
 	}
 
 	public final boolean isHostSetted(int id) {
@@ -202,8 +189,8 @@ public class Configuration {
 				configHome = "config";
 			}
 			String sep = System.getProperty("file.separator");
-			String path = configHome + sep + "system.config";
-			;
+			String path = configHome + sep + "server" + sep + "bft-config" + sep + "system.config";
+			
 			FileReader fr = new FileReader(path);
 			BufferedReader rd = new BufferedReader(fr);
 			String line = null;
