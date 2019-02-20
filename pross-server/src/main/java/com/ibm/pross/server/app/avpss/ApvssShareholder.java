@@ -2,6 +2,7 @@ package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -97,7 +98,7 @@ public class ApvssShareholder {
 	protected final ZeroKnowledgeProof[] receivedProofs;
 	private final SortedMap<Integer, EcPoint> qualifiedProofs;
 	private final EcPoint[] sharePublicKeys; // g^s_i for i = 0 to n (inclusive)
-	private final EcPoint[] feldmanValues; // g^a_i for i = 0 to k-1 (inclusive)
+	private EcPoint[] feldmanValues; // g^a_i for i = 0 to k-1 (inclusive)
 
 	// Used to misbehave
 	private final boolean sendValidCommitments;
@@ -492,15 +493,22 @@ public class ApvssShareholder {
 			provenShareKeys.add(result);
 		}
 
-		for (int i = 0; i < this.n; i++) {
+		final List<DerivationResult> shareVerificationKeys = new ArrayList<>();
+		for (int i = 0; i <= this.n; i++) {
 			this.sharePublicKeys[i] = Polynomials.interpolateExponents(provenShareKeys, this.k, i);
+			shareVerificationKeys.add(new DerivationResult(BigInteger.valueOf(i+1), this.sharePublicKeys[i]));
 		}
+		
+		// Convert the share public keys to Feldman Coefficients using matrix inversion
+		this.feldmanValues = Polynomials.interpolateCoefficientsExponents(shareVerificationKeys, this.k);
 
 		final long endVerification = System.nanoTime();
 		System.out.println("Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000.0));
 		
-		System.out.println("My share:                  " + this.getShare1().getY());
-		System.out.println("Secret's verification key: " + this.getSecretPublicKey());
+		System.out.println("My share:                      " + this.getShare1().getY());
+		System.out.println("Secret's verification key:      " + this.getSecretPublicKey());
+		System.out.println("Shareholder verification keys: " + Arrays.toString(this.sharePublicKeys));
+		System.out.println("Feldman Values for Polynomial: " + Arrays.toString(this.feldmanValues));
 		System.out.println("DKG Complete!");
 
 		System.out.println("Signatures generated: " + SigningUtil.signCount.get());

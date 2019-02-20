@@ -235,5 +235,26 @@ public class ShamirTest {
 	public void testComputeUpdatedPublicKeys() {
 		fail("Not yet implemented");
 	}
+	
+	@Test
+	public void testInterpolateCoefficients()
+	{
+		int n = 9;
+		int threshold = 5;
+
+		// Create coefficients
+		final BigInteger[] coefficients = Shamir.generateCoefficients(threshold);
+		System.out.println("Original Coefficients:  " + Arrays.toString(coefficients));
+
+		// Create shares
+		final ShamirShare[] shares = Shamir.generateShares(coefficients, n);
+		final Set<ShamirShare> shareSet = new HashSet<>(Arrays.asList(shares));
+
+		// Attempt to recover coefficients from points
+		final BigInteger[] recoveredCoefficients = Polynomials.interpolateCoefficients(shareSet, threshold);
+		System.out.println("Recovered Coefficients: " + Arrays.toString(coefficients));
+		
+		Assert.assertArrayEquals(coefficients, recoveredCoefficients);
+	}
 
 }

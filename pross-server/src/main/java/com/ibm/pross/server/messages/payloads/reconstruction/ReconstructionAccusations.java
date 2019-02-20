@@ -25,6 +25,7 @@ public class ReconstructionAccusations extends Payload {
 
 	public ReconstructionAccusations(final long updateTime, final int coorruptShareholder,
 			final SortedSet<Integer> accused) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.corruptShareholder = coorruptShareholder;
 		this.accused = accused;

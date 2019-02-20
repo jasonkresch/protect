@@ -88,7 +88,7 @@ public class Polynomials {
 		return numerator.multiply(invDenominator).mod(modulo);
 	}
 
-	public static BigInteger interpolateComplete(final Collection<ShamirShare> shares, int threshold, int x) {
+	public static BigInteger interpolateComplete(final Collection<ShamirShare> shares, final int threshold, final int x) {
 		if (shares.size() < threshold) {
 			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
 		}
@@ -117,6 +117,34 @@ public class Polynomials {
 		}
 
 		return sum;
+	}
+	
+	/**
+	 * Uses matrix inversion to recover the polynomial coefficients from at least a threshold number of shares
+	 *  
+	 * @param shares
+	 * @param threshold
+	 * 
+	 * @return An array of BigIntegers representing the coefficients of the polynomial that produced the shares
+	 */
+	public static BigInteger[] interpolateCoefficients(final Collection<ShamirShare> shares, final int threshold) {
+		if (shares.size() < threshold) {
+			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
+		}
+
+		// Determine coordinates
+		final BigInteger[] xCoords = new BigInteger[threshold];
+		final List<ShamirShare> shareList = new ArrayList<>(shares);
+		for (int i = 0; i < threshold; i++) {
+			xCoords[i] = shareList.get(i).getX();
+		}
+
+		final BigInteger[][] inverseMatrix = Matrices.generateInvertedCustomVandermondeFormMatrix(xCoords);
+
+		// Solve for coefficiencts of the polynomial by multiplying inverse matrix against shares
+		final BigInteger[] coefficients = Matrices.multiplyShareVector(inverseMatrix, shareList);
+
+		return coefficients;
 	}
 
 	/**
@@ -166,5 +194,35 @@ public class Polynomials {
 		}
 
 		return sum;
+	}
+	
+	
+
+	/**
+	 * Uses matrix inversion to recover the Feldman coefficients from at least a threshold number of share results
+	 *  
+	 * @param shares
+	 * @param threshold
+	 * 
+	 * @return An array of EcPoints representing the Feldman coefficients g^ai of the polynomial that produced the share results g^si
+	 */
+	public static EcPoint[] interpolateCoefficientsExponents(final List<DerivationResult> responses, final int threshold) {
+		if (responses.size() < threshold) {
+			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
+		}
+
+		// Determine coordinates
+		final BigInteger[] xCoords = new BigInteger[threshold];
+		for (int i = 0; i < threshold; i++) {
+			final DerivationResult toprfResponse = responses.get(i);
+			xCoords[i] = toprfResponse.getIndex();
+		}
+
+		final BigInteger[][] inverseMatrix = Matrices.generateInvertedCustomVandermondeFormMatrix(xCoords);
+
+		// Solve for Feldman coefficiencts of the polynomial by multiplying inverse matrix against shares
+		final EcPoint[] feldmanCoefficients = Matrices.multiplyPointVector(inverseMatrix, responses);
+
+		return feldmanCoefficients;
 	}
 }

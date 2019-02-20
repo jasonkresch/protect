@@ -20,6 +20,7 @@ public class ReconstructionVssPublicPayload extends Payload {
 	private final EcPoint[] feldmanValues;
 
 	public ReconstructionVssPublicPayload(final long updateTime,final int corruptShareholder, final EcPoint[] feldmanValues) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.corruptShareholder = corruptShareholder;
 		this.feldmanValues = feldmanValues;

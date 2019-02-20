@@ -27,6 +27,7 @@ public class DynamicRekey extends Payload {
 	private final PublicKey newEncryptionKey;
 
 	public DynamicRekey(final long timePeriod, final PublicKey newVerifyingKey, final PublicKey newEncryptionKey) {
+		super(null, null);
 		this.updateTime = timePeriod;
 		this.newVerifyingKey = newVerifyingKey;
 		this.newEncryptionKey = newEncryptionKey;

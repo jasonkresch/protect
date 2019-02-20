@@ -17,6 +17,7 @@ public class ReconstructionContribution extends Payload {
 	private final ShamirShare shareUpdate;
 
 	public ReconstructionContribution(final long timePeriod, final ShamirShare shareUpdate) {
+		super(null, null);
 		this.updateTime = timePeriod;
 		this.shareUpdate = shareUpdate;
 	}

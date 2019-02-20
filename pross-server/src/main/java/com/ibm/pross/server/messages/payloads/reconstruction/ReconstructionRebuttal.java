@@ -21,6 +21,7 @@ public class ReconstructionRebuttal extends Payload {
 
 	public ReconstructionRebuttal(final long updateTime, final int corruptShareholder, final int accuser,
 			final byte[] rebuttalEvidence) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.corruptShareholder = corruptShareholder;
 		this.accuser = accuser;

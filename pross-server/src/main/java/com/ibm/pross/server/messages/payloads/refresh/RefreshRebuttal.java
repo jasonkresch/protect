@@ -19,6 +19,7 @@ public class RefreshRebuttal extends Payload {
 	private final byte[] rebuttalEvidence;
 
 	public RefreshRebuttal(final long updateTime, final int accuser, final byte[] rebuttalEvidence) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.accuser = accuser;
 		this.rebuttalEvidence = rebuttalEvidence;

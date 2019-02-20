@@ -22,6 +22,7 @@ public class GenerationAccusations extends Payload {
 	private final SortedSet<Integer> accused;
 
 	public GenerationAccusations(final SortedSet<Integer> accused) {
+		super(null, null);
 		this.accused = accused;
 	}
 

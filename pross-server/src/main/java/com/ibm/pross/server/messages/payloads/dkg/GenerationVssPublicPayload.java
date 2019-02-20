@@ -18,6 +18,7 @@ public class GenerationVssPublicPayload extends Payload {
 	private final EcPoint[] feldmanValues;
 
 	public GenerationVssPublicPayload(final EcPoint[] feldmanValues) {
+		super(null, null);
 		this.feldmanValues = feldmanValues;
 	}
 

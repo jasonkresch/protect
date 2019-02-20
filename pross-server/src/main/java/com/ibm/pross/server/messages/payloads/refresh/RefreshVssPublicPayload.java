@@ -19,6 +19,7 @@ public class RefreshVssPublicPayload extends Payload {
 	private final EcPoint[] feldmanValues;
 
 	public RefreshVssPublicPayload(final long updateTime, final EcPoint[] feldmanValues) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.feldmanValues = feldmanValues;
 	}

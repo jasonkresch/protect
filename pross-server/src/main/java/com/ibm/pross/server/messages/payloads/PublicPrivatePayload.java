@@ -16,6 +16,7 @@ public class PublicPrivatePayload extends Payload {
 	private final Payload privatePayload;
 
 	public PublicPrivatePayload(final Payload publicPayload, final Payload privatePayload) {
+		super(null, null);
 		this.publicPayload = publicPayload;
 		this.privatePayload = privatePayload;
 	}

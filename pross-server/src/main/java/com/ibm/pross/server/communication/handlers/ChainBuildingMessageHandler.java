@@ -33,37 +33,35 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	// Two chains which are maintained
 	private final ConcurrentMap<Long, SignedMessage> bftChain = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, SignedMessage> optChain = new ConcurrentHashMap<>();
-	
+
 	// Maintain track of votes for various positions
 	private final ConcurrentMap<Long, ConcurrentMap<SignedMessage, Set<Integer>>> votes = new ConcurrentHashMap<>();
-	
-	
+
 	// Other fields
 	private final KeyLoader keyLoader;
 	private final int myIndex;
 	private final int optQuorum;
 	private final ChannelSender sender;
-	
+
 	private final BftAtomicBroadcastChannel bftChannel;
 
 	private volatile MessageDeliveryManager messageManager;
-	
+
 	public ChainBuildingMessageHandler(final int myIndex, final int optQuorum, final KeyLoader keyLoader) {
 		this.myIndex = myIndex;
 		this.optQuorum = optQuorum;
 		this.keyLoader = keyLoader;
-		
+
 		// Create instance of atomic broadcast channel, register to receive messages
 		this.bftChannel = new BftAtomicBroadcastChannel();
 		this.sender = this.bftChannel.link(myIndex - 1);
 		this.bftChannel.register(this);
 	}
-	
-	public boolean isBftReady()
-	{
+
+	public boolean isBftReady() {
 		return this.bftChannel.isReady();
 	}
-	
+
 	public MessageDeliveryManager getMessageManager() {
 		return messageManager;
 	}
@@ -72,12 +70,9 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		this.messageManager = messageManager;
 	}
 
-	
 	////////////////////////////////////////////////////////////////////////////////
-	//                          Point-to-Point messages
+	// Point-to-Point messages
 	///////////////////////////////////////////////////////////////////////////////
-
-	
 
 	/**
 	 * Handles message received over point-to-point links
@@ -86,14 +81,14 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	public void handleMessage(final Message message) {
 
 		// TODO: Implement stuff here
-		//System.out.println("OPT BFT --- Received unique authenticated message: " /*+ message*/);
+		// System.out.println("OPT BFT --- Received unique authenticated message: " /*+
+		// message*/);
 
 		// Count votes for messages in a given position
 		if (message instanceof PublicMessage) {
 			final PublicMessage publicMessage = (PublicMessage) message;
 			final Payload payload = publicMessage.getPayload();
-			if (payload.getOpcode() == Payload.OpCode.BFT_CERTIFICATION)
-			{
+			if (payload.getOpcode() == Payload.OpCode.BFT_CERTIFICATION) {
 				final SimpleEntry<Long, SignedMessage> data = (SimpleEntry<Long, SignedMessage>) payload.getData();
 				final long messagePosition = data.getKey();
 				final SignedMessage bftMessage = data.getValue();
@@ -101,31 +96,31 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			}
 		}
 	}
-	
-	private synchronized void recordVote(final long messagePosition, final SignedMessage bftMessage, final int voterId)
-	{
+
+	private synchronized void recordVote(final long messagePosition, final SignedMessage bftMessage,
+			final int voterId) {
 		// Get the map for this position
 		this.votes.putIfAbsent(messagePosition, new ConcurrentHashMap<SignedMessage, Set<Integer>>());
 		final ConcurrentMap<SignedMessage, Set<Integer>> positionVotes = this.votes.get(messagePosition);
-		
+
 		// Get the set of votes for this message
 		positionVotes.putIfAbsent(bftMessage, new ConcurrentSkipListSet<>());
 		final Set<Integer> messageVotes = positionVotes.get(bftMessage);
 		messageVotes.add(voterId);
-		
+
 		// Check if Opt-BFT quorum has been met
-		if (messageVotes.size() == this.optQuorum)
-		{
-			//System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " /*+ bftMessage*/);
+		if (messageVotes.size() == this.optQuorum) {
+			// System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message
+			// to Opt-BFT Chain: " /*+ bftMessage*/);
 			System.out.println("Certified message #" + (optChain.size() + 1) + " is available.");
-			this.optChain.put(messagePosition, bftMessage);
-			this.notifyAll();
+			if (this.optChain.putIfAbsent(messagePosition, bftMessage) == null) {
+				this.notifyAll();
+			}
 		}
 	}
-	
-	
+
 	////////////////////////////////////////////////////////////////////////////////
-	//                          BFT
+	// BFT
 	///////////////////////////////////////////////////////////////////////////////
 
 	/**
@@ -137,36 +132,33 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 
 		// Deserialize the signed message sent as a TOM over the BFT Layer
 		final SignedMessage bftMessage = MessageSerializer.deserializeSignedMessage(serializedMessage);
-		
+
 		// Ensure it has a valid signature
 		final PublicKey senderPublicKey = keyLoader.getVerificationKey(bftMessage.getMessage().getSenderIndex());
-		if (!bftMessage.isSignatureValid(senderPublicKey))
-		{
+		if (!bftMessage.isSignatureValid(senderPublicKey)) {
 			// Ignore messages with invalid signatures
 			return;
 		}
-		
-		//System.out.println("Received new BFT message"); //: " /*+ bftMessage*/);
-		
-		
+
+		// System.out.println("Received new BFT message"); //: " /*+ bftMessage*/);
+
 		// Add BFT message to the BFT chain
 		final long messagePosition = this.bftChain.size();
 		this.bftChain.put(messagePosition, bftMessage);
-		
 
-		// Generate a certification message encapsulating this message along with our view of its position in the chain
+		// Generate a certification message encapsulating this message along with our
+		// view of its position in the chain
 		final CertificationPayload certificationPayload = new CertificationPayload(messagePosition, bftMessage);
 		final PublicMessage publicMessage = new PublicMessage(this.myIndex, certificationPayload);
-		
-		// Broadcast our signature of this message and its position over point-to-point links
-		this.messageManager.broadcast(publicMessage);
-		
 
-		
+		// Broadcast our signature of this message and its position over point-to-point
+		// links
+		this.messageManager.broadcast(publicMessage);
+
 		// Fix this: (can simulate skipping the Certification Layer)
 		// Add message straight to the opt chain and signal
-		//this.optChain.putIfAbsent(new Long(this.optChain.size()), bftMessage);
-		//this.notifyAll();
+		// this.optChain.putIfAbsent(new Long(this.optChain.size()), bftMessage);
+		// this.notifyAll();
 	}
 
 	@Override
@@ -174,25 +166,22 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		return (this.myIndex - 1);
 	}
 
-	public void send(final Message message)
-	{
+	public void send(final Message message) {
 		final SignedMessage signedMessage = new SignedMessage((PublicMessage) message, keyLoader.getSigningKey());
 		this.sender.broadcast(signedMessage);
 	}
-	
-	public void send(final SignedMessage signedMessage)
-	{
+
+	public void send(final SignedMessage signedMessage) {
 		this.sender.broadcast(signedMessage);
 	}
-	
-	public int getMessageCount()
-	{
+
+	public int getMessageCount() {
 		return this.optChain.size();
 	}
-	
-	public Message getMessage(final long messageId)
-	{
-		// We don't need to return the signed message we we have already validated its signature
+
+	public Message getMessage(final long messageId) {
+		// We don't need to return the signed message we we have already validated its
+		// signature
 		return this.optChain.get(messageId).getMessage();
 	}
 }

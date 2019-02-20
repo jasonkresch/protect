@@ -19,6 +19,7 @@ public class ReconstructionDetectCorrupt extends Payload {
 	private final EcPoint[] sharePublicKeys;
 
 	public ReconstructionDetectCorrupt(final long updateTime, final EcPoint[] sharePublicKeys) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.sharePublicKeys = sharePublicKeys;
 	}

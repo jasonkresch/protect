@@ -16,6 +16,7 @@ public class VssPrivatePayload extends Payload {
 	private final ShamirShare shareUpdate;
 
 	public VssPrivatePayload(final ShamirShare shareUpdate) {
+		super(null, null);
 		this.shareUpdate = shareUpdate;
 	}
 

@@ -23,6 +23,7 @@ public class RefreshAccusations extends Payload {
 	private final SortedSet<Integer> accused;
 
 	public RefreshAccusations(final long updateTime, final SortedSet<Integer> accused) {
+		super(null, null);
 		this.updateTime = updateTime;
 		this.accused = accused;
 	}

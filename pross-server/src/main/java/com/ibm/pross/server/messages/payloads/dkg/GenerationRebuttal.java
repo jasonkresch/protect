@@ -18,6 +18,7 @@ public class GenerationRebuttal extends Payload {
 	private final byte[] rebuttalEvidence;
 
 	public GenerationRebuttal(final int accuser, final byte[] rebuttalEvidence) {
+		super(null, null);
 		this.accuser = accuser;
 		this.rebuttalEvidence = rebuttalEvidence;
 	}
