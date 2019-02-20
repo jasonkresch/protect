@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import com.ibm.pross.server.util.EcDsaSigning;
+import com.ibm.pross.server.util.MessageSigningUtil;
 
 /**
  * A signed relayed message is a relayed message object  with an accompanying signature
@@ -36,7 +36,7 @@ public class SignedRelayedMessage implements Serializable {
 	 * @param senderSigningKey
 	 */
 	public SignedRelayedMessage(final RelayedMessage relayedMessage, final PrivateKey senderSigningKey) {
-		this(relayedMessage, EcDsaSigning.createSignature(relayedMessage, senderSigningKey));
+		this(relayedMessage, MessageSigningUtil.createSignature(relayedMessage, senderSigningKey));
 	}
 
 	/**
@@ -68,7 +68,7 @@ public class SignedRelayedMessage implements Serializable {
 	 * @return
 	 */
 	public boolean isSignatureValid(final PublicKey senderPublicKey) {
-		return EcDsaSigning.verifySignature(this.relayedMessage, this.signature, senderPublicKey);
+		return MessageSigningUtil.verifySignature(this.relayedMessage, this.signature, senderPublicKey);
 	}
 
 	@Override

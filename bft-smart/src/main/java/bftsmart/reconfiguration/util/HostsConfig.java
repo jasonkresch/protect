@@ -15,55 +15,42 @@ limitations under the License.
 */
 package bftsmart.reconfiguration.util;
 
-import java.io.BufferedReader;
-import java.io.FileReader;
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.Hashtable;
-import java.util.Iterator;
-import java.util.Set;
-import java.util.StringTokenizer;
+import java.util.HashMap;
+import java.util.Map;
+
+import bftsmart.reconfiguration.util.sharedconfig.ConfigurationLoader;
+import bftsmart.reconfiguration.util.sharedconfig.HostConfiguration;
 
 public class HostsConfig {
 
-	private Hashtable servers = new Hashtable();
+	private Map<Integer, Config> servers = new HashMap<Integer, Config>();
 
-	/** Creates a new instance of ServersConfig */
-	public HostsConfig(String configHome, String fileName) {
-		loadConfig(configHome, fileName);
+	/** Creates a new instance of ServersConfig 
+	 * @param hostsFileName */
+	public HostsConfig(String configHome, String hostsFileName) {
+		loadConfig(configHome, hostsFileName);
 	}
 
-	private void loadConfig(String configHome, String fileName) {
+	private void loadConfig(String configHome, String hostsFileName) {
+
 		try {
-			String path = "";
-			String sep = System.getProperty("file.separator");
-			if (configHome.equals("")) {
-				if (fileName.equals(""))
-					path = "config" + sep + "hosts.config";
-				else
-					path = "config" + sep + fileName;
-			} else {
-				if (fileName.equals(""))
-					path = configHome + sep + "hosts.config";
-				else
-					path = configHome + sep + fileName;
+			if (configHome == "")
+			{
+				configHome = (new File("config")).getAbsolutePath();
 			}
-			FileReader fr = new FileReader(path);
-			BufferedReader rd = new BufferedReader(fr);
-			String line = null;
-			while ((line = rd.readLine()) != null) {
-				if (!line.startsWith("#")) {
-					StringTokenizer str = new StringTokenizer(line, " ");
-					if (str.countTokens() > 2) {
-						int id = Integer.valueOf(str.nextToken());
-						String host = str.nextToken();
-						int port = Integer.valueOf(str.nextToken());
-						this.servers.put(id, new Config(id, host, port));
-					}
-				}
+			
+			File serverFile = new File(new File(configHome), "server");
+			File hostFile = new File(serverFile, hostsFileName);
+			final HostConfiguration commonConfig = ConfigurationLoader.load(hostFile);
+
+			int id = 0;
+			for (InetSocketAddress server : commonConfig.getServerAddresses()) {
+				add(id++, server.getHostString(), server.getPort()+200);
 			}
-			fr.close();
-			rd.close();
-		} catch (Exception e) {
+		} catch (IOException e) {
 			e.printStackTrace(System.out);
 		}
 	}
@@ -110,25 +97,6 @@ public class HostsConfig {
 		return -1;
 	}
 
-	public int[] getHostsIds() {
-		Set s = this.servers.keySet();
-		int[] ret = new int[s.size()];
-		Iterator it = s.iterator();
-		int p = 0;
-		while (it.hasNext()) {
-			ret[p] = Integer.parseInt(it.next().toString());
-			p++;
-		}
-		return ret;
-	}
-
-	public void setPort(int id, int port) {
-		Config c = (Config) this.servers.get(id);
-		if (c != null) {
-			c.port = port;
-		}
-	}
-
 	public String getHost(int id) {
 		Config c = (Config) this.servers.get(id);
 		if (c != null) {
@@ -146,14 +114,54 @@ public class HostsConfig {
 	}
 
 	public class Config {
-		public int id;
-		public String host;
-		public int port;
+		public final int id;
+		public final String host;
+		public final int port;
 
 		public Config(int id, String host, int port) {
 			this.id = id;
 			this.host = host;
 			this.port = port;
 		}
+
+		@Override
+		public int hashCode() {
+			final int prime = 31;
+			int result = 1;
+			result = prime * result + getEnclosingInstance().hashCode();
+			result = prime * result + ((host == null) ? 0 : host.hashCode());
+			result = prime * result + id;
+			result = prime * result + port;
+			return result;
+		}
+
+		@Override
+		public boolean equals(Object obj) {
+			if (this == obj)
+				return true;
+			if (obj == null)
+				return false;
+			if (getClass() != obj.getClass())
+				return false;
+			Config other = (Config) obj;
+			if (!getEnclosingInstance().equals(other.getEnclosingInstance()))
+				return false;
+			if (host == null) {
+				if (other.host != null)
+					return false;
+			} else if (!host.equals(other.host))
+				return false;
+			if (id != other.id)
+				return false;
+			if (port != other.port)
+				return false;
+			return true;
+		}
+
+		private HostsConfig getEnclosingInstance() {
+			return HostsConfig.this;
+		}
+		
+		
 	}
 }

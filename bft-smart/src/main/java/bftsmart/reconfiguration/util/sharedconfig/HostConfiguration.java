@@ -1,4 +1,4 @@
-package com.ibm.pross.server.configuration;
+package bftsmart.reconfiguration.util.sharedconfig;
 
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -8,7 +8,7 @@ import java.util.List;
 /**
  * Represents the configuration state of the system of servers
  */
-public class Configuration {
+public class HostConfiguration {
 
 	private final int numServers;
 	private final int reconstructionThreshold;
@@ -16,7 +16,7 @@ public class Configuration {
 	private final int maxLivenessFaults;
 	private final List<InetSocketAddress> serverAddresses;
 
-	public Configuration(final int numServers, final int reconstructionThreshold, final int maxSafetyFaults,
+	public HostConfiguration(final int numServers, final int reconstructionThreshold, final int maxSafetyFaults,
 			final int maxLivenessFaults, List<InetSocketAddress> serverAddresses) {
 		this.numServers = numServers;
 		this.reconstructionThreshold = reconstructionThreshold;
@@ -65,7 +65,7 @@ public class Configuration {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		Configuration other = (Configuration) obj;
+		HostConfiguration other = (HostConfiguration) obj;
 		if (maxLivenessFaults != other.maxLivenessFaults)
 			return false;
 		if (maxSafetyFaults != other.maxSafetyFaults)

@@ -92,17 +92,16 @@ public class ServerConnection {
 		// Connect to the remote process or just wait for the connection?
 		if (isToConnect()) {
 			// I have to connect to the remote server
+			final String host = this.controller.getStaticConf().getHost(remoteId);
+			final int port = this.controller.getStaticConf().getServerToServerPort(remoteId);
 			try {
-				this.socket = new Socket(this.controller.getStaticConf().getHost(remoteId),
-						this.controller.getStaticConf().getServerToServerPort(remoteId));
+				this.socket = new Socket(host, port);
 				ServersCommunicationLayer.setSocketOptions(this.socket);
 				new DataOutputStream(this.socket.getOutputStream())
 						.writeInt(this.controller.getStaticConf().getProcessId());
 
-			} catch (UnknownHostException ex) {
-				ex.printStackTrace();
-			} catch (IOException ex) {
-				ex.printStackTrace();
+			} catch (IOException e) {
+				System.out.println("Error connecting to: " + host + ":" + port + " - "+ e.getMessage());
 			}
 		}
 		// else I have to wait a connection from the remote server
@@ -340,7 +339,7 @@ public class ServerConnection {
 
 			// TODO: Use KeyAgreement class
 
-			PrivateKey signingKey = controller.getStaticConf().getRSAPrivateKey();
+			PrivateKey signingKey = controller.getStaticConf().getPrivateKey();
 
 			BigInteger DHPrivKey = new BigInteger(signingKey.getEncoded());
 
@@ -382,7 +381,7 @@ public class ServerConnection {
 			byte[] remote_Signature = bytes;
 
 			// verify signature
-			PublicKey remoteRSAPubkey = controller.getStaticConf().getRSAPublicKey(remoteId);
+			PublicKey remoteRSAPubkey = controller.getStaticConf().getPublicKey(remoteId);
 
 			if (!TOMUtil.verifySignature(remoteRSAPubkey, remote_Bytes, remote_Signature)) {
 

@@ -150,7 +150,7 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 			e.printStackTrace(System.err);
 		}
 
-		this.prk = this.controller.getStaticConf().getRSAPrivateKey();
+		this.prk = this.controller.getStaticConf().getPrivateKey();
 		this.dt = new DeliveryThread(this, receiver, recoverer, this.controller); // Create delivery thread
 		this.dt.start();
 		this.stateManager = recoverer.getStateManager();
@@ -200,7 +200,7 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 	 */
 	public boolean verifySignature(SignedObject so, int sender) {
 		try {
-			return so.verify(controller.getStaticConf().getRSAPublicKey(sender), engine);
+			return so.verify(controller.getStaticConf().getPublicKey(sender), engine);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

@@ -27,6 +27,8 @@ import java.security.PublicKey;
 import java.security.Signature;
 import java.security.SignatureException;
 
+import com.ibm.pross.common.util.SigningUtil;
+
 import bftsmart.reconfiguration.ViewController;
 
 public class TOMUtil {
@@ -55,7 +57,7 @@ public class TOMUtil {
 			return signatureSize;
 		}
 
-		byte[] signature = signMessage(controller.getStaticConf().getRSAPrivateKey(), "a".getBytes());
+		byte[] signature = signMessage(controller.getStaticConf().getPrivateKey(), "a".getBytes());
 
 		if (signature != null) {
 			signatureSize = signature.length;
@@ -114,13 +116,7 @@ public class TOMUtil {
 		byte[] result = null;
 		try {
 
-			Signature signatureEngine = Signature.getInstance("SHA1withRSA");
-
-			signatureEngine.initSign(key);
-
-			signatureEngine.update(message);
-
-			result = signatureEngine.sign();
+			return SigningUtil.signDefault(message, key);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -144,11 +140,7 @@ public class TOMUtil {
 		boolean result = false;
 
 		try {
-			Signature signatureEngine = Signature.getInstance("SHA1withRSA");
-
-			signatureEngine.initVerify(key);
-
-			result = verifySignature(signatureEngine, message, signature);
+			result = SigningUtil.verifyDefault(message, signature, key);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

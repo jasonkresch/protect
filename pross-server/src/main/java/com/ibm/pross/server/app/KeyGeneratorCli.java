@@ -1,6 +1,8 @@
 package com.ibm.pross.server.app;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
@@ -42,22 +44,21 @@ public class KeyGeneratorCli {
 
 		Security.addProvider(new BouncyCastleProvider());
 		Security.addProvider(new EdDSASecurityProvider());
-		
+
 		// Check usage
-		if (args.length < 2)
-		{
+		if (args.length < 2) {
 			System.err.println("USAGE: key-path index");
 		}
 		final File keyPath = new File(args[0]);
 		final int keyIndex = Integer.parseInt(args[1]);
-		
+
 		// Generate EC Key Pair
-		//final KeyPair signingKeyPair = EcKeyGeneration.generateKeyPair();
-		
+		// final KeyPair signingKeyPair = EcKeyGeneration.generateKeyPair();
+
 		// Generate Ed25519 Key Pair
 		final KeyPairGenerator keyGen = KeyPairGenerator.getInstance(EdDSASecurityProvider.PROVIDER_NAME);
 		final KeyPair signingKeyPair = keyGen.generateKeyPair();
-		
+
 		// Generate Paillier Key Pair
 		final PaillierKeyGenerator encryptionKeyGenerator = new PaillierKeyGenerator(2048);
 		final PaillierKeyPair paillierKeyPair = encryptionKeyGenerator.generate();
@@ -70,7 +71,13 @@ public class KeyGeneratorCli {
 			writeObject(encryptionKeyPair.getPublic(), writer);
 		}
 		System.out.println("Wrote: " + publicKeyFile.getAbsolutePath());
-		
+		try (final BufferedReader reader = new BufferedReader(new FileReader(publicKeyFile));) {
+			String line;
+			while ((line = reader.readLine()) != null) {
+				System.out.println(line);
+			}
+		}
+
 		// Write private keys
 		final File privateKeyFile = new File(keyPath, "private-" + keyIndex);
 		try (PemWriter writer = new PemWriter(new FileWriter(privateKeyFile.getAbsolutePath()))) {
@@ -149,7 +156,7 @@ public class KeyGeneratorCli {
 		// Convert to key pair
 		return new PaillierKeyPair(pubKey, privKey);
 	}
-	
+
 	// Note this is only to take advantage of existing serialization methods
 	public static PaillierPrivateKey convertToPaillierPrivateKey(final RSAPrivateKey rsaPrivateKey)
 			throws InvalidKeySpecException, NoSuchAlgorithmException {
@@ -161,7 +168,7 @@ public class KeyGeneratorCli {
 		// Convert them back to Paillier private key
 		return new PaillierPrivateKey(lambda, n);
 	}
-	
+
 	// Note this is only to take advantage of existing serialization methods
 	public static PaillierPublicKey convertToPaillierPublicKey(final RSAPublicKey rsaPublicKey)
 			throws InvalidKeySpecException, NoSuchAlgorithmException {

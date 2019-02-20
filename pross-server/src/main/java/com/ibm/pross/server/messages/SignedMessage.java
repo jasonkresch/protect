@@ -10,7 +10,7 @@ import java.io.Serializable;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 
-import com.ibm.pross.server.util.EcDsaSigning;
+import com.ibm.pross.server.util.MessageSigningUtil;
 
 /**
  * A signed message is a message object (either public or a private message)
@@ -37,7 +37,7 @@ public class SignedMessage implements Serializable {
 	 * @param senderSigningKey
 	 */
 	public SignedMessage(final PublicMessage message, final PrivateKey senderSigningKey) {
-		this(message, EcDsaSigning.createSignature(message, senderSigningKey));
+		this(message, MessageSigningUtil.createSignature(message, senderSigningKey));
 	}
 
 	/**
@@ -69,7 +69,7 @@ public class SignedMessage implements Serializable {
 	 * @return
 	 */
 	public boolean isSignatureValid(final PublicKey senderPublicKey) {
-		return EcDsaSigning.verifySignature((PublicMessage) this.message, this.signature, senderPublicKey);
+		return MessageSigningUtil.verifySignature((PublicMessage) this.message, this.signature, senderPublicKey);
 	}
 
 	@Override

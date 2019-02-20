@@ -36,10 +36,23 @@ import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
 public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFOExecutable {
 
 	private final ChannelListener listener;
+	private volatile ServiceReplica serviceReplica;
 
 	public BftListenerWrapper(final ChannelListener listener) {
 		this.listener = listener;
-		new ServiceReplica(listener.getId(), this, this);
+
+		// Start service replica in a thread
+		final Thread thread = new Thread() {
+			public void run() {
+				BftListenerWrapper.this.serviceReplica = new ServiceReplica(listener.getId(), BftListenerWrapper.this,
+						BftListenerWrapper.this);
+			}
+		};
+		thread.start();
+	}
+
+	public boolean isReady() {
+		return ((this.serviceReplica != null) && (this.serviceReplica.isServiceReady()));
 	}
 
 	@Override
@@ -56,7 +69,7 @@ public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFO
 	public byte[] executeUnorderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
 		throw new RuntimeException("Unused method was invoked!");
 	}
-	
+
 	@Override
 	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
 		try {
@@ -68,17 +81,15 @@ public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFO
 		return command;
 	}
 
+	@Override
+	public void installSnapshot(byte[] state) {
+		throw new RuntimeException("Not yet implemented!");
+	}
 
-	
-	
-    @Override
-    public void installSnapshot(byte[] state) {
-    	throw new RuntimeException("Not yet implemented!");    }
-
-    @Override
-    public byte[] getSnapshot() {
-    	// Not yet implemented
-        return new byte[0];
-    }
+	@Override
+	public byte[] getSnapshot() {
+		// Not yet implemented
+		return new byte[0];
+	}
 
 }

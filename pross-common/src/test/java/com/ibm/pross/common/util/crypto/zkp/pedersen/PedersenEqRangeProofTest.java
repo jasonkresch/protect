@@ -182,7 +182,6 @@ public class PedersenEqRangeProofTest {
 		final PaillierKeyGenerator keyGenerator = new PaillierKeyGenerator(2048);
 		final PaillierKeyPair keyPair = keyGenerator.generate();
 		final PaillierPublicKey publicKey = keyPair.getPublicKey();
-		final PaillierPrivateKey privateKey = keyPair.getPrivateKey();
 
 		final BigInteger share1 = RandomNumberGenerator.generateRandomInteger(curve.getR());
 		final BigInteger share2 = RandomNumberGenerator.generateRandomInteger(curve.getR());

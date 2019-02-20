@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
+import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
@@ -31,9 +32,11 @@ import com.ibm.pross.server.app.avpss.exceptions.InvalidCiphertextException;
 import com.ibm.pross.server.app.avpss.exceptions.InvalidZeroKnowledgeProofException;
 import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
-import com.ibm.pross.server.configuration.KeyLoader;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
+
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
+
 import com.ibm.pross.server.messages.PublicMessage;
 
 public class ApvssShareholder {
@@ -55,7 +58,7 @@ public class ApvssShareholder {
 
 	// Our message processing thread
 	private final Thread messageProcessingThread;
-	private final AtomicBoolean stopped = new AtomicBoolean(false);
+	private final AtomicBoolean stopped = new AtomicBoolean(true);
 
 	// The index of this shareholder (ourself) (one is the base index)
 	// This shareholder will hold the share at f(index)
@@ -69,6 +72,9 @@ public class ApvssShareholder {
 
 	// The maximum number of failures
 	private final int f;
+
+	// Tracks if we have sent our public sharing
+	private final AtomicBoolean broadcastSharing = new AtomicBoolean(false);
 
 	// Received public sharings
 	protected final PublicSharing[] receivedSharings;
@@ -95,15 +101,21 @@ public class ApvssShareholder {
 
 	// Used to misbehave
 	private final boolean sendValidCommitments;
-	
+
 	// Used to time operation
 	private volatile long startTime;
+
+	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
+			final int n, final int k, final int f)
+	{
+		this(keyLoader, channel, index, n, k, f, true);
+	}
 	
 	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
 			final int n, final int k, final int f, final boolean sendValidCommitments) {
 
 		this.sendValidCommitments = sendValidCommitments;
-		
+
 		verifyConstraints(n, k, f);
 
 		/** Values unique to ourselves **/
@@ -172,7 +184,7 @@ public class ApvssShareholder {
 	private synchronized void messageIsAvailable() {
 		int messageId = this.currentMessageId.getAndIncrement();
 		final Message message = this.channel.getMessage(messageId);
-		System.out.println("DKG app processing message #" + messageId);
+		// System.out.println("DKG app processing message #" + messageId);
 		deliver(message);
 	}
 
@@ -208,10 +220,8 @@ public class ApvssShareholder {
 	}
 
 	public void start(boolean sendContributions) {
-		if (this.stopped.compareAndSet(false, false)) {
-			
-			this.startTime = System.nanoTime();
-			
+		if (this.stopped.compareAndSet(true, false)) {
+
 			if (sendContributions) {
 				// First broadcast our commitment and share contributions to the channel
 				broadcastPublicSharing();
@@ -245,22 +255,28 @@ public class ApvssShareholder {
 	 * commitments. This will start the DKG protocol based on APVSS, and it will be
 	 * driven to completion.
 	 */
-	private void broadcastPublicSharing() {
+	public void broadcastPublicSharing() {
 
-		// Get shareholder public encryption keys
-		final PaillierPublicKey[] publicKeys = new PaillierPublicKey[n];
-		for (int i = 1; i <= n; i++) {
-			publicKeys[i - 1] = (PaillierPublicKey) this.keyLoader.getEncryptionKey(i);
+		if (this.broadcastSharing.compareAndSet(false, true)) {
+
+			System.out.println("Starting DKG operation!");
+			this.startTime = System.nanoTime();
+			
+			// Get shareholder public encryption keys
+			final PaillierPublicKey[] publicKeys = new PaillierPublicKey[n];
+			for (int i = 1; i <= n; i++) {
+				publicKeys[i - 1] = (PaillierPublicKey) this.keyLoader.getEncryptionKey(i);
+			}
+
+			// Create Public Sharing of a random secret
+			final PublicSharingGenerator generator = new PublicSharingGenerator(this.n, this.k);
+			final PublicSharing publicSharing = generator.shareRandomSecret(publicKeys);
+
+			// Create a semi-private message
+			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
+			final Message publicSharingMessage = new PublicMessage(this.index, payload);
+			this.channel.send(publicSharingMessage);
 		}
-
-		// Create Public Sharing of a random secret
-		final PublicSharingGenerator generator = new PublicSharingGenerator(this.n, this.k);
-		final PublicSharing publicSharing = generator.shareRandomSecret(publicKeys);
-
-		// Create a semi-private message
-		final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
-		final Message publicSharingMessage = new PublicMessage(this.index, payload);
-		this.channel.send(publicSharingMessage);
 	}
 
 	/**
@@ -273,6 +289,11 @@ public class ApvssShareholder {
 	 */
 	protected synchronized void deliverPublicSharing(final PublicMessage message)
 			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException {
+
+		// A DKG is starting, broadcast sharing if we have not already done so
+		if (!broadcastSharing.get()) {
+			broadcastPublicSharing();
+		}
 
 		// Check if we've seen one of these already
 		final int senderIndex = message.getSenderIndex();
@@ -370,6 +391,9 @@ public class ApvssShareholder {
 		broadcastZkp();
 
 		this.isQualSetDefined = true;
+
+		final long shareEnd = System.nanoTime();
+		System.out.println("Time to establish share:             " + (((double) (shareEnd - startTime)) / 1_000_000.0));
 	}
 
 	/**
@@ -411,11 +435,10 @@ public class ApvssShareholder {
 			throws DuplicateMessageReceivedException, StateViolationException, InvalidZeroKnowledgeProofException {
 
 		// Ensure we have completed the sharing
-		if (!this.isQualSetDefined)
-		{
+		if (!this.isQualSetDefined) {
 			throw new StateViolationException("Sharing has not yet completed");
 		}
-		
+
 		// Check if we've seen one of these already
 		final int senderIndex = message.getSenderIndex();
 		if (this.receivedProofs[senderIndex - 1] != null) {
@@ -432,7 +455,7 @@ public class ApvssShareholder {
 			final BigInteger x = BigInteger.valueOf(senderIndex);
 			final EcPoint shareCommitment = PublicSharingGenerator.interpolatePedersonCommitments(x,
 					this.pedersenCommitments);
-			
+
 			// Verify proof
 			if (ZeroKnowledgeProver.verifyProof(shareCommitment, proof)) {
 
@@ -472,9 +495,16 @@ public class ApvssShareholder {
 		for (int i = 0; i < this.n; i++) {
 			this.sharePublicKeys[i] = Polynomials.interpolateExponents(provenShareKeys, this.k, i);
 		}
+
+		final long endVerification = System.nanoTime();
+		System.out.println("Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000.0));
 		
-		final long endTime = System.nanoTime();
-		System.err.println("Internal: shareholder: time took =" + (((double)(endTime - startTime)) / 1_000_000.0));
+		System.out.println("My share:                  " + this.getShare1().getY());
+		System.out.println("Secret's verification key: " + this.getSecretPublicKey());
+		System.out.println("DKG Complete!");
+
+		System.out.println("Signatures generated: " + SigningUtil.signCount.get());
+		System.out.println("Signatures verified:  " + SigningUtil.verCount.get());
 	}
 
 	/**
@@ -502,7 +532,8 @@ public class ApvssShareholder {
 	/**
 	 * Returns the public key of the share for this shareholder: y_i = g^x_i
 	 * 
-	 * This method will return null if called before DKG protocol has built the public keys
+	 * This method will return null if called before DKG protocol has built the
+	 * public keys
 	 * 
 	 * @see waitForQual();
 	 * 
@@ -575,6 +606,7 @@ public class ApvssShareholder {
 		}
 	}
 
-	// TODO: Catch all instances of casting (check instance of) or catch ClassCastException
+	// TODO: Catch all instances of casting (check instance of) or catch
+	// ClassCastException
 
 }

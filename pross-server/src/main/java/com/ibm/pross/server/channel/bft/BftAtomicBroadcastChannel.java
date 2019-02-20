@@ -6,17 +6,16 @@ import com.ibm.pross.server.channel.ChannelSender;
 
 public class BftAtomicBroadcastChannel implements AtomicBroadcastChannel {
 
+	private volatile BftListenerWrapper wrapper;
+	
 	@Override
 	public void register(final ChannelListener listener) {
-
-		final Thread thread = new Thread() {
-			public void run() {
-				// Start BFT Service Instance to relay messages to the listener
-				new BftListenerWrapper(listener);
-			}
-		};
-
-		thread.start();
+		this.wrapper = new BftListenerWrapper(listener);
+	}
+	
+	public boolean isReady()
+	{
+		return ((this.wrapper != null) && (this.wrapper.isReady()));
 	}
 
 	@Override

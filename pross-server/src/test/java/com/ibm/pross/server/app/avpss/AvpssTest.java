@@ -23,10 +23,10 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.app.ServerApplication;
-import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.avpss.AlertLog.ErrorCondition;
 import com.ibm.pross.server.app.avpss.channel.FifoAtomicBroadcastChannelLocalImpl;
-import com.ibm.pross.server.configuration.KeyLoader;
+
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 public class AvpssTest {
 

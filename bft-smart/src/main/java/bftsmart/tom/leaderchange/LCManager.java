@@ -983,7 +983,7 @@ public class LCManager {
 			} else if (consMsg.getProof() instanceof byte[]) { // certificate is made of signatures
 
 				bftsmart.tom.util.Logger.println("(LCManager.hasValidProof) Proof made of Signatures");
-				pubRSAKey = SVController.getStaticConf().getRSAPublicKey(consMsg.getSender());
+				pubRSAKey = SVController.getStaticConf().getPublicKey(consMsg.getSender());
 
 				byte[] signature = (byte[]) consMsg.getProof();
 

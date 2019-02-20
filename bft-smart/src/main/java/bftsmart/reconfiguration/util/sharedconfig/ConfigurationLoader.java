@@ -1,4 +1,4 @@
-package com.ibm.pross.server.configuration;
+package bftsmart.reconfiguration.util.sharedconfig;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -16,7 +16,7 @@ public class ConfigurationLoader {
 	public static final String MAX_LIVENESS_FAULTS_KEY = "max_liveness_faults";
 	public static final String NUM_SERVERS_KEY_PREFIX = "server.";
 	
-	public static Configuration load(final File configFile) throws IOException {
+	public static HostConfiguration load(final File configFile) throws IOException {
 
 		final Properties properties = new Properties();
 
@@ -44,7 +44,7 @@ public class ConfigurationLoader {
 
 		inputStream.close();
 
-		return new Configuration(numServers, reconstructionThreshold, maxSafetyFaults, maxLivenessFaults, serverAddresses);
+		return new HostConfiguration(numServers, reconstructionThreshold, maxSafetyFaults, maxLivenessFaults, serverAddresses);
 	}
 
 }

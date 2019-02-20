@@ -21,6 +21,8 @@ import java.security.SignatureException;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
 
+import com.ibm.pross.common.util.SigningUtil;
+
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.util.Logger;
 import bftsmart.tom.util.TOMUtil;
@@ -43,7 +45,7 @@ public class ClientData {
 	// anb: new code to deal with client requests that arrive after their execution
 	private RequestList orderedRequests = new RequestList(5);
 
-	private Signature signatureVerificator = null;
+	private PublicKey publicKey = null;
 
 	/**
 	 * Class constructor. Just store the clientId and creates a signature
@@ -58,8 +60,7 @@ public class ClientData {
 		this.clientId = clientId;
 		if (publicKey != null) {
 			try {
-				signatureVerificator = Signature.getInstance("SHA1withRSA");
-				signatureVerificator.initVerify(publicKey);
+				this.publicKey = publicKey;
 				Logger.println("Signature verifier initialized for client " + clientId);
 			} catch (Exception ex) {
 				ex.printStackTrace();
@@ -112,12 +113,8 @@ public class ClientData {
 	}
 
 	public boolean verifySignature(byte[] message, byte[] signature) {
-		if (signatureVerificator != null) {
-			try {
-				return TOMUtil.verifySignature(signatureVerificator, message, signature);
-			} catch (SignatureException ex) {
-				System.err.println("Error in processing client " + clientId + " signature: " + ex.getMessage());
-			}
+		if (publicKey != null) {
+			return TOMUtil.verifySignature(publicKey, message, signature);
 		}
 		return false;
 	}

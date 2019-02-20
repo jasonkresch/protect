@@ -15,10 +15,12 @@ limitations under the License.
 */
 package bftsmart.reconfiguration.util;
 
+import java.io.File;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.StringTokenizer;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.tom.util.Logger;
 
 public class TOMConfiguration extends Configuration {
@@ -37,7 +39,7 @@ public class TOMConfiguration extends Configuration {
 	protected int outQueueSize;
 	protected boolean shutdownHookEnabled;
 	protected boolean useSenderThread;
-	protected RSAKeyLoader rsaLoader;
+	protected KeyLoader keyLoader;
 	private int debug;
 	private int numNIOThreads;
 	private int useMACs;
@@ -334,7 +336,11 @@ public class TOMConfiguration extends Configuration {
 				sameBatchSize = false;
 			}
 
-			rsaLoader = new RSAKeyLoader(processId, TOMConfiguration.configHome, defaultKeys);
+			// Load keys
+			final File serverDirectory = new File(TOMConfiguration.configHome, "server");
+			final File keysDirectory = new File(serverDirectory, "keys");
+			this.keyLoader = new KeyLoader(keysDirectory, n, (processId + 1));
+			
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 		}
@@ -492,29 +498,18 @@ public class TOMConfiguration extends Configuration {
 		return useControlFlow;
 	}
 
-	public PublicKey getRSAPublicKey() {
+	public PublicKey getPublicKey(final int serverId) {
 		try {
-			return rsaLoader.loadPublicKey();
+			return this.keyLoader.getVerificationKey(serverId + 1);
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 			return null;
 		}
-
 	}
 
-	public PublicKey getRSAPublicKey(int id) {
+	public PrivateKey getPrivateKey() {
 		try {
-			return rsaLoader.loadPublicKey(id);
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-			return null;
-		}
-
-	}
-
-	public PrivateKey getRSAPrivateKey() {
-		try {
-			return rsaLoader.loadPrivateKey();
+			return this.keyLoader.getSigningKey();
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 			return null;
@@ -522,7 +517,6 @@ public class TOMConfiguration extends Configuration {
 	}
 
 	public boolean isBFT() {
-
 		return this.isBFT;
 	}
 

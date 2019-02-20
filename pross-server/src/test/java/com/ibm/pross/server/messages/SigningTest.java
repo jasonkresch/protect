@@ -24,7 +24,7 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.messages.MessageSignature;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.payloads.refresh.RefreshAccusations;
-import com.ibm.pross.server.util.EcDsaSigning;
+import com.ibm.pross.server.util.MessageSigningUtil;
 
 public class SigningTest {
 
@@ -55,9 +55,9 @@ public class SigningTest {
 		final KeyPair keyPair = generateKeyPair();
 
 		final PublicMessage message = new PublicMessage(0, new RefreshAccusations(1, new TreeSet<Integer>()));
-		final MessageSignature signature = EcDsaSigning.createSignature(message, keyPair.getPrivate());
+		final MessageSignature signature = MessageSigningUtil.createSignature(message, keyPair.getPrivate());
 
-		Assert.assertTrue(EcDsaSigning.verifySignature(message, signature, keyPair.getPublic()));
+		Assert.assertTrue(MessageSigningUtil.verifySignature(message, signature, keyPair.getPublic()));
 	}
 
 }

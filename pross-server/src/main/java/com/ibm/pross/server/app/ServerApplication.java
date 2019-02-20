@@ -1,25 +1,32 @@
 package com.ibm.pross.server.app;
 
+import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
+import org.apache.log4j.BasicConfigurator;
+import org.apache.log4j.Level;
+import org.apache.log4j.LogManager;
+import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
 import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
-import com.ibm.pross.server.configuration.Configuration;
-import com.ibm.pross.server.configuration.ConfigurationLoader;
-import com.ibm.pross.server.configuration.KeyLoader;
-import com.ibm.pross.server.util.EcDsaSigning;
 
+import bftsmart.reconfiguration.util.sharedconfig.ConfigurationLoader;
+import bftsmart.reconfiguration.util.sharedconfig.HostConfiguration;
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class ServerApplication {
@@ -33,13 +40,26 @@ public class ServerApplication {
 	public static String KEYS_DIRECTORY = "keys";
 	public static String SAVE_DIRECTORY = "state";
 
-	
-	private final Configuration configuration;
+	private final HostConfiguration configuration;
 	private final KeyLoader keyLoader;
 	private final ChainBuildingMessageHandler chainBuilder;
-	
-	public ServerApplication(final File baseDirectory, final int serverIndex) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException
-	{
+
+	private void doDistribuedKeyGeneration(final ApvssShareholder shareholder) {
+		
+		// Initiate the DKG
+		shareholder.broadcastPublicSharing();
+		
+		// Wait for share to be established
+		shareholder.waitForQual();
+
+		// Wait for completion
+		shareholder.waitForPublicKeys();
+
+	}
+
+	public ServerApplication(final File baseDirectory, final int serverIndex)
+			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
+
 		// Load configuration
 		final File configFile = new File(baseDirectory, CONFIG_FILENAME);
 		this.configuration = ConfigurationLoader.load(configFile);
@@ -61,55 +81,85 @@ public class ServerApplication {
 		messageReceiver.start();
 		System.out.println("Listening on port: " + myPort);
 
+		// Perform basic benchmark before starting up
+		System.out.print("Benchmarking Algorithms: ");
+		BenchmarkCli.runAllBenchmarks();
+
 		// Create message handler for the Certified Chain
 		final int optQuorum = (this.configuration.getNumServers() - this.configuration.getMaxLivenessFaults());
 		this.chainBuilder = new ChainBuildingMessageHandler(serverIndex, optQuorum, this.keyLoader);
-		
+
 		// Create message manager to manage messages received over point to point links;
-		final MessageDeliveryManager messageManager = new MessageDeliveryManager(serverAddresses, serverIndex, this.keyLoader,
-				saveFile, this.chainBuilder, messageReceiver);
+		final MessageDeliveryManager messageManager = new MessageDeliveryManager(serverAddresses, serverIndex,
+				this.keyLoader, saveFile, this.chainBuilder, messageReceiver);
 		this.chainBuilder.setMessageManager(messageManager);
+
 		
-		
-		Thread.sleep(10_000);
-		
-		
-		// Create DKG shareholder
-		
-		// Define parameters
+		// Wait for BFT to setup
+		while (!this.chainBuilder.isBftReady())
+		{
+			Thread.sleep(100);
+		}
+		System.out.println("System ready.");
+
+		// Create Shareholder
 		final int n = configuration.getNumServers();
 		final int k = configuration.getMaxSafetyFaults() + 1;
 		final int f = configuration.getMaxLivenessFaults();
-
-		final long start = System.nanoTime();
-		System.err.println("Starting shareholder: t=" + start);
+		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f);
+		shareholder.start(false); // We start the message processing thread but don't start the DKG
 		
-		// Create shareholder
 		
-		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f, true);
-		//if (serverIndex != 3)
-		shareholder.start(true);
-		shareholder.waitForQual();
-
-		System.err.println("Share established!");
 		
-		// Wait for completion
-		shareholder.waitForPublicKeys();
 		
-		final long end = System.nanoTime();
-		System.err.println("Completed shareholder: time took =" + (((double)(end - start)) / 1_000_000.0));
-		
-		shareholder.stop();
-
-		System.err.println("Created share: " + shareholder.getShare1().getY());
-		System.err.println("Share public key: " + shareholder.getSecretPublicKey());
-		System.err.println("Done!");
-		
-		System.out.print("Signatures generated: " + EcDsaSigning.signCount.get() + ", verified: " + EcDsaSigning.verCount.get());
+		// Prompt user for action
+		final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+		while (true) {
+			System.out.println("Available Options:");
+			System.out.println("1. Initiate DKG");
+			System.out.println("2. Initiate Share Recovery");
+			System.out.println("3. Initiate Proactive Refresh");
+			System.out.println("4. Quit");
+			System.out.print("Enter selection: ");
+			final String input = reader.readLine();
+			switch (input) {
+				case "1":
+					System.out.println("Performing DKG...");
+					doDistribuedKeyGeneration(shareholder);
+					break;
+				case "2":
+					System.out.println("Performing Share Recovery...");
+					break;
+				case "3":
+					System.out.println("Performing Proactive Refresh...");
+					break;
+				case "4":
+					System.out.println("Exiting...");
+					System.exit(0);
+					break;
+				default:
+					System.err.println("Unknown selection: " + input);
+			}
+		}
 	}
-	
+
 	public static void main(final String[] args)
 			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
+		
+		// Configure logging
+		BasicConfigurator.configure();
+		List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
+		loggers.add(LogManager.getRootLogger());
+		for ( Logger logger : loggers ) {
+		    logger.setLevel(Level.OFF);
+		}
+		
+		// Delete BFT SMaRt's cache of the view
+		final File configPath = new File("config");
+		final File cachedView = new File(configPath, "currentView");
+		cachedView.delete();
+		
+		// Print launch configuration
 		System.out.println(Arrays.toString(args));
 
 		// Parse arguments
@@ -119,9 +169,9 @@ public class ServerApplication {
 		}
 		final File baseDirectory = new File(args[0]);
 		final int serverIndex = Integer.parseInt(args[1]);
-		
-		final ServerApplication serverApplication = new ServerApplication(baseDirectory, serverIndex);
 
+		// Start server
+		new ServerApplication(baseDirectory, serverIndex);
 	}
 
 }

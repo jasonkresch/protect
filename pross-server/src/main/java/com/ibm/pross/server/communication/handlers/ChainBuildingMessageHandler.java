@@ -16,13 +16,14 @@ import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.channel.bft.BftAtomicBroadcastChannel;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
-import com.ibm.pross.server.configuration.KeyLoader;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.payloads.optbft.CertificationPayload;
 import com.ibm.pross.server.util.MessageSerializer;
+
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 /**
  * Connects the BFT layer to the Certified Opt chain
@@ -42,6 +43,8 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	private final int myIndex;
 	private final int optQuorum;
 	private final ChannelSender sender;
+	
+	private final BftAtomicBroadcastChannel bftChannel;
 
 	private volatile MessageDeliveryManager messageManager;
 	
@@ -51,9 +54,14 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		this.keyLoader = keyLoader;
 		
 		// Create instance of atomic broadcast channel, register to receive messages
-		final BftAtomicBroadcastChannel channel = new BftAtomicBroadcastChannel();
-		this.sender = channel.link(myIndex - 1);
-		channel.register(this);
+		this.bftChannel = new BftAtomicBroadcastChannel();
+		this.sender = this.bftChannel.link(myIndex - 1);
+		this.bftChannel.register(this);
+	}
+	
+	public boolean isBftReady()
+	{
+		return this.bftChannel.isReady();
 	}
 	
 	public MessageDeliveryManager getMessageManager() {
@@ -78,7 +86,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	public void handleMessage(final Message message) {
 
 		// TODO: Implement stuff here
-		System.out.println("OPT BFT --- Received unique authenticated message: " /*+ message*/);
+		//System.out.println("OPT BFT --- Received unique authenticated message: " /*+ message*/);
 
 		// Count votes for messages in a given position
 		if (message instanceof PublicMessage) {
@@ -108,7 +116,8 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		// Check if Opt-BFT quorum has been met
 		if (messageVotes.size() == this.optQuorum)
 		{
-			System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " /*+ bftMessage*/);
+			//System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message to Opt-BFT Chain: " /*+ bftMessage*/);
+			System.out.println("Certified message #" + (optChain.size() + 1) + " is available.");
 			this.optChain.put(messagePosition, bftMessage);
 			this.notifyAll();
 		}
@@ -137,7 +146,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			return;
 		}
 		
-		System.out.println("Received authenticated message over BFT channel: " /*+ bftMessage*/);
+		//System.out.println("Received new BFT message"); //: " /*+ bftMessage*/);
 		
 		
 		// Add BFT message to the BFT chain

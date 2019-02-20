@@ -16,6 +16,7 @@ limitations under the License.
 package bftsmart.reconfiguration.util;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.FileReader;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
@@ -37,7 +38,7 @@ public class Configuration {
 
 	protected static String configHome = "";
 
-	protected static String hostsFileName = "";
+	protected static String hostsFileName = "common.config";
 
 	protected boolean defaultKeys = false;
 

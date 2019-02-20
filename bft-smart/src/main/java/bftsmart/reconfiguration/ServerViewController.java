@@ -100,7 +100,7 @@ public class ServerViewController extends ViewController {
 
 	public void enqueueUpdate(TOMMessage up) {
 		ReconfigureRequest request = (ReconfigureRequest) TOMUtil.getObject(up.getContent());
-		if (TOMUtil.verifySignature(getStaticConf().getRSAPublicKey(request.getSender()), request.toString().getBytes(),
+		if (TOMUtil.verifySignature(getStaticConf().getPublicKey(request.getSender()), request.toString().getBytes(),
 				request.getSignature())) {
 			if (request.getSender() == getStaticConf().getTTPId()) {
 				this.updates.add(up);

@@ -33,7 +33,7 @@ public class EcDsaSigningTest {
 	public void testSignaturePerformanceEcDsa() throws SignatureException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException {
 
 
-		final String signatureAlgorithm = CommonConfiguration.SIGNATURE_ALGORITHM;
+		final String signatureAlgorithm = CommonConfiguration.EC_SIGNATURE_ALGORITHM;
 
 		// Create message to sign
 		final byte[] message = new byte[4096];
@@ -73,7 +73,7 @@ public class EcDsaSigningTest {
 	@Test
 	public void testVerifyPerformanceEcDsa() throws SignatureException, NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException {
 
-		final String signatureAlgorithm = CommonConfiguration.SIGNATURE_ALGORITHM;
+		final String signatureAlgorithm = CommonConfiguration.EC_SIGNATURE_ALGORITHM;
 
 		// Create message to sign
 		final byte[] message = new byte[4096];
@@ -124,7 +124,7 @@ public class EcDsaSigningTest {
 	public void testECDSA()
 			throws NoSuchAlgorithmException, NoSuchProviderException, InvalidKeyException, SignatureException {
 
-		final String signatureAlgorithm = CommonConfiguration.SIGNATURE_ALGORITHM;
+		final String signatureAlgorithm = CommonConfiguration.EC_SIGNATURE_ALGORITHM;
 
 		// Create message to sign
 		final byte[] message = new byte[4096];

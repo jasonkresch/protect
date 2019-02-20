@@ -43,6 +43,8 @@ public class CommonConfiguration {
 	// Default hash algorithm
 	public static final String HASH_ALGORITHM = "SHA-512";
 	
-	// Default signature algorithm
-	public final static String SIGNATURE_ALGORITHM = "SHA512withECDSA";
+	// Default signature algorithms for different key types
+	public final static String EC_SIGNATURE_ALGORITHM = "SHA512withECDSA";
+	public final static String ED_SIGNATURE_ALGORITHM = "NONEwithEdDSA";
+	public final static String RSA_SIGNATURE_ALGORITHM = "SHA512withRSA";
 }

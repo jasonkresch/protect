@@ -591,6 +591,11 @@ public class ServiceReplica {
 
 		return cs;
 	}
+	
+	public boolean isServiceReady()
+	{
+		return (this.tomLayer != null) && (this.tomLayer.isAlive() && (this.tomLayer.getLastExec() == -1));
+	}
 
 	public int getId() {
 		return id;
