@@ -35,7 +35,7 @@ public class MessageSignature implements Serializable {
 
 	@Override
 	public String toString() {
-		return "[MessageSignature]";
+		return "MessageSignature [algorithm=" + algorithm + ", signatureBytes=" + Arrays.toString(signatureBytes) + "]";
 	}
 
 	@Override
@@ -43,6 +43,7 @@ public class MessageSignature implements Serializable {
 		final int prime = 31;
 		int result = 1;
 		result = prime * result + ((algorithm == null) ? 0 : algorithm.hashCode());
+		result = prime * result + Arrays.hashCode(signatureBytes);
 		return result;
 	}
 
@@ -60,8 +61,9 @@ public class MessageSignature implements Serializable {
 				return false;
 		} else if (!algorithm.equals(other.algorithm))
 			return false;
+		if (!Arrays.equals(signatureBytes, other.signatureBytes))
+			return false;
 		return true;
 	}
 
-	
 }

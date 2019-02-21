@@ -37,16 +37,14 @@ public class AtomicFileOperations {
 		final File tempFile = new File(parentDirectory,
 				destinationFile.getName() + UUID.randomUUID().toString() + ".tmp");
 
-		try (final FileOutputStream fos = new FileOutputStream(tempFile);
-				final ObjectOutputStream ois = new ObjectOutputStream(fos);) {
+		try (final FileOutputStream fos = new FileOutputStream(tempFile);) {
 
 			// FIXME: Make serialization of state objects more efficient, currently a
 			// performance problem
 
 			// Do everything we can to ensure a flush to storage
-			ois.write(data);
+			fos.write(data);
 			//fos.getChannel().force(true);
-			ois.flush();
 			fos.flush();
 			//fos.getFD().sync();
 			fos.close();
