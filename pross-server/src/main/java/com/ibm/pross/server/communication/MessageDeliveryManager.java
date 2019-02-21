@@ -51,8 +51,9 @@ public class MessageDeliveryManager {
 
 		// Load persisted state from disk
 		this.saveLocation = saveLocation;
-		this.messageStateTracker = loadPersistedState(serverAddresses.size(), myIndex, saveLocation);
-
+		final File saveFile = new File(saveLocation, "message-state.dat");
+		this.messageStateTracker = loadPersistedState(serverAddresses.size(), myIndex, saveFile);
+		
 		// Create a message sender for each server
 		this.messageSenders = new ArrayList<>(serverAddresses.size());
 		for (final InetSocketAddress serverAddress : serverAddresses) {
@@ -63,24 +64,21 @@ public class MessageDeliveryManager {
 		this.timer.scheduleAtFixedRate(new StubbornSendTask(), RESEND_DELAY, RESEND_DELAY);
 
 		// Start thread to process messages from the messageReceiver
-		final Thread messageReceiveProcessingThread = new Thread(new Runnable() {
-			@Override
-			public void run() {
-				while (true) {
-					final byte[] rawMessage = messageReceiver.awaitNextMessage();
-					try {
-						final Object object = MessageSerializer.deserializeSignedRelayedMessage(rawMessage);
-						if (object instanceof SignedRelayedMessage) {
+		final Thread messageReceiveProcessingThread = new Thread(() -> {
+			while (true) {
+				final byte[] rawMessage = messageReceiver.awaitNextMessage();
+				try {
+					final Object object = MessageSerializer.deserializeSignedRelayedMessage(rawMessage);
+					if (object instanceof SignedRelayedMessage) {
 
-							final SignedRelayedMessage signedRelayedMessage = (SignedRelayedMessage) object;
-							// System.out.println("RAW Opt BFT --- Received signed relay message: " +
-							// signedRelayedMessage);
+						final SignedRelayedMessage signedRelayedMessage = (SignedRelayedMessage) object;
+						// System.out.println("RAW Opt BFT --- Received signed relay message: " +
+						// signedRelayedMessage);
 
-							// Validate it, and process if necessary
-							receive(signedRelayedMessage);
-						}
-					} catch (Throwable ignored) {
+						// Validate it, and process if necessary
+						receive(signedRelayedMessage);
 					}
+				} catch (Throwable ignored) {
 				}
 			}
 		});
@@ -98,25 +96,26 @@ public class MessageDeliveryManager {
 	 */
 	private static MessageStateTracker loadPersistedState(final int numEntities, final int myIndex,
 			final File saveLocation) {
-		try {
-			return (MessageStateTracker) AtomicFileOperations.readObject(saveLocation);
-		} catch (IOException e) {
+		//try {
+		//	return (MessageStateTracker) AtomicFileOperations.readObject(saveLocation);
+		//} catch (IOException e) {
 			return new MessageStateTracker(numEntities, myIndex);
-		}
+		//}
 	}
 
 	/**
-	 * Save messafe tracking state to disk
+	 * Save message tracking state to disk
 	 * 
 	 * @param messageStateTracker
 	 * @param saveLocation
 	 */
 	private static void persistState(final MessageStateTracker messageStateTracker, final File saveLocation) {
-		try {
-			AtomicFileOperations.atomicWrite(saveLocation, messageStateTracker);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to persist state to disk:" + e);
-		}
+		// FIXME: Get this working again, save only one message at a time.
+//		try {
+//			AtomicFileOperations.atomicWrite(saveLocation, messageStateTracker);
+//		} catch (IOException e) {
+//			throw new RuntimeException("Failed to persist state to disk:" + e);
+//		}
 	}
 
 	// Periodic task for stubborn message delivery
@@ -181,7 +180,7 @@ public class MessageDeliveryManager {
 
 		// Persist the state of message state tracker to disk
 		// We must do this before sending an acknowledgement
-		persistState(this.messageStateTracker, this.saveLocation);
+		//persistState(this.messageStateTracker, this.saveLocation);
 
 		if (isNew) {
 			// Handle the message

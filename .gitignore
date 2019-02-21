@@ -6,4 +6,5 @@ target/
 .recommenders
 *.tmp
 *.dat
+*.msg
 currentView

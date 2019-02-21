@@ -6,16 +6,29 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.io.Serializable;
 import java.io.SyncFailedException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.UUID;
 
+import com.ibm.pross.server.messages.SignedMessage;
+
 public class AtomicFileOperations {
 
-	public static void atomicWrite(final File destinationFile, final Serializable object)
+	public static void atomicWriteSignedMessage(final File destinationFile, final SignedMessage signedMessage)
+			throws SyncFailedException, IOException {
+		byte[] messageData = MessageSerializer.serializeSignedMessage(signedMessage);
+		atomicWriteBytes(destinationFile, messageData);
+	}
+	
+	public static void atomicWriteString(final File destinationFile, final String string)
+			throws SyncFailedException, IOException {
+		atomicWriteBytes(destinationFile, string.getBytes(StandardCharsets.UTF_8));
+	}
+	
+	public static void atomicWriteBytes(final File destinationFile, final byte[] data)
 			throws SyncFailedException, IOException {
 
 		// Create a temporary file in the same directory as the desination file
@@ -31,11 +44,11 @@ public class AtomicFileOperations {
 			// performance problem
 
 			// Do everything we can to ensure a flush to storage
-			// ois.writeObject(object);
-			// fos.getChannel().force(true);
+			ois.write(data);
+			//fos.getChannel().force(true);
 			ois.flush();
 			fos.flush();
-			// fos.getFD().sync();
+			//fos.getFD().sync();
 			fos.close();
 
 			try {
@@ -56,15 +69,13 @@ public class AtomicFileOperations {
 	 * @param saveFile
 	 * @return
 	 */
-	public static Object readObject(final File saveFile) throws IOException {
-		// Attempt to read a previous state from the save file
-		try (final FileInputStream fis = new FileInputStream(saveFile);
-				final ObjectInputStream ois = new ObjectInputStream(fis);) {
-			return ois.readObject();
-		} catch (IOException | ClassNotFoundException | ClassCastException e) {
-			throw new IOException("Failed to load object", e);
-		}
-
+	public static SignedMessage readSignedMessage(final File saveFile) throws IOException {
+		
+		// Read serialized object
+		byte[] messageData = Files.readAllBytes(saveFile.toPath());
+		
+		// Deserialize message
+		return MessageSerializer.deserializeSignedMessage(messageData);
 	}
 
 }

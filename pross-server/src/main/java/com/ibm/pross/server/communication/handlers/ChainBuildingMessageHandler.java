@@ -1,5 +1,6 @@
 package com.ibm.pross.server.communication.handlers;
 
+import java.io.File;
 import java.io.IOException;
 import java.security.PublicKey;
 import java.util.AbstractMap.SimpleEntry;
@@ -21,6 +22,7 @@ import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.payloads.optbft.CertificationPayload;
+import com.ibm.pross.server.util.AtomicFileOperations;
 import com.ibm.pross.server.util.MessageSerializer;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
@@ -47,7 +49,11 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 
 	private volatile MessageDeliveryManager messageManager;
 
-	public ChainBuildingMessageHandler(final int myIndex, final int optQuorum, final KeyLoader keyLoader) {
+	private final File bftMessageFolder;
+	private final File certifiedMessageFolder;
+
+	public ChainBuildingMessageHandler(final int myIndex, final int optQuorum, final KeyLoader keyLoader,
+			final File saveLocation) {
 		this.myIndex = myIndex;
 		this.optQuorum = optQuorum;
 		this.keyLoader = keyLoader;
@@ -56,6 +62,12 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		this.bftChannel = new BftAtomicBroadcastChannel();
 		this.sender = this.bftChannel.link(myIndex - 1);
 		this.bftChannel.register(this);
+
+		// Create folders to track persisted chains
+		this.bftMessageFolder = new File(saveLocation, "bft-chain");
+		this.certifiedMessageFolder = new File(saveLocation, "certified-chain");
+		bftMessageFolder.mkdirs();
+		certifiedMessageFolder.mkdirs();
 	}
 
 	public boolean isBftReady() {
@@ -112,9 +124,21 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		if (messageVotes.size() == this.optQuorum) {
 			// System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message
 			// to Opt-BFT Chain: " /*+ bftMessage*/);
-			System.out.println("Certified message #" + (optChain.size() + 1) + " is available.");
-			if (this.optChain.putIfAbsent(messagePosition, bftMessage) == null) {
-				this.notifyAll();
+			synchronized (this.optChain) {
+				final int messageIndex = optChain.size() + 1;
+
+				System.out.println("Certified message #" + messageIndex + " is available.");
+				if (this.optChain.putIfAbsent(messagePosition, bftMessage) == null) {
+					final String msgFileName = String.format("%08d", messageIndex) + ".msg";
+					final File messageFile = new File(this.certifiedMessageFolder, msgFileName);
+					try {
+						AtomicFileOperations.atomicWriteSignedMessage(messageFile, bftMessage);
+					} catch (IOException e) {
+						e.printStackTrace();
+						System.exit(-1);
+					}
+					this.notifyAll();
+				}
 			}
 		}
 	}
@@ -143,22 +167,33 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		// System.out.println("Received new BFT message"); //: " /*+ bftMessage*/);
 
 		// Add BFT message to the BFT chain
-		final long messagePosition = this.bftChain.size();
-		this.bftChain.put(messagePosition, bftMessage);
+		synchronized (this.bftChain) {
+			final long messagePosition = this.bftChain.size();
+			this.bftChain.put(messagePosition, bftMessage);
 
-		// Generate a certification message encapsulating this message along with our
-		// view of its position in the chain
-		final CertificationPayload certificationPayload = new CertificationPayload(messagePosition, bftMessage);
-		final PublicMessage publicMessage = new PublicMessage(this.myIndex, certificationPayload);
+			final String msgFileName = String.format("%08d", messagePosition + 1) + ".msg";
+			final File messageFile = new File(this.bftMessageFolder, msgFileName);
+			try {
+				AtomicFileOperations.atomicWriteSignedMessage(messageFile, bftMessage);
+			} catch (IOException e) {
+				e.printStackTrace();
+				System.exit(-1);
+			}
 
-		// Broadcast our signature of this message and its position over point-to-point
-		// links
-		this.messageManager.broadcast(publicMessage);
+			// Generate a certification message encapsulating this message along with our
+			// view of its position in the chain
+			final CertificationPayload certificationPayload = new CertificationPayload(messagePosition, bftMessage);
+			final PublicMessage publicMessage = new PublicMessage(this.myIndex, certificationPayload);
 
-		// Fix this: (can simulate skipping the Certification Layer)
-		// Add message straight to the opt chain and signal
-		// this.optChain.putIfAbsent(new Long(this.optChain.size()), bftMessage);
-		// this.notifyAll();
+			// Broadcast our signature of this message and its position over point-to-point
+			// links
+			this.messageManager.broadcast(publicMessage);
+
+			// Fix this: (can simulate skipping the Certification Layer)
+			// Add message straight to the opt chain and signal
+			// this.optChain.putIfAbsent(new Long(this.optChain.size()), bftMessage);
+			// this.notifyAll();
+		}
 	}
 
 	@Override

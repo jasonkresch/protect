@@ -73,7 +73,8 @@ public class ServerApplication {
 		// Setup persistent state for message broadcast and processing
 		final List<InetSocketAddress> serverAddresses = this.configuration.getServerAddresses();
 		final File saveDir = new File(baseDirectory, SAVE_DIRECTORY);
-		final File saveFile = new File(saveDir, "message-state-" + serverIndex + ".dat");
+		final File serverSaveDir = new File(saveDir, "server-" + serverIndex);
+		serverSaveDir.mkdirs();
 
 		// Wait for messages and begin processing them as they arrive
 		final int myPort = this.configuration.getServerAddresses().get(serverIndex - 1).getPort();
@@ -87,11 +88,11 @@ public class ServerApplication {
 
 		// Create message handler for the Certified Chain
 		final int optQuorum = (this.configuration.getNumServers() - this.configuration.getMaxLivenessFaults());
-		this.chainBuilder = new ChainBuildingMessageHandler(serverIndex, optQuorum, this.keyLoader);
+		this.chainBuilder = new ChainBuildingMessageHandler(serverIndex, optQuorum, this.keyLoader, serverSaveDir);
 
 		// Create message manager to manage messages received over point to point links;
 		final MessageDeliveryManager messageManager = new MessageDeliveryManager(serverAddresses, serverIndex,
-				this.keyLoader, saveFile, this.chainBuilder, messageReceiver);
+				this.keyLoader, serverSaveDir, this.chainBuilder, messageReceiver);
 		this.chainBuilder.setMessageManager(messageManager);
 
 		
