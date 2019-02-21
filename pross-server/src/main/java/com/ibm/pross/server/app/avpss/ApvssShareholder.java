@@ -505,12 +505,22 @@ public class ApvssShareholder {
 		System.out.println(
 				"Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000_000.0) + " seconds");
 
-		System.out.println("Share: s_" + this.index + "  =               " + this.getShare1());
-		for (int i = 0; i <= n; i++) {
-			System.out.println("Verification key: g^{s_" + i + "} = " + this.sharePublicKeys[i]);
+		// Print our share
+		System.out.println();
+		System.out.println("Sharing Result:");
+		System.out.println("This Server's Share:     s_" + this.index + "     =  " + this.getShare1());
+		
+		// Print secret verification key
+		System.out.println("Secret Verification key: g^{s}   =  " + this.sharePublicKeys[0]);
+		
+		// Print share verification keys
+		for (int i = 1; i <= n; i++) {
+			System.out.println("Share Verification key:  g^{s_" + i + "} =  " + this.sharePublicKeys[i]);
 		}
+		
+		// Print Feldman Coefficients
 		for (int i = 0; i < k; i++) {
-			System.out.println("Feldman Value: g^{a_" + i + "} =    " + this.feldmanValues[i]);
+			System.out.println("Feldman Coefficient:     g^{a_" + i + "} =  " + this.feldmanValues[i]);
 		}
 
 		
