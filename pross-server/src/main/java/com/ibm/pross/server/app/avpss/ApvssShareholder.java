@@ -107,11 +107,10 @@ public class ApvssShareholder {
 	private volatile long startTime;
 
 	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
-			final int n, final int k, final int f)
-	{
+			final int n, final int k, final int f) {
 		this(keyLoader, channel, index, n, k, f, true);
 	}
-	
+
 	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
 			final int n, final int k, final int f, final boolean sendValidCommitments) {
 
@@ -262,7 +261,7 @@ public class ApvssShareholder {
 
 			System.out.println("Starting DKG operation!");
 			this.startTime = System.nanoTime();
-			
+
 			// Get shareholder public encryption keys
 			final PaillierPublicKey[] publicKeys = new PaillierPublicKey[n];
 			for (int i = 1; i <= n; i++) {
@@ -394,7 +393,7 @@ public class ApvssShareholder {
 		this.isQualSetDefined = true;
 
 		final long shareEnd = System.nanoTime();
-		System.out.println("Time to establish share:             " + (((double) (shareEnd - startTime)) / 1_000_000.0));
+		System.out.println("Time to establish share:             " + (((double) (shareEnd - startTime)) / 1_000_000_000.0) + " seconds");
 	}
 
 	/**
@@ -496,23 +495,29 @@ public class ApvssShareholder {
 		final List<DerivationResult> shareVerificationKeys = new ArrayList<>();
 		for (int i = 0; i <= this.n; i++) {
 			this.sharePublicKeys[i] = Polynomials.interpolateExponents(provenShareKeys, this.k, i);
-			shareVerificationKeys.add(new DerivationResult(BigInteger.valueOf(i+1), this.sharePublicKeys[i]));
+			shareVerificationKeys.add(new DerivationResult(BigInteger.valueOf(i), this.sharePublicKeys[i]));
 		}
-		
+
 		// Convert the share public keys to Feldman Coefficients using matrix inversion
 		this.feldmanValues = Polynomials.interpolateCoefficientsExponents(shareVerificationKeys, this.k);
 
 		final long endVerification = System.nanoTime();
-		System.out.println("Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000.0));
+		System.out.println(
+				"Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000_000.0) + " seconds");
+
+		System.out.println("Share: s_" + this.index + "  =               " + this.getShare1());
+		for (int i = 0; i <= n; i++) {
+			System.out.println("Verification key: g^{s_" + i + "} = " + this.sharePublicKeys[i]);
+		}
+		for (int i = 0; i < k; i++) {
+			System.out.println("Feldman Value: g^{a_" + i + "} =    " + this.feldmanValues[i]);
+		}
+
 		
-		System.out.println("My share:                      " + this.getShare1().getY());
-		System.out.println("Secret's verification key:      " + this.getSecretPublicKey());
-		System.out.println("Shareholder verification keys: " + Arrays.toString(this.sharePublicKeys));
-		System.out.println("Feldman Values for Polynomial: " + Arrays.toString(this.feldmanValues));
 		System.out.println("DKG Complete!");
 
-		System.out.println("Signatures generated: " + SigningUtil.signCount.get());
-		System.out.println("Signatures verified:  " + SigningUtil.verCount.get());
+		// System.out.println("Signatures generated: " + SigningUtil.signCount.get());
+		// System.out.println("Signatures verified: " + SigningUtil.verCount.get());
 	}
 
 	/**

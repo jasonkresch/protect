@@ -28,7 +28,7 @@ import com.ibm.pross.server.app.avpss.channel.FifoAtomicBroadcastChannelLocalImp
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
-public class AvpssTest {
+public class ApvssTest {
 
 	@BeforeClass
 	public static void setupBefore() {
