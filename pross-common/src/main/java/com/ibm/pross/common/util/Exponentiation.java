@@ -6,6 +6,8 @@ import com.squareup.jnagmp.Gmp;
 
 public class Exponentiation {
 
+	public static final boolean USE_SECURE_MOD_POW = false;
+
 	public static final boolean GMP_AVAILABLE;
 
 	static {
@@ -36,7 +38,8 @@ public class Exponentiation {
 	 * 
 	 * @return (base ^ exponent) % modulus
 	 */
-	public static BigInteger modPowSecure(final BigInteger base, final BigInteger exponent, final BigInteger modulus) {
+	protected static BigInteger modPowSecure(final BigInteger base, final BigInteger exponent,
+			final BigInteger modulus) {
 		if (GMP_AVAILABLE) {
 			return exponent.signum() < 0 // Gmp library can't handle negative exponents
 					? modInverse(Gmp.modPowSecure(base, exponent.negate(), modulus), modulus)
@@ -56,7 +59,7 @@ public class Exponentiation {
 	 * @param modulus
 	 * @return
 	 */
-	public static BigInteger modPowerSecureJava(final BigInteger base, final BigInteger exponent,
+	protected static BigInteger modPowerSecureJava(final BigInteger base, final BigInteger exponent,
 			final BigInteger modulus) {
 		throw new RuntimeException("Not yet implemented");
 //		
@@ -93,9 +96,15 @@ public class Exponentiation {
 	 */
 	public static BigInteger modPow(BigInteger base, BigInteger exponent, BigInteger modulus) {
 		if (GMP_AVAILABLE) {
-			return exponent.signum() < 0 // Gmp library can't handle negative exponents
-					? modInverse(Gmp.modPowInsecure(base, exponent.negate(), modulus), modulus)
-					: Gmp.modPowInsecure(base, exponent, modulus);
+			if (USE_SECURE_MOD_POW) {
+				return exponent.signum() < 0 // Gmp library can't handle negative exponents
+						? modInverse(Gmp.modPowSecure(base, exponent.negate(), modulus), modulus)
+						: Gmp.modPowSecure(base, exponent, modulus);
+			} else {
+				return exponent.signum() < 0 // Gmp library can't handle negative exponents
+						? modInverse(Gmp.modPowInsecure(base, exponent.negate(), modulus), modulus)
+						: Gmp.modPowInsecure(base, exponent, modulus);
+			}
 		} else {
 			return base.modPow(exponent, modulus);
 		}
@@ -104,15 +113,12 @@ public class Exponentiation {
 	/**
 	 * Computes the modular multiplicitive inverse of a number
 	 *
-	 * @param a
-	 *            The number to compute the inverse of
-	 * @param b
-	 *            The modulus
+	 * @param a The number to compute the inverse of
+	 * @param b The modulus
 	 * 
 	 * @return the inverse of a modulo b
 	 * 
-	 * @throws ArithmeticException
-	 *             if there is no inverse
+	 * @throws ArithmeticException if there is no inverse
 	 */
 	public static BigInteger modInverse(final BigInteger a, final BigInteger modulus) throws ArithmeticException {
 		if (GMP_AVAILABLE) {

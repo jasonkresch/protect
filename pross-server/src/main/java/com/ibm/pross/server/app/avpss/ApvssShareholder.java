@@ -2,7 +2,6 @@ package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -14,7 +13,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
-import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
@@ -35,10 +33,9 @@ import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
+import com.ibm.pross.server.messages.PublicMessage;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-
-import com.ibm.pross.server.messages.PublicMessage;
 
 public class ApvssShareholder {
 

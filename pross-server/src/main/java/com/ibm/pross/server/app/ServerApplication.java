@@ -19,6 +19,7 @@ import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
 import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
@@ -107,35 +108,40 @@ public class ServerApplication {
 		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f);
 		shareholder.start(false); // We start the message processing thread but don't start the DKG
 
+		// Start server to process client requests
+		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, configuration);
+		requestProcessor.start();
+		
+		
 		// Prompt user for action
-		final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-		System.out.println("Available Options:");
-		System.out.println("1. Initiate DKG");
-		System.out.println("2. Initiate Share Recovery");
-		System.out.println("3. Initiate Proactive Refresh");
-		System.out.println("4. Quit");
-		System.out.print("Enter selection: ");
-		while (true) {
-			final String input = reader.readLine();
-			switch (input) {
-			case "1":
-				System.out.println("Initiating DKG...");
-				doDistribuedKeyGeneration(shareholder);
-				break;
-			case "2":
-				System.out.println("Performing Share Recovery...");
-				break;
-			case "3":
-				System.out.println("Performing Proactive Refresh...");
-				break;
-			case "4":
-				System.out.println("Exiting...");
-				System.exit(0);
-				break;
-			default:
-				System.err.println("Unknown selection: " + input);
-			}
-		}
+//		final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
+//		System.out.println("Available Options:");
+//		System.out.println("1. Initiate DKG");
+//		System.out.println("2. Initiate Share Recovery");
+//		System.out.println("3. Initiate Proactive Refresh");
+//		System.out.println("4. Quit");
+//		System.out.print("Enter selection: ");
+//		while (true) {
+//			final String input = reader.readLine();
+//			switch (input) {
+//			case "1":
+//				System.out.println("Initiating DKG...");
+//				doDistribuedKeyGeneration(shareholder);
+//				break;
+//			case "2":
+//				System.out.println("Performing Share Recovery...");
+//				break;
+//			case "3":
+//				System.out.println("Performing Proactive Refresh...");
+//				break;
+//			case "4":
+//				System.out.println("Exiting...");
+//				System.exit(0);
+//				break;
+//			default:
+//				System.err.println("Unknown selection: " + input);
+//			}
+//		}
 	}
 
 	public static void main(final String[] args)

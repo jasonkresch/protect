@@ -25,6 +25,78 @@ public class ServerConfiguration {
 		this.maxSafetyFaults = maxSafetyFaults;
 		this.maxLivenessFaults = maxLivenessFaults;
 		this.serverAddresses = new ArrayList<InetSocketAddress>(serverAddresses);
+
+		verifyConstraints();
+	}
+
+	private void verifyConstraints() {
+		boolean validConfig = true;
+
+		// Validate constraints on numServers
+		if (!(this.numServers > 0)) {
+			System.err.println("num_servers must be greater than zero");
+			validConfig = false;
+		}
+
+		// Validate constraints on reconstructionThreshold
+		if (!(this.reconstructionThreshold <= this.numServers)) {
+			System.err.println("reconstruction_threshold must be less than or equal to num_servers");
+			validConfig = false;
+		}
+		if (!(this.reconstructionThreshold > this.maxSafetyFaults)) {
+			System.err.println("reconstruction_threshold must be greater than max_safety_faults");
+			validConfig = false;
+		}
+
+		// Validate constraints on maxSafetyFaults
+		if (!(this.maxSafetyFaults >= 0)) {
+			System.err.println("max_safety_faults must be greater than or equal to zero");
+			validConfig = false;
+		}
+		if (!(this.maxSafetyFaults < this.reconstructionThreshold)) {
+			System.err.println("max_safety_faults must be less than reconstruction_threshold");
+			validConfig = false;
+		}
+		if (!(this.maxSafetyFaults <= (this.numServers - (2 * this.maxLivenessFaults) - 1))) {
+			System.err.println(
+					"max_safety_faults must be less than or equal to (num_servers - (2 * max_liveness_faults) - 1");
+			validConfig = false;
+		}
+
+		// Validate constraints on maxLivenessFaults
+		if (!(this.maxLivenessFaults >= 0)) {
+			System.err.println("max_liveness_faults must be greater than or equal to zero");
+			validConfig = false;
+		}
+		if (!(this.maxLivenessFaults <= this.maxSafetyFaults)) {
+			System.err.println("max_liveness_faults must be less than or equal to max_safety_faults");
+			validConfig = false;
+		}
+		if (!(this.maxLivenessFaults <= ((this.numServers - maxSafetyFaults - 1) / 2))) {
+			System.err.println(
+					"max_safety_faults must be less than or equal to ((num_servers - max_safety_faults - 1) / 2)");
+			validConfig = false;
+		}
+
+		// Validate constraints on maxBftFaults
+		if (!(this.maxBftFaults >= 0)) {
+			System.err.println("max_bft_faults must be greater than or equal to zero");
+			validConfig = false;
+		}
+		if (!(this.maxBftFaults <= ((this.numServers - 1) / 3))) {
+			System.err.println("max_bft_faults must be less than or equal to ((num_servers - 1) / 3)");
+			validConfig = false;
+		}
+		
+		if (this.serverAddresses.size() != this.numServers)
+		{
+			System.err.println("The number of defined server addresses must equal num_servers");
+			validConfig = false;
+		}
+
+		if (validConfig == false) {
+			throw new IllegalArgumentException("Server Configuration is not valid");
+		}
 	}
 
 	public List<InetSocketAddress> getServerAddresses() {
