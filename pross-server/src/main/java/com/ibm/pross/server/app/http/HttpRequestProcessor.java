@@ -1,19 +1,23 @@
 package com.ibm.pross.server.app.http;
 
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.ConcurrentHashMap;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.LinkedHashMap;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
-import com.ibm.pross.server.app.http.handlers.RootHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
-import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
+import com.ibm.pross.server.app.http.handlers.RootHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpServer;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 @SuppressWarnings("restriction")
@@ -37,21 +41,21 @@ public class HttpRequestProcessor {
 
 		// Returns basic information about this server:
 		// quorum information, other servers)
-		this.server.createContext("/", new RootHandler(serverIndex, serverConfig));
+		this.server.createContext("/", new RootHandler(serverIndex, serverConfig, shareholders));
 
 		// Define request handlers for the supported client operations
 		this.server.createContext("/generate", new GenerateHandler(accessEnforcement, shareholders));
-		this.server.createContext("/read", new InfoHandler());
-		this.server.createContext("/store", new InfoHandler());
-		this.server.createContext("/info", new InfoHandler());
-		this.server.createContext("/delete", new InfoHandler());
-		this.server.createContext("/disable", new InfoHandler());
-		this.server.createContext("/enable", new InfoHandler());
-		this.server.createContext("/exponentiate", new InfoHandler());
-		this.server.createContext("/rsa_sign", new InfoHandler());
+		this.server.createContext("/read", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/store", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/info", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/delete", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/disable", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/enable", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/exponentiate", new InfoHandler(accessEnforcement, shareholders));
+		this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement, shareholders));
 
 		// Define server to server requests
-		this.server.createContext("/recover", new InfoHandler());
+		this.server.createContext("/recover", new InfoHandler(accessEnforcement, shareholders));
 
 		// this.server.setExecutor(Executors.newFixedThreadPool(NUM_PROCESSING_THREADS));
 	}
@@ -62,6 +66,32 @@ public class HttpRequestProcessor {
 
 	public void stop() {
 		this.server.stop(SHUTDOWN_DELAY_SECONDS);
+	}
+
+	/**
+	 * From:
+	 * https://stackoverflow.com/questions/13592236/parse-a-uri-string-into-name-value-collection
+	 * 
+	 * @param url
+	 * @return
+	 * @throws UnsupportedEncodingException
+	 */
+	public static Map<String, List<String>> parseQueryString(final String queryString)
+			throws UnsupportedEncodingException {
+		final Map<String, List<String>> queryPairs = new LinkedHashMap<String, List<String>>();
+		final String[] pairs = queryString.split("&");
+		for (String pair : pairs) {
+			final int idx = pair.indexOf("=");
+			final String key = idx > 0 ? URLDecoder.decode(pair.substring(0, idx), "UTF-8") : pair;
+			if (!queryPairs.containsKey(key)) {
+				queryPairs.put(key, new LinkedList<String>());
+			}
+			final String value = idx > 0 && pair.length() > idx + 1
+					? URLDecoder.decode(pair.substring(idx + 1), "UTF-8")
+					: null;
+			queryPairs.get(key).add(value);
+		}
+		return queryPairs;
 	}
 
 }

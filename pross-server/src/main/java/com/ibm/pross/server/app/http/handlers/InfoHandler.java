@@ -3,10 +3,16 @@ package com.ibm.pross.server.app.http.handlers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentMap;
 
+import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
+import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
@@ -19,7 +25,10 @@ import com.sun.net.httpserver.HttpExchange;
  * <pre>
  * Information about the secret includes:
  * - The name of the secret
+ * - The public key of the secret
  * - The current epoch id of the secret (first is zero)
+ * - The shareholder public verification keys of the secret
+ * - The Feldman co-efficients of the secret
  * - The time the secret was first generated/stored by this server
  * - The id of the client who performed the creation or generation of the secret
  * - The time the secret was last proactively refreshed by this server
@@ -34,26 +43,44 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.INFO;
 
-	// Request header names
-	public static final String SECRET_NAME_FIELD = "X-Secret-Name";
+	// Query name
+	public static final String SECRET_NAME_FIELD = "secretName";
+
+	// Fields
+	private final AccessEnforcement accessEnforcement;
+	private final ConcurrentMap<String, ApvssShareholder> shareholders;
+
+	public InfoHandler(final AccessEnforcement accessEnforcement,
+			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+		this.shareholders = shareholders;
+		this.accessEnforcement = accessEnforcement;
+	}
 
 	@Override
 	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
-			throws IOException, UnauthorizedException, NotFoundException {
+			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
 		// Extract secret name from request
-		// TODO: Support get fields too!
-		final String secretName = exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
-		// final String secretName = (String) exchange.getAttribute(SECRET_NAME_FIELD);
+		final String queryString = exchange.getRequestURI().getQuery();
+		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
+		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
+		if (secretNames == null || secretNames.size() != 1) {
+			throw new BadRequestException();
+		}
+		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		final AccessEnforcement accessEnforcement = AccessEnforcement.INSECURE_DUMMY_ENFORCEMENT;
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
 
 		// Do processing
+		final ApvssShareholder shareholder = this.shareholders.get(secretName);
+		if (shareholder == null)
+		{
+			throw new NotFoundException();
+		}
 
 		// Create response
-		final String response = "Hi there! You asked for: " + secretName + "\n";
+		final String response = "Hi there! You asked for: " + secretName + "\n.  We found it!";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers

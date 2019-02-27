@@ -60,8 +60,6 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 		// final String secretName = (String) exchange.getAttribute(SECRET_NAME_FIELD);
 
 		// Perform authentication
-		// final AccessEnforcement accessEnforcement =
-		// AccessEnforcement.INSECURE_DUMMY_ENFORCEMENT;
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
 
 		// Do processing

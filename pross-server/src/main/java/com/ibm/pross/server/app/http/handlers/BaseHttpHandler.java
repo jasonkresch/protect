@@ -5,6 +5,7 @@ import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
 
 import com.ibm.pross.server.app.http.HttpStatusCode;
+import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
@@ -40,6 +41,13 @@ public abstract class BaseHttpHandler implements HttpHandler {
 			try (final OutputStream os = exchange.getResponseBody();) {
 				os.write(binaryResponse);
 			}
+		} catch (BadRequestException e) {
+			final String response = "400: Bad Request\n";
+			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
+			exchange.sendResponseHeaders(HttpStatusCode.BAD_REQUEST, binaryResponse.length);
+			try (final OutputStream os = exchange.getResponseBody();) {
+				os.write(binaryResponse);
+			}
 		}
 	}
 
@@ -53,7 +61,8 @@ public abstract class BaseHttpHandler implements HttpHandler {
 	 * @throws IOException
 	 * @throws UnauthorizedException
 	 * @throws NotFoundException
+	 * @throws BadRequestException
 	 */
 	public abstract void handleWithExceptions(final HttpExchange exchange)
-			throws IOException, UnauthorizedException, NotFoundException, ConflictException;
+			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException;
 }
