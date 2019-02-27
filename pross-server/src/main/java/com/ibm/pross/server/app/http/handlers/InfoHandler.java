@@ -7,7 +7,8 @@ import java.nio.charset.StandardCharsets;
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
-import com.ibm.pross.server.configuration.permissions.UnauthorizedException;
+import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
+import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
 /**
@@ -32,27 +33,27 @@ import com.sun.net.httpserver.HttpExchange;
 public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.INFO;
-	
-	// Field names
+
+	// Request header names
 	public static final String SECRET_NAME_FIELD = "X-Secret-Name";
 
 	@Override
 	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
-			throws IOException, UnauthorizedException {
+			throws IOException, UnauthorizedException, NotFoundException {
 
 		// Extract secret name from request
 		// TODO: Support get fields too!
 		final String secretName = exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
-		//final String secretName = (String) exchange.getAttribute(SECRET_NAME_FIELD);
+		// final String secretName = (String) exchange.getAttribute(SECRET_NAME_FIELD);
 
 		// Perform authentication
 		final AccessEnforcement accessEnforcement = AccessEnforcement.INSECURE_DUMMY_ENFORCEMENT;
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
 
 		// Do processing
-		
+
 		// Create response
-		final String response = "Hi there! You asked for: " + secretName;
+		final String response = "Hi there! You asked for: " + secretName + "\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers

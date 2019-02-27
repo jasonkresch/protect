@@ -1,4 +1,4 @@
-package com.ibm.pross.server.configuration.permissions;
+package com.ibm.pross.server.configuration.permissions.exceptions;
 
 public class UnauthorizedException extends Exception {
 

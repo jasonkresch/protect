@@ -27,7 +27,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 
 public class CoordinatorTest {
-
+/**
 	public static Administration DEFAULT_ADMINISTRATION;
 	
 	@BeforeClass
@@ -110,5 +110,5 @@ public class CoordinatorTest {
 		System.out.println("Prf Output 2: " + output2);
 		Assert.assertEquals(output1, output2);
 	}
-
+*/
 }

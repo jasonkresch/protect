@@ -12,6 +12,9 @@ public class PublicMessage implements Message, Serializable {
 
 	private static final long serialVersionUID = -8470206987302692599L;
 
+	// The name of the channel over which this message will be sent
+	private final String channelName;
+	
 	// Always set to the index of the shareholder who created and sent this
 	// message. Sender index is used to determine the public key by which to
 	// verify the message authenticity
@@ -28,7 +31,8 @@ public class PublicMessage implements Message, Serializable {
 	 * @param content
 	 *            The content of the message to send
 	 */
-	public PublicMessage(final int senderIndex, final Payload payload) {
+	public PublicMessage(final String channelName, final int senderIndex, final Payload payload) {
+		this.channelName = channelName;
 		this.senderIndex = senderIndex;
 		this.payload = payload;
 	}
@@ -44,9 +48,8 @@ public class PublicMessage implements Message, Serializable {
 	}
 
 	@Override
-	public boolean isRecipient(int index) {
-		// This is a broadcast message, all shareholders are recipients
-		return true;
+	public boolean isRecipient(final String channelName) {
+		return this.channelName.equals(channelName);
 	}
 
 	@Override
@@ -80,6 +83,11 @@ public class PublicMessage implements Message, Serializable {
 	@Override
 	public String toString() {
 		return "PublicMessage [senderIndex=" + senderIndex + ", payload=" + payload + "]";
+	}
+
+	@Override
+	public String getChannelName() {
+		return this.channelName;
 	}
 
 	

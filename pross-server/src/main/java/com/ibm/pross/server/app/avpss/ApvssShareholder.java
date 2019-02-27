@@ -2,6 +2,7 @@ package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
@@ -39,6 +40,10 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 public class ApvssShareholder {
 
+	enum SharingType {
+		PEDERSEN_DKG, FELDMAN_DKG, STORED;
+	}
+
 	// Group Constants
 	public static final EcCurve curve = CommonConfiguration.CURVE;
 	public static final EcPoint g = CommonConfiguration.g;
@@ -57,6 +62,26 @@ public class ApvssShareholder {
 	// Our message processing thread
 	private final Thread messageProcessingThread;
 	private final AtomicBoolean stopped = new AtomicBoolean(true);
+
+	/********************** Misc Info ******************************/
+	// The unique name for this secret
+	private final String secretName;
+
+	// The current version of this secret
+	private final AtomicInteger epochNumber = new AtomicInteger(0);
+
+	// Create date of this secret
+	private volatile Date creationTime;
+
+	// Time of last epoch change
+	private volatile Date lastEpochChange;
+
+	// How the secret was established
+	private volatile SharingType type;
+
+	// Who stored the secret (if type = Stored)
+	private volatile int creatorId;
+	/*****************************************************************/
 
 	// The index of this shareholder (ourself) (one is the base index)
 	// This shareholder will hold the share at f(index)
@@ -103,17 +128,17 @@ public class ApvssShareholder {
 	// Used to time operation
 	private volatile long startTime;
 
-	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
+	public ApvssShareholder(final String secretName, final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
 			final int n, final int k, final int f) {
-		this(keyLoader, channel, index, n, k, f, true);
+		this(secretName, keyLoader, channel, index, n, k, f, true);
 	}
 
-	public ApvssShareholder(final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
+	public ApvssShareholder(final String secretName, final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
 			final int n, final int k, final int f, final boolean sendValidCommitments) {
 
+		this.secretName = secretName;
+		
 		this.sendValidCommitments = sendValidCommitments;
-
-		verifyConstraints(n, k, f);
 
 		/** Values unique to ourselves **/
 		this.index = index;
@@ -123,7 +148,7 @@ public class ApvssShareholder {
 		this.channel = channel;
 		this.n = n;
 		this.k = k; // (t + 1) == reconstruction threshold
-		this.f = f; // t_L = maximum liveness failures
+		this.f = f; // t_S = maximum safety failures
 
 		/** Variables to track sharing **/
 		this.receivedSharings = new PublicSharing[n];
@@ -136,19 +161,6 @@ public class ApvssShareholder {
 		this.feldmanValues = new EcPoint[k];
 
 		this.messageProcessingThread = createMessageProcessingThread(this.channel);
-	}
-
-	private static void verifyConstraints(final int n, final int k, final int f) {
-
-		// TODO: Update this based on new rules for t_L, t_S, etc.
-
-		if (!(f < k)) {
-			throw new IllegalArgumentException("F must be less than K");
-		}
-
-		if (!(k <= (n - 2 * f))) {
-			throw new IllegalArgumentException("K must be less than or equal to N - 2F");
-		}
 	}
 
 	public Thread createMessageProcessingThread(final FifoAtomicBroadcastChannel channel) {
@@ -181,8 +193,13 @@ public class ApvssShareholder {
 	private synchronized void messageIsAvailable() {
 		int messageId = this.currentMessageId.getAndIncrement();
 		final Message message = this.channel.getMessage(messageId);
-		// System.out.println("DKG app processing message #" + messageId);
-		deliver(message);
+		
+		// Deliver only if this message is relevant for the given epoch and secret
+		final String channelName = (this.epochNumber + "-" + this.secretName);
+		if (message.isRecipient(channelName)) {
+			// System.out.println("DKG app processing message #" + messageId);
+			deliver(message);
+		}
 	}
 
 	/**
@@ -252,7 +269,7 @@ public class ApvssShareholder {
 	 * commitments. This will start the DKG protocol based on APVSS, and it will be
 	 * driven to completion.
 	 */
-	public void broadcastPublicSharing() {
+	public boolean broadcastPublicSharing() {
 
 		if (this.broadcastSharing.compareAndSet(false, true)) {
 
@@ -271,8 +288,13 @@ public class ApvssShareholder {
 
 			// Create a semi-private message
 			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
-			final Message publicSharingMessage = new PublicMessage(this.index, payload);
+			final String channelName = (this.epochNumber + "-" + this.secretName);
+			final Message publicSharingMessage = new PublicMessage(channelName, this.index, payload);
 			this.channel.send(publicSharingMessage);
+
+			return true;
+		} else {
+			return false; // Already started
 		}
 	}
 
@@ -390,7 +412,8 @@ public class ApvssShareholder {
 		this.isQualSetDefined = true;
 
 		final long shareEnd = System.nanoTime();
-		System.out.println("Time to establish share:             " + (((double) (shareEnd - startTime)) / 1_000_000_000.0) + " seconds");
+		System.out.println("Time to establish share:             "
+				+ (((double) (shareEnd - startTime)) / 1_000_000_000.0) + " seconds");
 	}
 
 	/**
@@ -415,7 +438,8 @@ public class ApvssShareholder {
 
 		// Send message out
 		final ZkpPayload payload = new ZkpPayload(proof);
-		this.channel.send(new PublicMessage(this.index, payload));
+		final String channelName = (this.epochNumber + "-" + this.secretName);
+		this.channel.send(new PublicMessage(channelName, this.index, payload));
 	}
 
 	/**
@@ -499,28 +523,27 @@ public class ApvssShareholder {
 		this.feldmanValues = Polynomials.interpolateCoefficientsExponents(shareVerificationKeys, this.k);
 
 		final long endVerification = System.nanoTime();
-		System.out.println(
-				"Time to establish verification keys: " + (((double) (endVerification - startTime)) / 1_000_000_000.0) + " seconds");
+		System.out.println("Time to establish verification keys: "
+				+ (((double) (endVerification - startTime)) / 1_000_000_000.0) + " seconds");
 
 		// Print our share
 		System.out.println();
 		System.out.println("Sharing Result:");
 		System.out.println("This Server's Share:     s_" + this.index + "     =  " + this.getShare1());
-		
+
 		// Print secret verification key
 		System.out.println("Secret Verification key: g^{s}   =  " + this.sharePublicKeys[0]);
-		
+
 		// Print share verification keys
 		for (int i = 1; i <= n; i++) {
 			System.out.println("Share Verification key:  g^{s_" + i + "} =  " + this.sharePublicKeys[i]);
 		}
-		
+
 		// Print Feldman Coefficients
 		for (int i = 0; i < k; i++) {
 			System.out.println("Feldman Coefficient:     g^{a_" + i + "} =  " + this.feldmanValues[i]);
 		}
 
-		
 		System.out.println("DKG Complete!");
 
 		// System.out.println("Signatures generated: " + SigningUtil.signCount.get());

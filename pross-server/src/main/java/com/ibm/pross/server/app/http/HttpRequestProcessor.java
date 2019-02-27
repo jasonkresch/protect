@@ -2,12 +2,18 @@ package com.ibm.pross.server.app.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.concurrent.Executors;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
-import com.ibm.pross.server.app.http.handlers.BaseHandler;
+import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.handlers.RootHandler;
+import com.ibm.pross.server.app.http.handlers.GenerateHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
+import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
+import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpServer;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 @SuppressWarnings("restriction")
@@ -20,7 +26,9 @@ public class HttpRequestProcessor {
 
 	private final HttpServer server;
 
-	public HttpRequestProcessor(final int serverIndex, final ServerConfiguration serverConfig) throws IOException {
+	public HttpRequestProcessor(final int serverIndex, final ServerConfiguration serverConfig,
+			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders)
+			throws IOException {
 
 		final int httpListenPort = BASE_HTTP_PORT + serverIndex;
 
@@ -29,10 +37,10 @@ public class HttpRequestProcessor {
 
 		// Returns basic information about this server:
 		// quorum information, other servers)
-		this.server.createContext("/", new BaseHandler(serverIndex, serverConfig));
+		this.server.createContext("/", new RootHandler(serverIndex, serverConfig));
 
 		// Define request handlers for the supported client operations
-		this.server.createContext("/generate", new InfoHandler());
+		this.server.createContext("/generate", new GenerateHandler(accessEnforcement, shareholders));
 		this.server.createContext("/read", new InfoHandler());
 		this.server.createContext("/store", new InfoHandler());
 		this.server.createContext("/info", new InfoHandler());

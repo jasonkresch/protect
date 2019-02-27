@@ -16,14 +16,21 @@ public interface Message extends Serializable {
 	 * @return
 	 */
 	int getSenderIndex();
+	
+	/**
+	 * Returns the name of the channel for this message
+	 * @return
+	 */
+	String getChannelName();
 
 	/**
-	 * Determines whether the provided shareholder's index indicates the shareholder is a recipient 
-	 * @param index
-	 *            The index of the shareholder
+	 * Determines whether the provided channel name indicates the shareholder is a recipient  for this message
+	 * 
+	 * @param channelName
+	 *            The channel name of the shareholder
 	 * @return Returns true if the provided shareholder index is a recipient of
 	 *         the message
 	 */
-	boolean isRecipient(int index);
+	boolean isRecipient(String channelName);
 
 }

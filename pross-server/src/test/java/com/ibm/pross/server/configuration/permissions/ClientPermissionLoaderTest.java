@@ -7,6 +7,8 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
+import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
+import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 
 public class ClientPermissionLoaderTest {
 
@@ -21,7 +23,23 @@ public class ClientPermissionLoaderTest {
 	public static final Integer storeUser = 4;
 
 	@Test
-	public void testAdminPermissions() throws IOException, UnauthorizedException {
+	public void testNotFoundSecret() throws IOException, UnauthorizedException, NotFoundException {
+
+		final AccessEnforcement accessEnforcement = ClientPermissionLoader
+				.load(new File("config/client/clients.config"));
+
+		Assert.assertNotNull(accessEnforcement);
+
+		try {
+			accessEnforcement.enforceAccess(admin, "no-such-secret", Permissions.GENERATE);
+			Assert.fail("Expected not found exception");
+		} catch (NotFoundException expected) {
+
+		}
+	}
+
+	@Test
+	public void testAdminPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
 				.load(new File("config/client/clients.config"));
@@ -88,7 +106,7 @@ public class ClientPermissionLoaderTest {
 	}
 
 	@Test
-	public void testSecOfficerPermissions() throws IOException, UnauthorizedException {
+	public void testSecOfficerPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
 				.load(new File("config/client/clients.config"));
@@ -174,7 +192,7 @@ public class ClientPermissionLoaderTest {
 	}
 
 	@Test
-	public void testExpUserPermissions() throws IOException, UnauthorizedException {
+	public void testExpUserPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
 				.load(new File("config/client/clients.config"));
@@ -269,7 +287,7 @@ public class ClientPermissionLoaderTest {
 	}
 
 	@Test
-	public void testStoreUserPermissions() throws IOException, UnauthorizedException {
+	public void testStoreUserPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
 				.load(new File("config/client/clients.config"));

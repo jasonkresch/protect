@@ -8,7 +8,6 @@ import java.nio.charset.StandardCharsets;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.sun.net.httpserver.HttpExchange;
-import com.sun.net.httpserver.HttpHandler;
 
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
@@ -18,18 +17,18 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * servers (as links), and benchmark results.
  */
 @SuppressWarnings("restriction")
-public class BaseHandler implements HttpHandler {
+public class RootHandler extends BaseHttpHandler {
 
 	private final int serverIndex;
 	private final ServerConfiguration serverConfiguration;
 
-	public BaseHandler(final int serverIndex, final ServerConfiguration serverConfiguration) {
+	public RootHandler(final int serverIndex, final ServerConfiguration serverConfiguration) {
 		this.serverIndex = serverIndex;
 		this.serverConfiguration = serverConfiguration;
 	}
 
 	@Override
-	public void handle(final HttpExchange exchange) throws IOException {
+	public void handleWithExceptions(final HttpExchange exchange) throws IOException {
 
 		// Create response
 		final StringBuilder stringBuilder = new StringBuilder();

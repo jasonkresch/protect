@@ -183,7 +183,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			// Generate a certification message encapsulating this message along with our
 			// view of its position in the chain
 			final CertificationPayload certificationPayload = new CertificationPayload(messagePosition, bftMessage);
-			final PublicMessage publicMessage = new PublicMessage(this.myIndex, certificationPayload);
+			final PublicMessage publicMessage = new PublicMessage("certification", this.myIndex, certificationPayload);
 
 			// Broadcast our signature of this message and its position over point-to-point
 			// links

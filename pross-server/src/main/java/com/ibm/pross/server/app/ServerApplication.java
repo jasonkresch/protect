@@ -1,9 +1,7 @@
 package com.ibm.pross.server.app;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.net.InetSocketAddress;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
@@ -11,6 +9,8 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import org.apache.log4j.BasicConfigurator;
 import org.apache.log4j.Level;
@@ -23,6 +23,8 @@ import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
 import com.ibm.pross.server.communication.handlers.ChainBuildingMessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
+import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
+import com.ibm.pross.server.configuration.permissions.ClientPermissionLoader;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
@@ -39,23 +41,11 @@ public class ServerApplication {
 	public static String CONFIG_FILENAME = "common.config";
 	public static String KEYS_DIRECTORY = "keys";
 	public static String SAVE_DIRECTORY = "state";
+	public static String AUTH_DIRECTORY = "../client/clients.config";
 
 	private final ServerConfiguration configuration;
 	private final KeyLoader keyLoader;
 	private final ChainBuildingMessageHandler chainBuilder;
-
-	private void doDistribuedKeyGeneration(final ApvssShareholder shareholder) {
-
-		// Initiate the DKG
-		shareholder.broadcastPublicSharing();
-
-		// Wait for share to be established
-		shareholder.waitForQual();
-
-		// Wait for completion
-		shareholder.waitForPublicKeys();
-
-	}
 
 	public ServerApplication(final File baseDirectory, final int serverIndex)
 			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
@@ -69,6 +59,10 @@ public class ServerApplication {
 		final File keysDirectory = new File(baseDirectory, KEYS_DIRECTORY);
 		this.keyLoader = new KeyLoader(keysDirectory, this.configuration.getNumServers(), serverIndex);
 		System.out.println("Loaded encryption and verification keys");
+
+		// Load Client Access Controls
+		final AccessEnforcement accessEnforcement = ClientPermissionLoader
+				.load(new File(baseDirectory, AUTH_DIRECTORY));
 
 		// Setup persistent state for message broadcast and processing
 		final List<InetSocketAddress> serverAddresses = this.configuration.getServerAddresses();
@@ -95,24 +89,31 @@ public class ServerApplication {
 				this.keyLoader, serverSaveDir, this.chainBuilder, messageReceiver);
 		this.chainBuilder.setMessageManager(messageManager);
 
+		// Create Shareholder for each secret to be maintained
+		final ConcurrentMap<String, ApvssShareholder> shareholders = new ConcurrentHashMap<>();
+		final int n = this.configuration.getNumServers();
+		final int k = this.configuration.getReconstructionThreshold();
+		final int f = this.configuration.getMaxSafetyFaults();
+		for (final String secretName : accessEnforcement.getKnownSecrets()) {
+			// Create Shareholder
+			System.out.println("Starting APVSS Shareholder for secret: " + secretName);
+			final ApvssShareholder shareholder = new ApvssShareholder(secretName, this.keyLoader, this.chainBuilder,
+					serverIndex, n, k, f);
+			shareholder.start(false); // Start the message processing thread but don't start the DKG
+			shareholders.put(secretName, shareholder);
+		}
+
 		// Wait for BFT to setup
 		while (!this.chainBuilder.isBftReady()) {
 			Thread.sleep(100);
 		}
 		System.out.println("System ready.");
 
-		// Create Shareholder
-		final int n = configuration.getNumServers();
-		final int k = configuration.getMaxSafetyFaults() + 1;
-		final int f = configuration.getMaxLivenessFaults();
-		final ApvssShareholder shareholder = new ApvssShareholder(keyLoader, this.chainBuilder, serverIndex, n, k, f);
-		shareholder.start(false); // We start the message processing thread but don't start the DKG
-
 		// Start server to process client requests
-		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, configuration);
+		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, this.configuration,
+				accessEnforcement, shareholders);
 		requestProcessor.start();
-		
-		
+
 		// Prompt user for action
 //		final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
 //		System.out.println("Available Options:");

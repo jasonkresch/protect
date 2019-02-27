@@ -4,7 +4,9 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -15,7 +17,7 @@ public class ClientPermissionLoader {
 	public static AccessEnforcement load(final File configFile) throws IOException {
 
 		System.out.println("Loading client permissions: " + configFile.toString());
-		
+
 		final Properties properties = new Properties();
 
 		try (final FileInputStream inputStream = new FileInputStream(configFile);) {
@@ -25,6 +27,9 @@ public class ClientPermissionLoader {
 
 			// Create map of client ids to their permissions
 			final ConcurrentMap<Integer, ClientPermissions> permissionMap = new ConcurrentHashMap<Integer, ClientPermissions>();
+
+			// Create set of all known secrets
+			final Set<String> knownSecrets = new HashSet<>();
 
 			// Populate map using permission entries
 			for (final String key : properties.stringPropertyNames()) {
@@ -47,11 +52,12 @@ public class ClientPermissionLoader {
 					// Sanitize string and convert to enumeration
 					final Permissions permission = Permissions.valueOf(permissionString.trim().toUpperCase());
 					clientPermissions.addPermission(secretName, permission);
+					knownSecrets.add(secretName);
 				}
 
 			}
 
-			return new AccessEnforcement(permissionMap);
+			return new AccessEnforcement(permissionMap, knownSecrets);
 		}
 	}
 
