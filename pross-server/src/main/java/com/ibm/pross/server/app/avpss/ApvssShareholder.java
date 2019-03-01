@@ -1,6 +1,8 @@
 package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -87,6 +89,9 @@ public class ApvssShareholder {
 
 	// Who stored the secret (if type = Stored)
 	private volatile int creatorId;
+	
+	private AtomicBoolean enabled = new AtomicBoolean(true);
+	
 	/*****************************************************************/
 
 	// The index of this shareholder (ourself) (one is the base index)
@@ -663,6 +668,36 @@ public class ApvssShareholder {
 	public ShamirShare getShare2() {
 		return share2;
 	}
+	
+	/**
+	 * Return the hash of the secret share of this shareholder for g^s
+	 * 
+	 * (Only used in tests)
+	 * 
+	 * @return
+	 */
+	public byte[] getShare1Hash() {
+		try {
+			return MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM).digest(share1.getY().toByteArray());
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Return the hash of the secret share of this shareholder for h^s
+	 * 
+	 * (Only used in tests)
+	 * 
+	 * @return
+	 */
+	public byte[] getShare2Hash() {
+		try {
+			return MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM).digest(share2.getY().toByteArray());
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * Wait until this shareholder has established the set of qualified shareholders
@@ -708,6 +743,14 @@ public class ApvssShareholder {
 
 	public SharingType getSharingType() {
 		return this.sharingType;
+	}
+	
+	public boolean isEnabled() {
+		return this.enabled.get();
+	}
+	
+	public void setEnabled(boolean isEnabled) {
+		this.enabled.set(isEnabled);
 	}
 
 	// TODO: Catch all instances of casting (check instance of) or catch

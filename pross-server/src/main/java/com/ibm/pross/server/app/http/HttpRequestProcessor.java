@@ -3,7 +3,6 @@ package com.ibm.pross.server.app.http;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.net.URLDecoder;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
@@ -15,6 +14,7 @@ import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
+import com.ibm.pross.server.app.http.handlers.ReadHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpServer;
@@ -46,24 +46,28 @@ public class HttpRequestProcessor {
 
 		// Define request handlers for the supported client operations
 		this.server.createContext("/generate", new GenerateHandler(accessEnforcement, shareholders));
-		// this.server.createContext("/read", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
-		// this.server.createContext("/store", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
 		this.server.createContext("/info", new InfoHandler(accessEnforcement, serverConfig, shareholders));
-		// this.server.createContext("/delete", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
-		// this.server.createContext("/disable", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
-		// this.server.createContext("/enable", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
+
+		// Handlers for reading or storing shares
+		this.server.createContext("/read", new ReadHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/store", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		// implement as DKG with default value given to each shareholder (must use
+		// interpolation style DKG!)
+
+		// Handlers for deleting or recovering shares
+		this.server.createContext("/delete", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/recover", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+
+		// Handlers for enabling and disabling shares
+		this.server.createContext("/enable", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/disable", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+
+		// Handlers for using the shares to perform functions
 		this.server.createContext("/exponentiate", new ExponentiateHandler(accessEnforcement, shareholders));
-		// this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
+		this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement, serverConfig, shareholders));
 
 		// Define server to server requests
-		// this.server.createContext("/recover", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
+		this.server.createContext("/get_partial", new InfoHandler(accessEnforcement, serverConfig, shareholders));
 
 		// this.server.setExecutor(Executors.newFixedThreadPool(NUM_PROCESSING_THREADS));
 	}

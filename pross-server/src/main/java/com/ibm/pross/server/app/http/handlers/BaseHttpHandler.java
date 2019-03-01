@@ -2,11 +2,14 @@ package com.ibm.pross.server.app.http.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
+import com.ibm.pross.server.configuration.permissions.exceptions.HttpException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
@@ -20,31 +23,22 @@ public abstract class BaseHttpHandler implements HttpHandler {
 		// Invoke the sub-class's handler
 		try {
 			this.handleWithExceptions(exchange);
-		} catch (final UnauthorizedException e) {
-			final String response = "403: Unauthorized\n";
+		} catch (final HttpException e) {
+			final String response = e.getErrorCode() + ": " + e.getErrorMessage() + "\n";
+			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
+			exchange.sendResponseHeaders(e.getErrorCode(), binaryResponse.length);
+			try (final OutputStream os = exchange.getResponseBody();) {
+				os.write(binaryResponse);
+			}
+		} catch (final Throwable e) {
+			// Treat as an internal exception (but include stack trace for debugging)
+			final StringWriter writer = new StringWriter();
+			e.printStackTrace(new PrintWriter(writer));
+			final String stackTrace = writer.toString();
+			
+			final String response = "500: Internal Error\n" + stackTrace;
 			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 			exchange.sendResponseHeaders(HttpStatusCode.NOT_AUTHORIZED, binaryResponse.length);
-			try (final OutputStream os = exchange.getResponseBody();) {
-				os.write(binaryResponse);
-			}
-		} catch (final NotFoundException e) {
-			final String response = "404: Not Found\n";
-			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
-			exchange.sendResponseHeaders(HttpStatusCode.NOT_FOUND, binaryResponse.length);
-			try (final OutputStream os = exchange.getResponseBody();) {
-				os.write(binaryResponse);
-			}
-		} catch (final ConflictException e) {
-			final String response = "409: Already Exists\n";
-			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
-			exchange.sendResponseHeaders(HttpStatusCode.CONFLICT, binaryResponse.length);
-			try (final OutputStream os = exchange.getResponseBody();) {
-				os.write(binaryResponse);
-			}
-		} catch (BadRequestException e) {
-			final String response = "400: Bad Request\n";
-			final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
-			exchange.sendResponseHeaders(HttpStatusCode.BAD_REQUEST, binaryResponse.length);
 			try (final OutputStream os = exchange.getResponseBody();) {
 				os.write(binaryResponse);
 			}

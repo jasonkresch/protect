@@ -24,30 +24,14 @@ import com.sun.net.httpserver.HttpExchange;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
- * This handler returns information about a secret. Client's must have a
- * specific authorization to be able to invoke this method. If the secret is not
+ * This handler returns the raw content of a secret share. Client's must have a
+ * specific authorization to be able to invoke this method. If the share is not
  * found a 404 is returned. If the client is not authorized a 401 is returned.
- * 
- * <pre>
- * Information about the secret includes:
- * - The name of the secret
- * - The public key of the secret
- * - The current epoch id of the secret (first is zero)
- * - The shareholder public verification keys of the secret
- * - The Feldman co-efficients of the secret
- * - The time the secret was first generated/stored by this server
- * - The id of the client who performed the creation or generation of the secret
- * - The time the secret was last proactively refreshed by this server
- * - The next scheduled time for this server to begin a proactive refresh
- * - The number of shares and the reconstruction threshold of the secret
- * - The prime field of the shamir sharing of the secret
- * - The elliptic curve group for exponentiation operations
- * </pre>
  */
 @SuppressWarnings("restriction")
-public class InfoHandler extends AuthenticatedClientRequestHandler {
+public class ReadHandler extends AuthenticatedClientRequestHandler {
 
-	public static final Permissions REQUEST_PERMISSION = Permissions.INFO;
+	public static final Permissions REQUEST_PERMISSION = Permissions.READ;
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
@@ -57,7 +41,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public InfoHandler(final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
+	public ReadHandler(final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		this.shareholders = shareholders;
 		this.serverConfig = serverConfig;
@@ -87,7 +71,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		}
 
 		// Create response
-		final String response = getSecretInfo(shareholder, secretName, serverConfig);
+		final String response = readShare(shareholder, secretName, serverConfig);
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -99,14 +83,15 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		}
 	}
 
-	private static String getSecretInfo(final ApvssShareholder shareholder, final String secretName,
-			final ServerConfiguration serverConfig) {
+	private static String readShare(final ApvssShareholder shareholder, final String secretName,
+			final ServerConfiguration serverConfig) throws NotFoundException {
 
 		// This server
 		final int serverIndex = shareholder.getIndex();
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
 		final String ourIp = thisServerAddress.getHostString();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
+		final String infoUrl = "http://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName;
 
 		// Create response
 		final StringBuilder stringBuilder = new StringBuilder();
@@ -124,25 +109,14 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		stringBuilder.append("<p/>\n");
 
 		// Secret Info
-		stringBuilder.append("<b>Information for \"" + secretName + "\":</b><br/>\n");
-		final int n = shareholder.getN();
-		final int k = shareholder.getK();
+		stringBuilder.append("<b>Share #" + serverIndex + " of \"<a href=\"" + infoUrl + "\">" + secretName + "</a>\":</b><br/>\n");
 		if (shareholder.getSecretPublicKey() == null) {
-			final String linkUrl = "http://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
-			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)<br/>\n");
+			throw new NotFoundException();
 		} else {
-			stringBuilder.append("sharing_type             =  " + shareholder.getSharingType() + "<br/>\n");
-			stringBuilder.append("g^{s}                    =  " + shareholder.getSecretPublicKey() + "<br/>\n");
-			stringBuilder.append("number_of_shares         =  " + shareholder.getN() + "<br/>\n");
-			stringBuilder.append("reconstruction_threshold =  " + shareholder.getK() + "<br/>\n");
-			stringBuilder.append("creation_time            =  " + shareholder.getCreationTime() + "<br/>\n");
-			stringBuilder.append("<p/>\n");
-
-			// Print Epoch information
-			stringBuilder.append("<b>Epoch:</b><br/>\n");
-			stringBuilder.append("epoch_number      =  " + shareholder.getEpoch() + "<br/>\n");
-			stringBuilder.append("last_refresh_time =  " + shareholder.getLastRefreshTime() + "<br/>\n");
-			stringBuilder.append("refresh_frequency =  " + shareholder.getRefreshFrequency() + " seconds<br/>\n");
+			// Print share information
+			stringBuilder.append("s_" + serverIndex + "     =  " + shareholder.getShare1().getY() + "<br/>\n");
+			stringBuilder.append("epoch        =  " + shareholder.getEpoch() + "<br/>\n");
+			stringBuilder.append("last_refresh =  " + shareholder.getLastRefreshTime() + "<br/>\n");
 			stringBuilder.append("<p/>\n");
 
 			// Print Field Information
@@ -150,43 +124,6 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("prime_modulus    =  " + CommonConfiguration.CURVE.getR() + "<br/>\n");
 			stringBuilder.append("curve_oid        =  " + CommonConfiguration.CURVE.getOid() + " ("
 					+ CommonConfiguration.CURVE.getName() + ")<br/>\n");
-			stringBuilder.append("<p/>\n");
-
-			// Print share verification keys
-			stringBuilder.append("<b>Share Verification Keys:</b><br/>\n");
-			for (int i = 1; i <= n; i++) {
-				stringBuilder.append("g^{s_" + i + "} =  " + shareholder.getSharePublicKey(i) + "<br/>\n");
-			}
-			stringBuilder.append("<p/>\n");
-
-			// Print Feldman Coefficients
-			stringBuilder.append("<b>Feldman Coefficients:</b><br/>\n");
-			for (int i = 0; i < k; i++) {
-				stringBuilder.append("g^{a_" + i + "} =  " + shareholder.getFeldmanValues(i) + "<br/>\n");
-			}
-			stringBuilder.append("<p/>\n");
-
-			// Print Share Information
-			final String readLink = "http://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
-			final String enableLink = "http://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
-			final String disableLink = "http://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
-			final String deleteLink = "http://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
-			final String recoverLink = "http://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
-			stringBuilder.append("<b>Share Information:</b><br/>\n");
-			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")        =  "
-					+ Hex.encodeHexString(shareholder.getShare1Hash()) + " (<a href=\"" + readLink
-					+ "\">View Share</a>) <br/>\n");
-			if (shareholder.getShare1() != null) {
-				stringBuilder.append("exists  =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) <br/>\n");
-			} else {
-				stringBuilder.append("exists  =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) <br/>\n");
-			}
-			if (shareholder.isEnabled()) {
-				stringBuilder.append("status  =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) <br/>\n");
-			} else {
-				stringBuilder.append("status  =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) <br/>\n");
-			}
-
 			stringBuilder.append("<p/>\n");
 		}
 
@@ -199,7 +136,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			serverId++;
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
+			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/read?secretName=" + secretName;
 			stringBuilder.append(
 					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
 		}
