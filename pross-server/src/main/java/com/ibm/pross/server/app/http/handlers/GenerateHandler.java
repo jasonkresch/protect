@@ -3,12 +3,16 @@ package com.ibm.pross.server.app.http.handlers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
+import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
@@ -39,8 +43,11 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 	public static final Permissions REQUEST_PERMISSION = Permissions.GENERATE;
 
 	// Request header names
-	public static final String SECRET_NAME_FIELD = "X-Secret-Name";
+	//public static final String SECRET_NAME_FIELD = "X-Secret-Name";
 
+	// Query name
+	public static final String SECRET_NAME_FIELD = "secretName";
+	
 	// Fields
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
@@ -52,12 +59,17 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 
 	@Override
 	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
-			throws IOException, UnauthorizedException, NotFoundException, ConflictException {
+			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException {
 
 		// Extract secret name from request
-		// TODO: Support get fields too!
-		final String secretName = exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
-		// final String secretName = (String) exchange.getAttribute(SECRET_NAME_FIELD);
+		//final String secretName = exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
+		final String queryString = exchange.getRequestURI().getQuery();
+		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
+		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
+		if (secretNames == null || secretNames.size() != 1) {
+			throw new BadRequestException();
+		}
+		final String secretName = secretNames.get(0);
 
 		// Perform authentication
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
@@ -73,7 +85,7 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 		// Create response
 		final String response = "The secret '" + secretName + "' has been generated in " + processingTimeMs + " ms.\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
-
+		
 		// Write headers
 		exchange.sendResponseHeaders(HttpStatusCode.SUCCESS, binaryResponse.length);
 

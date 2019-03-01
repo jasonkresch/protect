@@ -2,11 +2,13 @@ package com.ibm.pross.server.app.http.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
@@ -16,6 +18,8 @@ import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestExcep
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
+
+import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
  * This handler returns information about a secret. Client's must have a
@@ -48,11 +52,13 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
+	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public InfoHandler(final AccessEnforcement accessEnforcement,
+	public InfoHandler(final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		this.shareholders = shareholders;
+		this.serverConfig = serverConfig;
 		this.accessEnforcement = accessEnforcement;
 	}
 
@@ -74,13 +80,12 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 		// Do processing
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
-		if (shareholder == null)
-		{
+		if (shareholder == null) {
 			throw new NotFoundException();
 		}
 
 		// Create response
-		final String response = "Hi there! You asked for: " + secretName + "\n.  We found it!";
+		final String response = getSecretInfo(shareholder, secretName, serverConfig);
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -90,6 +95,94 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		try (final OutputStream os = exchange.getResponseBody();) {
 			os.write(binaryResponse);
 		}
+	}
+
+	private static String getSecretInfo(final ApvssShareholder shareholder, final String secretName,
+			final ServerConfiguration serverConfig) {
+
+		// This server
+		final int serverIndex = shareholder.getIndex();
+		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
+		final String ourIp = thisServerAddress.getHostString();
+		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
+
+		// Create response
+		final StringBuilder stringBuilder = new StringBuilder();
+		stringBuilder.append("<html>\n");
+		stringBuilder.append("<head>\n");
+		stringBuilder.append("<meta http-equiv=\"refresh\" content=\"10\">\n");
+		stringBuilder.append("</head>\n");
+		stringBuilder.append("<body>\n");
+		stringBuilder.append("<tt>\n");
+
+		// Shareholder information
+		stringBuilder.append("This is <a href=\"/\">shareholder #" + serverIndex + "</a>"
+				+ " running <a href=\"https://github.com/jasonkresch/protect\">PROTECT</a>,"
+				+ " a <b>P</b>latform for <b>Ro</b>bust <b>T</b>hr<b>e</b>shold <b>C</b>ryp<b>t</b>ography.\n");
+		stringBuilder.append("<p/>\n");
+
+		// Secret Info
+		stringBuilder.append("<b>Information for \"" + secretName + "\":</b><br/>\n");
+		final int n = shareholder.getN();
+		final int k = shareholder.getK();
+		if (shareholder.getSecretPublicKey() == null) {
+			final String linkUrl = "http://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
+			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)<br/>\n");
+		} else {
+			stringBuilder.append("sharing_type             =  " + shareholder.getSharingType() + "<br/>\n");
+			stringBuilder.append("g^{s}                    =  " + shareholder.getSecretPublicKey() + "<br/>\n");
+			stringBuilder.append("number_of_shares         =  " + shareholder.getN() + "<br/>\n");
+			stringBuilder.append("reconstruction_threshold =  " + shareholder.getK() + "<br/>\n");
+			stringBuilder.append("creation_time            =  " + shareholder.getCreationTime() + "<br/>\n");
+			stringBuilder.append("<p/>\n");
+
+			// Print Epoch information
+			stringBuilder.append("<b>Epoch:</b><br/>\n");
+			stringBuilder.append("epoch_number      =  " + shareholder.getEpoch() + "<br/>\n");
+			stringBuilder.append("last_refresh_time =  " + shareholder.getLastRefreshTime() + "<br/>\n");
+			stringBuilder.append("refresh_frequency =  " + shareholder.getRefreshFrequency() + " seconds<br/>\n");
+			stringBuilder.append("<p/>\n");
+
+			// Print Field Information
+			stringBuilder.append("<b>Field Information:</b><br/>\n");
+			stringBuilder.append("prime_modulus    =  " + CommonConfiguration.CURVE.getR() + "<br/>\n");
+			stringBuilder.append("curve_oid        =  " + CommonConfiguration.CURVE.getOid() + " ("
+					+ CommonConfiguration.CURVE.getName() + ")<br/>\n");
+			stringBuilder.append("<p/>\n");
+
+			// Print share verification keys
+			stringBuilder.append("<b>Share Verification Keys:</b><br/>\n");
+			for (int i = 1; i <= n; i++) {
+				stringBuilder.append("g^{s_" + i + "} =  " + shareholder.getSharePublicKey(i) + "<br/>\n");
+			}
+			stringBuilder.append("<p/>\n");
+
+			// Print Feldman Coefficients
+			stringBuilder.append("<b>Feldman Coefficients:</b><br/>\n");
+			for (int i = 0; i < k; i++) {
+				stringBuilder.append("g^{a_" + i + "} =  " + shareholder.getFeldmanValues(i) + "<br/>\n");
+			}
+		}
+
+		// Peers
+		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<b>Peers:</b><br/>\n");
+		int serverId = 0;
+		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
+			serverId++;
+			final String serverIp = serverAddress.getHostString();
+			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
+			stringBuilder.append(
+					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
+		}
+		stringBuilder.append("<p/>\n");
+
+		stringBuilder.append("</tt>\n");
+		stringBuilder.append("</body>\n");
+		stringBuilder.append("</html>\n");
+
+		return stringBuilder.toString();
 	}
 
 }

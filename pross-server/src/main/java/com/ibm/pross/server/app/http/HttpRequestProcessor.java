@@ -12,6 +12,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
@@ -45,17 +46,24 @@ public class HttpRequestProcessor {
 
 		// Define request handlers for the supported client operations
 		this.server.createContext("/generate", new GenerateHandler(accessEnforcement, shareholders));
-		this.server.createContext("/read", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/store", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/info", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/delete", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/disable", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/enable", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/exponentiate", new InfoHandler(accessEnforcement, shareholders));
-		this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement, shareholders));
+		// this.server.createContext("/read", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
+		// this.server.createContext("/store", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
+		this.server.createContext("/info", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		// this.server.createContext("/delete", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
+		// this.server.createContext("/disable", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
+		// this.server.createContext("/enable", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
+		this.server.createContext("/exponentiate", new ExponentiateHandler(accessEnforcement, shareholders));
+		// this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
 
 		// Define server to server requests
-		this.server.createContext("/recover", new InfoHandler(accessEnforcement, shareholders));
+		// this.server.createContext("/recover", new InfoHandler(accessEnforcement,
+		// serverConfig, shareholders));
 
 		// this.server.setExecutor(Executors.newFixedThreadPool(NUM_PROCESSING_THREADS));
 	}
@@ -78,6 +86,7 @@ public class HttpRequestProcessor {
 	 */
 	public static Map<String, List<String>> parseQueryString(final String queryString)
 			throws UnsupportedEncodingException {
+
 		final Map<String, List<String>> queryPairs = new LinkedHashMap<String, List<String>>();
 		final String[] pairs = queryString.split("&");
 		for (String pair : pairs) {

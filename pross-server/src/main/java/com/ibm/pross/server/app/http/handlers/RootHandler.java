@@ -26,7 +26,8 @@ public class RootHandler extends BaseHttpHandler {
 	private final ServerConfiguration serverConfiguration;
 	final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public RootHandler(final int serverIndex, final ServerConfiguration serverConfiguration, final ConcurrentMap<String, ApvssShareholder> shareholders) {
+	public RootHandler(final int serverIndex, final ServerConfiguration serverConfiguration,
+			final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		this.serverIndex = serverIndex;
 		this.serverConfiguration = serverConfiguration;
 		this.shareholders = shareholders;
@@ -40,20 +41,21 @@ public class RootHandler extends BaseHttpHandler {
 		stringBuilder.append("<html>\n");
 		stringBuilder.append("<body>\n");
 		stringBuilder.append("<tt>\n");
-		stringBuilder.append("This is shareholder #" + this.serverIndex
+		stringBuilder.append("This is <a href=\"/\">shareholder #" + this.serverIndex + "</a>"
 				+ " running <a href=\"https://github.com/jasonkresch/protect\">PROTECT</a>,"
 				+ " a <b>P</b>latform for <b>Ro</b>bust <b>T</b>hr<b>e</b>shold <b>C</b>ryp<b>t</b>ography.\n");
 		stringBuilder.append("<p/>\n");
-		
+
 		// Config
 		stringBuilder.append("<b>System Configuration:</b><br/>\n");
 		stringBuilder.append("num_servers = " + serverConfiguration.getNumServers() + "<br/>\n");
-		stringBuilder.append("reconstruction_threshold = " + serverConfiguration.getReconstructionThreshold() + "<br/>\n");
+		stringBuilder
+				.append("reconstruction_threshold = " + serverConfiguration.getReconstructionThreshold() + "<br/>\n");
 		stringBuilder.append("max_safety_faults = " + serverConfiguration.getMaxSafetyFaults() + "<br/>\n");
 		stringBuilder.append("max_liveness_faults = " + serverConfiguration.getMaxLivenessFaults() + "<br/>\n");
 		stringBuilder.append("max_bft_faults = " + serverConfiguration.getMaxBftFaults() + "<br/>\n");
 		stringBuilder.append("<p/>\n");
-		
+
 		// Peers
 		stringBuilder.append("<b>Peers:</b><br/>\n");
 		int serverId = 0;
@@ -62,13 +64,14 @@ public class RootHandler extends BaseHttpHandler {
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/";
-			stringBuilder.append("server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
+			stringBuilder.append(
+					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
 		}
 		stringBuilder.append("<p/>\n");
-		
+
 		// Secrets
 		stringBuilder.append("<b>Secrets:</b><br/>\n");
-		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex-1).getHostString();
+		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex - 1).getHostString();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + this.serverIndex;
 		int secretId = 0;
 		for (final Entry<String, ApvssShareholder> entry : this.shareholders.entrySet()) {

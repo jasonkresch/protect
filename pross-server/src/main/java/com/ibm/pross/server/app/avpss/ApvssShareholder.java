@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map.Entry;
 import java.util.SortedMap;
 import java.util.SortedSet;
+import java.util.Timer;
+import java.util.TimerTask;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -32,6 +34,7 @@ import com.ibm.pross.server.app.avpss.exceptions.InvalidCiphertextException;
 import com.ibm.pross.server.app.avpss.exceptions.InvalidZeroKnowledgeProofException;
 import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
+import com.ibm.pross.server.communication.MessageDeliveryManager.StubbornSendTask;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
 import com.ibm.pross.server.messages.PublicMessage;
@@ -40,7 +43,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 public class ApvssShareholder {
 
-	enum SharingType {
+	public enum SharingType {
 		PEDERSEN_DKG, FELDMAN_DKG, STORED;
 	}
 
@@ -63,6 +66,9 @@ public class ApvssShareholder {
 	private final Thread messageProcessingThread;
 	private final AtomicBoolean stopped = new AtomicBoolean(true);
 
+	// Our timer task for doing proactive refresh
+	private final Timer timer = new Timer(true);
+
 	/********************** Misc Info ******************************/
 	// The unique name for this secret
 	private final String secretName;
@@ -77,7 +83,7 @@ public class ApvssShareholder {
 	private volatile Date lastEpochChange;
 
 	// How the secret was established
-	private volatile SharingType type;
+	private volatile SharingType sharingType;
 
 	// Who stored the secret (if type = Stored)
 	private volatile int creatorId;
@@ -128,16 +134,17 @@ public class ApvssShareholder {
 	// Used to time operation
 	private volatile long startTime;
 
-	public ApvssShareholder(final String secretName, final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
-			final int n, final int k, final int f) {
+	public ApvssShareholder(final String secretName, final KeyLoader keyLoader,
+			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k, final int f) {
 		this(secretName, keyLoader, channel, index, n, k, f, true);
 	}
 
-	public ApvssShareholder(final String secretName, final KeyLoader keyLoader, final FifoAtomicBroadcastChannel channel, final int index,
-			final int n, final int k, final int f, final boolean sendValidCommitments) {
+	public ApvssShareholder(final String secretName, final KeyLoader keyLoader,
+			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k, final int f,
+			final boolean sendValidCommitments) {
 
 		this.secretName = secretName;
-		
+
 		this.sendValidCommitments = sendValidCommitments;
 
 		/** Values unique to ourselves **/
@@ -147,8 +154,8 @@ public class ApvssShareholder {
 		this.keyLoader = keyLoader;
 		this.channel = channel;
 		this.n = n;
-		this.k = k; // (t + 1) == reconstruction threshold
-		this.f = f; // t_S = maximum safety failures
+		this.k = k; // reconstruction threshold (usually f_S + 1)
+		this.f = f; // f_S = maximum safety failures
 
 		/** Variables to track sharing **/
 		this.receivedSharings = new PublicSharing[n];
@@ -187,15 +194,28 @@ public class ApvssShareholder {
 		}, "Shareholder-Thread-" + this.index);
 	}
 
+	// Periodic task for stubborn message delivery
+	public class RefreshTask extends TimerTask {
+		@Override
+		public void run() {
+			// TODO: Send a refresh message to the channel
+			System.out.println("Performing Refresh for secret '" + ApvssShareholder.this.secretName + "'");
+			final int newEpoch = ApvssShareholder.this.epochNumber.incrementAndGet();
+			ApvssShareholder.this.lastEpochChange = new Date();
+			System.out.println(
+					"Refresh completed for secret '" + ApvssShareholder.this.secretName + "', epoch = " + newEpoch);
+		}
+	}
+
 	/**
 	 * A message is available on the queue, get it and deliver it for processing
 	 */
 	private synchronized void messageIsAvailable() {
 		int messageId = this.currentMessageId.getAndIncrement();
 		final Message message = this.channel.getMessage(messageId);
-		
+
 		// Deliver only if this message is relevant for the given epoch and secret
-		final String channelName = (this.epochNumber + "-" + this.secretName);
+		final String channelName = this.secretName;
 		if (message.isRecipient(channelName)) {
 			// System.out.println("DKG app processing message #" + messageId);
 			deliver(message);
@@ -288,7 +308,7 @@ public class ApvssShareholder {
 
 			// Create a semi-private message
 			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
-			final String channelName = (this.epochNumber + "-" + this.secretName);
+			final String channelName = this.secretName;
 			final Message publicSharingMessage = new PublicMessage(channelName, this.index, payload);
 			this.channel.send(publicSharingMessage);
 
@@ -438,7 +458,7 @@ public class ApvssShareholder {
 
 		// Send message out
 		final ZkpPayload payload = new ZkpPayload(proof);
-		final String channelName = (this.epochNumber + "-" + this.secretName);
+		final String channelName = this.secretName;
 		this.channel.send(new PublicMessage(channelName, this.index, payload));
 	}
 
@@ -544,7 +564,16 @@ public class ApvssShareholder {
 			System.out.println("Feldman Coefficient:     g^{a_" + i + "} =  " + this.feldmanValues[i]);
 		}
 
+		this.creationTime = new Date();
+		this.lastEpochChange = this.creationTime;
+		this.sharingType = SharingType.PEDERSEN_DKG;
+
 		System.out.println("DKG Complete!");
+
+		// Schedule Proactive Refresh Task
+		System.out.println("Scheduling Refresh to occur every " + this.getRefreshFrequency() + " seconds");
+		final int refreshPeriodMillis = this.getRefreshFrequency() * 1000;
+		this.timer.scheduleAtFixedRate(new RefreshTask(), refreshPeriodMillis, refreshPeriodMillis);
 
 		// System.out.println("Signatures generated: " + SigningUtil.signCount.get());
 		// System.out.println("Signatures verified: " + SigningUtil.verCount.get());
@@ -588,6 +617,18 @@ public class ApvssShareholder {
 
 	public EcPoint getSharePublicKey(final int index) {
 		return this.sharePublicKeys[index];
+	}
+
+	public EcPoint getFeldmanValues(final int index) {
+		return this.feldmanValues[index];
+	}
+
+	public int getN() {
+		return this.n;
+	}
+
+	public int getK() {
+		return this.k;
 	}
 
 	/**
@@ -647,6 +688,26 @@ public class ApvssShareholder {
 				// Ignored
 			}
 		}
+	}
+
+	public Date getCreationTime() {
+		return this.creationTime;
+	}
+
+	public int getEpoch() {
+		return this.epochNumber.get();
+	}
+
+	public Date getLastRefreshTime() {
+		return this.lastEpochChange;
+	}
+
+	public int getRefreshFrequency() {
+		return 30;
+	}
+
+	public SharingType getSharingType() {
+		return this.sharingType;
 	}
 
 	// TODO: Catch all instances of casting (check instance of) or catch
