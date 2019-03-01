@@ -73,7 +73,7 @@ public abstract class PointHasher {
 	 *
 	 * @param a
 	 */
-	protected BigInteger squareRoot(BigInteger a) {
+	public BigInteger squareRoot(BigInteger a) {
 		return Exponentiation.modPow(a, this.squareRootExponent, this.curve.getP());
 	}
 

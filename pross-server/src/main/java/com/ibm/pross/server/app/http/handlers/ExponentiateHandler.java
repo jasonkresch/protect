@@ -89,12 +89,13 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 
 		// Extract Y-Coordinate from request or compute it.
 		final BigInteger yCoord;
-		final List<String> yCoords = params.get(BASE_X_COORD);
+		final List<String> yCoords = params.get(BASE_Y_COORD);
 		if (yCoords != null && yCoords.size() == 1) {
 			yCoord = new BigInteger(yCoords.get(0));
 		} else {
 			// Compute yCoordinate from xCoordinate
-			yCoord = CommonConfiguration.CURVE.computeYSquared(xCoord);
+			final BigInteger ySquared = CommonConfiguration.CURVE.computeYSquared(xCoord);
+			yCoord = CommonConfiguration.CURVE.getPointHasher().squareRoot(ySquared);
 		}
 
 		// Form an elliptic curve point
@@ -118,12 +119,12 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		final long endTime = System.nanoTime();
 
 		// Compute processing time
-		final long processingTimeMs = (endTime - startTime) / 1_000;
+		final long processingTimeUs = (endTime - startTime) / 1_000;
 
 		// Create response
-		final String response = basePoint + "^{s_" + serverIndex + "} = " + result + "\n"
-				+ "Result computed using share #" + serverIndex + " of secret '" + secretName + "' computed in "
-				+ processingTimeMs + " μs.\n";
+		final String response = basePoint + "^{s_" + serverIndex + "} = \n" +
+				result + "\n\n"
+				+ "Result computed in " + processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName + "\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
