@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.math.BigInteger;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -50,7 +51,7 @@ public class ApvssTest {
 	}
 	
 	
-	private final KeyLoader createKeyLoader(final int numServers, final int serverIndex) throws FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException
+	private final KeyLoader createKeyLoader(final int numServers, final int serverIndex) throws FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException, CertificateException
 	{
 		final String baseDirectory = "config/server/";
 		
@@ -60,7 +61,7 @@ public class ApvssTest {
 	}
 	
 	@Test
-	public void testPedersenValidationAllGood() throws InterruptedException, FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+	public void testPedersenValidationAllGood() throws InterruptedException, FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException, CertificateException {
 
 		// Create channel
 		final FifoAtomicBroadcastChannelLocalImpl channel = new FifoAtomicBroadcastChannelLocalImpl();
@@ -241,7 +242,7 @@ public class ApvssTest {
 	}
 
 	@Test
-	public void testPedersenValidationOneBadShareholder() throws InterruptedException, FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException {
+	public void testPedersenValidationOneBadShareholder() throws InterruptedException, FileNotFoundException, NoSuchAlgorithmException, InvalidKeySpecException, IOException, CertificateException {
 
 		// Create channel
 		final FifoAtomicBroadcastChannelLocalImpl channel = new FifoAtomicBroadcastChannelLocalImpl();

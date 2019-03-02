@@ -6,7 +6,6 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.math.BigInteger;
-import java.security.Key;
 import java.security.KeyFactory;
 import java.security.KeyPair;
 import java.security.KeyPairGenerator;
@@ -14,8 +13,7 @@ import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.Security;
-import java.security.interfaces.ECPrivateKey;
-import java.security.interfaces.ECPublicKey;
+import java.security.cert.CertificateEncodingException;
 import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
@@ -23,16 +21,15 @@ import java.security.spec.RSAPrivateKeySpec;
 import java.security.spec.RSAPublicKeySpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.bouncycastle.util.io.pem.PemObject;
 import org.bouncycastle.util.io.pem.PemWriter;
 
+import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyGenerator;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyPair;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
+import com.ibm.pross.common.util.serialization.Pem;
 
-import net.i2p.crypto.eddsa.EdDSAPrivateKey;
-import net.i2p.crypto.eddsa.EdDSAPublicKey;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 /**
@@ -40,7 +37,7 @@ import net.i2p.crypto.eddsa.EdDSASecurityProvider;
  */
 public class KeyGeneratorCli {
 
-	public static void main(String[] args) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException {
+	public static void main(String[] args) throws InvalidKeySpecException, NoSuchAlgorithmException, IOException, CertificateEncodingException {
 
 		Security.addProvider(new BouncyCastleProvider());
 		Security.addProvider(new EdDSASecurityProvider());
@@ -54,7 +51,7 @@ public class KeyGeneratorCli {
 		final int keyIndex = Integer.parseInt(args[1]);
 
 		// Generate EC Key Pair
-		// final KeyPair signingKeyPair = EcKeyGeneration.generateKeyPair();
+		final KeyPair tlsKeyPair = EcKeyGeneration.generateKeyPair();
 
 		// Generate Ed25519 Key Pair
 		final KeyPairGenerator keyGen = KeyPairGenerator.getInstance(EdDSASecurityProvider.PROVIDER_NAME);
@@ -68,8 +65,9 @@ public class KeyGeneratorCli {
 		// Write public keys
 		final File publicKeyFile = new File(keyPath, "public-" + keyIndex);
 		try (PemWriter writer = new PemWriter(new FileWriter(publicKeyFile.getAbsolutePath()))) {
-			writeObject(signingKeyPair.getPublic(), writer);
-			writeObject(encryptionKeyPair.getPublic(), writer);
+			Pem.writeObject(tlsKeyPair.getPublic(), writer);
+			Pem.writeObject(signingKeyPair.getPublic(), writer);
+			Pem.writeObject(encryptionKeyPair.getPublic(), writer);
 		}
 		System.out.println("Wrote: " + publicKeyFile.getAbsolutePath());
 		try (final BufferedReader reader = new BufferedReader(new FileReader(publicKeyFile));) {
@@ -82,37 +80,13 @@ public class KeyGeneratorCli {
 		// Write private keys
 		final File privateKeyFile = new File(keyPath, "private-" + keyIndex);
 		try (PemWriter writer = new PemWriter(new FileWriter(privateKeyFile.getAbsolutePath()))) {
-			writeObject(signingKeyPair.getPrivate(), writer);
-			writeObject(encryptionKeyPair.getPrivate(), writer);
+			Pem.writeObject(tlsKeyPair.getPrivate(), writer);
+			Pem.writeObject(signingKeyPair.getPrivate(), writer);
+			Pem.writeObject(encryptionKeyPair.getPrivate(), writer);
 		}
 		System.out.println("Wrote: " + privateKeyFile.getAbsolutePath());
 	}
 
-	private static void writeObject(final Key key, final PemWriter writer) throws IOException {
-
-		final String description;
-		if (key instanceof RSAPrivateKey) {
-			description = "PAILLIER PRIVATE KEY";
-		} else if (key instanceof RSAPublicKey) {
-			description = "PAILLIER PUBLIC KEY";
-		} else if (key instanceof ECPrivateKey) {
-			description = "EC PRIVATE KEY";
-		} else if (key instanceof ECPublicKey) {
-			description = "EC PUBLIC KEY";
-		} else if (key instanceof EdDSAPrivateKey) {
-			description = "ED25519 PRIVATE KEY";
-		} else if (key instanceof EdDSAPublicKey) {
-			description = "ED25519 PUBLIC KEY";
-		} else if (key instanceof PrivateKey) {
-			description = "PRIVATE KEY";
-		} else if (key instanceof PublicKey) {
-			description = "PUBLIC KEY";
-		} else {
-			description = "KEY";
-		}
-
-		writer.writeObject(new PemObject(description, key.getEncoded()));
-	}
 
 	// Note this is only to take advantage of existing serialization methods
 	public static KeyPair convertFromPaillier(final PaillierKeyPair paillierKeyPair)

@@ -3,8 +3,13 @@ package com.ibm.pross.server.app;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.Security;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
+import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
 import java.util.Arrays;
 import java.util.Collections;
@@ -18,6 +23,7 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.ibm.pross.common.util.serialization.Pem;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
@@ -40,15 +46,18 @@ public class ServerApplication {
 
 	public static String CONFIG_FILENAME = "common.config";
 	public static String KEYS_DIRECTORY = "keys";
+	public static String CERTS_DIRECTORY = "certs";
 	public static String SAVE_DIRECTORY = "state";
 	public static String AUTH_DIRECTORY = "../client/clients.config";
+	public static String CA_DIRECTORY = "../ca";
 
 	private final ServerConfiguration configuration;
 	private final KeyLoader keyLoader;
 	private final ChainBuildingMessageHandler chainBuilder;
 
 	public ServerApplication(final File baseDirectory, final int serverIndex)
-			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
+			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException,
+			CertificateException, KeyManagementException, UnrecoverableKeyException, KeyStoreException {
 
 		// Load configuration
 		final File configFile = new File(baseDirectory, CONFIG_FILENAME);
@@ -109,44 +118,23 @@ public class ServerApplication {
 		}
 		System.out.println("System ready.");
 
+		// Load certificates to support TLS
+		final File caDirectory = new File(baseDirectory, CA_DIRECTORY);
+		final File caCertificateFile = new File(caDirectory, "ca-cert");
+		final File certDirectory = new File(baseDirectory, CERTS_DIRECTORY);
+		final File hostCertificateFile = new File(certDirectory, "cert-" + serverIndex);
+		final X509Certificate caCert = Pem.loadCertificateFromFile(caCertificateFile);
+		final X509Certificate hostCert = Pem.loadCertificateFromFile(hostCertificateFile);
+
 		// Start server to process client requests
 		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, this.configuration,
-				accessEnforcement, shareholders);
+				accessEnforcement, shareholders, caCert, hostCert, this.keyLoader.getTlsKey());
 		requestProcessor.start();
 
-		// Prompt user for action
-//		final BufferedReader reader = new BufferedReader(new InputStreamReader(System.in));
-//		System.out.println("Available Options:");
-//		System.out.println("1. Initiate DKG");
-//		System.out.println("2. Initiate Share Recovery");
-//		System.out.println("3. Initiate Proactive Refresh");
-//		System.out.println("4. Quit");
-//		System.out.print("Enter selection: ");
-//		while (true) {
-//			final String input = reader.readLine();
-//			switch (input) {
-//			case "1":
-//				System.out.println("Initiating DKG...");
-//				doDistribuedKeyGeneration(shareholder);
-//				break;
-//			case "2":
-//				System.out.println("Performing Share Recovery...");
-//				break;
-//			case "3":
-//				System.out.println("Performing Proactive Refresh...");
-//				break;
-//			case "4":
-//				System.out.println("Exiting...");
-//				System.exit(0);
-//				break;
-//			default:
-//				System.err.println("Unknown selection: " + input);
-//			}
-//		}
 	}
 
-	public static void main(final String[] args)
-			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException {
+	public static void main(final String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
+			InterruptedException, CertificateException, KeyManagementException, UnrecoverableKeyException, KeyStoreException {
 
 		// Configure logging
 		BasicConfigurator.configure();

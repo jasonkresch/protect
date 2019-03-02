@@ -91,7 +91,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
 		final String ourIp = thisServerAddress.getHostString();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
-		final String infoUrl = "http://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName;
+		final String infoUrl = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName;
 
 		// Create response
 		final StringBuilder stringBuilder = new StringBuilder();
@@ -136,7 +136,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 			serverId++;
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/read?secretName=" + secretName;
+			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/read?secretName=" + secretName;
 			stringBuilder.append(
 					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
 		}

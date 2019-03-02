@@ -3,7 +3,6 @@ package com.ibm.pross.server.app.http.handlers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.math.BigInteger;
-import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -11,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
@@ -20,8 +20,6 @@ import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestExcep
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
-
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
  * This handler returns information about a secret. Client's must have a
@@ -80,9 +78,15 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		// Perform authentication
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
 
+		// Ensure shareholder exists
+		final ApvssShareholder shareholder = this.shareholders.get(secretName);
+		if (shareholder == null) {
+			throw new NotFoundException();
+		}
+
 		// Extract X-Coordinate from request
 		final List<String> xCoords = params.get(BASE_X_COORD);
-		if (xCoords == null || xCoords.size() != 1) {
+		if ((xCoords == null) || (xCoords.size() != 1) || (xCoords.get(0) == null)) {
 			throw new BadRequestException();
 		}
 		final BigInteger xCoord = new BigInteger(xCoords.get(0));
@@ -90,7 +94,7 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		// Extract Y-Coordinate from request or compute it.
 		final BigInteger yCoord;
 		final List<String> yCoords = params.get(BASE_Y_COORD);
-		if (yCoords != null && yCoords.size() == 1) {
+		if ((yCoords != null) && (yCoords.size() == 1) && (yCoords.get(0) != null)) {
 			yCoord = new BigInteger(yCoords.get(0));
 		} else {
 			// Compute yCoordinate from xCoordinate
@@ -107,13 +111,6 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		}
 
 		// Do processing
-		final ApvssShareholder shareholder = this.shareholders.get(secretName);
-		if (shareholder == null) {
-			throw new NotFoundException();
-		}
-
-		final int serverIndex = shareholder.getIndex();
-
 		final long startTime = System.nanoTime();
 		final EcPoint result = doExponentiation(shareholder, basePoint);
 		final long endTime = System.nanoTime();
@@ -122,9 +119,9 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		final long processingTimeUs = (endTime - startTime) / 1_000;
 
 		// Create response
-		final String response = basePoint + "^{s_" + serverIndex + "} = \n" +
-				result + "\n\n"
-				+ "Result computed in " + processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName + "\n";
+		final int serverIndex = shareholder.getIndex();
+		final String response = basePoint + "^{s_" + serverIndex + "} = \n" + result + "\n\n" + "Result computed in "
+				+ processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName + "\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -137,11 +134,12 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 	}
 
 	private EcPoint doExponentiation(final ApvssShareholder shareholder, EcPoint basePoint) throws NotFoundException {
-		if (shareholder.getSecretPublicKey() == null) {
+		final ShamirShare share = shareholder.getShare1();
+		if ((shareholder.getSecretPublicKey() == null) || (share == null)) {
 			throw new NotFoundException();
 		} else {
 			// Compute exponentiation using share
-			return CommonConfiguration.CURVE.multiply(basePoint, shareholder.getShare1().getY());
+			return CommonConfiguration.CURVE.multiply(basePoint, share.getY());
 		}
 
 	}

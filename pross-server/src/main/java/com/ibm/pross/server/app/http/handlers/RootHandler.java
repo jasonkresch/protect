@@ -63,7 +63,7 @@ public class RootHandler extends BaseHttpHandler {
 			serverId++;
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/";
+			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/";
 			stringBuilder.append(
 					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
 		}
@@ -77,7 +77,7 @@ public class RootHandler extends BaseHttpHandler {
 		for (final Entry<String, ApvssShareholder> entry : this.shareholders.entrySet()) {
 			secretId++;
 			final String secretName = entry.getKey();
-			final String linkUrl = "http://" + ourHost + ":" + ourPort + "/info?secretName=" + secretName;
+			final String linkUrl = "https://" + ourHost + ":" + ourPort + "/info?secretName=" + secretName;
 			stringBuilder.append(secretId + ". " + "<a href=\"" + linkUrl + "\">" + secretName + "</a><br/>\n");
 		}
 		stringBuilder.append("</tt>\n");

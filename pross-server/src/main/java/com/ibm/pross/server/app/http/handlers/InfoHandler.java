@@ -128,7 +128,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		final int n = shareholder.getN();
 		final int k = shareholder.getK();
 		if (shareholder.getSecretPublicKey() == null) {
-			final String linkUrl = "http://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
+			final String linkUrl = "https://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
 			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)<br/>\n");
 		} else {
 			stringBuilder.append("sharing_type             =  " + shareholder.getSharingType() + "<br/>\n");
@@ -167,11 +167,11 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("<p/>\n");
 
 			// Print Share Information
-			final String readLink = "http://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
-			final String enableLink = "http://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
-			final String disableLink = "http://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
-			final String deleteLink = "http://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
-			final String recoverLink = "http://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
+			final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
+			final String enableLink = "https://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
+			final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
+			final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
+			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
 			stringBuilder.append("<b>Share Information:</b><br/>\n");
 			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")        =  "
 					+ Hex.encodeHexString(shareholder.getShare1Hash()) + " (<a href=\"" + readLink
@@ -186,7 +186,12 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			} else {
 				stringBuilder.append("status  =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) <br/>\n");
 			}
-
+			stringBuilder.append("<p/>\n");
+			
+			stringBuilder.append("<b>Use Share:</b><br/>\n");
+			stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
+			stringBuilder.append("<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append("x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> <br/>\n");
 			stringBuilder.append("<p/>\n");
 		}
 
@@ -199,7 +204,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			serverId++;
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "http://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
+			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
 			stringBuilder.append(
 					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
 		}
