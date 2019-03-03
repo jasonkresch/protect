@@ -11,6 +11,7 @@ import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestExcep
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
 import com.ibm.pross.server.configuration.permissions.exceptions.HttpException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
+import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
@@ -56,7 +57,8 @@ public abstract class BaseHttpHandler implements HttpHandler {
 	 * @throws UnauthorizedException
 	 * @throws NotFoundException
 	 * @throws BadRequestException
+	 * @throws ResourceUnavailableException 
 	 */
 	public abstract void handleWithExceptions(final HttpExchange exchange)
-			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException;
+			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException, ResourceUnavailableException;
 }

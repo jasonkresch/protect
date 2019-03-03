@@ -27,7 +27,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 /**
  * This handler returns information about a secret. Client's must have a
  * specific authorization to be able to invoke this method. If the secret is not
- * found a 404 is returned. If the client is not authorized a 401 is returned.
+ * found a 404 is returned. If the client is not authorized a 403 is returned.
  * 
  * <pre>
  * Information about the secret includes:

@@ -25,6 +25,8 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.handlers.DisableHandler;
+import com.ibm.pross.server.app.http.handlers.EnableHandler;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
 import com.ibm.pross.server.app.http.handlers.IdHandler;
@@ -99,8 +101,8 @@ public class HttpRequestProcessor {
 		this.server.createContext("/recover", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Handlers for enabling and disabling shares
-		this.server.createContext("/enable", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
-		this.server.createContext("/disable", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/enable", new EnableHandler(clientKeys, accessEnforcement, shareholders));
+		this.server.createContext("/disable", new DisableHandler(clientKeys, accessEnforcement, shareholders));
 
 		// Handlers for using the shares to perform functions
 		this.server.createContext("/exponentiate", new ExponentiateHandler(clientKeys, accessEnforcement, shareholders));

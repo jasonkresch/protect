@@ -16,6 +16,7 @@ import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
+import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
@@ -25,7 +26,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 /**
  * This handler returns the raw content of a secret share. Client's must have a
  * specific authorization to be able to invoke this method. If the share is not
- * found a 404 is returned. If the client is not authorized a 401 is returned.
+ * found a 404 is returned. If the client is not authorized a 403 is returned.
  */
 @SuppressWarnings("restriction")
 public class ReadHandler extends AuthenticatedClientRequestHandler {
@@ -50,7 +51,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 
 	@Override
 	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
-			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
+			throws IOException, UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
 		final String queryString = exchange.getRequestURI().getQuery();
@@ -64,10 +65,14 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		// Perform authentication
 		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
 
-		// Do processing
+		// Ensure shareholder exists
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
 		if (shareholder == null) {
 			throw new NotFoundException();
+		}
+		// Make sure secret is not disabled
+		if (!shareholder.isEnabled()) {
+			throw new ResourceUnavailableException();
 		}
 
 		// Create response

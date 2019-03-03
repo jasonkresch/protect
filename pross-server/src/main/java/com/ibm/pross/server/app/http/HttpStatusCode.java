@@ -13,5 +13,5 @@ public class HttpStatusCode {
 	
 	// Server errors
 	public static final int SERVER_ERROR = 500;
-	public static final int OUT_OF_RESOURCES = 503;
+	public static final int RESOURCE_UNAVAILABLE = 503;
 }

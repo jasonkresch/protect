@@ -18,31 +18,17 @@ import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
+import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 /**
- * This handler returns information about a secret. Client's must have a
- * specific authorization to be able to invoke this method. If the secret is not
- * found a 404 is returned. If the client is not authorized a 401 is returned.
- * 
- * <pre>
- * Information about the secret includes:
- * - The name of the secret
- * - The public key of the secret
- * - The current epoch id of the secret (first is zero)
- * - The shareholder public verification keys of the secret
- * - The Feldman co-efficients of the secret
- * - The time the secret was first generated/stored by this server
- * - The id of the client who performed the creation or generation of the secret
- * - The time the secret was last proactively refreshed by this server
- * - The next scheduled time for this server to begin a proactive refresh
- * - The number of shares and the reconstruction threshold of the secret
- * - The prime field of the shamir sharing of the secret
- * - The elliptic curve group for exponentiation operations
- * </pre>
+ * This handler performs an exponentiation using a share of a secret. Client's
+ * must have a specific authorization to be able to invoke this method. If the
+ * secret is not found a 404 is returned. If the client is not authorized a 403
+ * is returned.
  */
 @SuppressWarnings("restriction")
 public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
@@ -66,8 +52,8 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
-			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
+	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId) throws IOException,
+			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
 		final String queryString = exchange.getRequestURI().getQuery();
@@ -85,6 +71,10 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
 		if (shareholder == null) {
 			throw new NotFoundException();
+		}
+		// Make sure secret is not disabled
+		if (!shareholder.isEnabled()) {
+			throw new ResourceUnavailableException();
 		}
 
 		// Extract X-Coordinate from request
