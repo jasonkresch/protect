@@ -119,7 +119,11 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 			throw new NotFoundException();
 		} else {
 			// Print share information
-			stringBuilder.append("s_" + serverIndex + "     =  " + shareholder.getShare1().getY() + "<br/>\n");
+			if (shareholder.getShare1() != null) {
+				stringBuilder.append("s_" + serverIndex + "     =  " + shareholder.getShare1().getY() + "<br/>\n");
+			} else {
+				stringBuilder.append("s_" + serverIndex + "     =  [SHARE DELETED]<br/>\n");
+			}
 			stringBuilder.append("epoch        =  " + shareholder.getEpoch() + "<br/>\n");
 			stringBuilder.append("last_refresh =  " + shareholder.getLastRefreshTime() + "<br/>\n");
 			stringBuilder.append("<p/>\n");

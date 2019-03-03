@@ -177,7 +177,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
 			stringBuilder.append("<b>Share Information:</b><br/>\n");
 			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")        =  "
-					+ Hex.encodeHexString(shareholder.getShare1Hash()) + " (<a href=\"" + readLink
+					+ shareholder.getShare1Hash() + " (<a href=\"" + readLink
 					+ "\">View Share</a>) <br/>\n");
 			if (shareholder.getShare1() != null) {
 				stringBuilder.append("exists  =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) <br/>\n");

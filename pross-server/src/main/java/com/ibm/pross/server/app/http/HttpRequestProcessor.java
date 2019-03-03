@@ -25,6 +25,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.http.handlers.DeleteHandler;
 import com.ibm.pross.server.app.http.handlers.DisableHandler;
 import com.ibm.pross.server.app.http.handlers.EnableHandler;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
@@ -97,7 +98,7 @@ public class HttpRequestProcessor {
 		// interpolation style DKG!)
 
 		// Handlers for deleting or recovering shares
-		this.server.createContext("/delete", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/delete", new DeleteHandler(clientKeys, accessEnforcement, shareholders));
 		this.server.createContext("/recover", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Handlers for enabling and disabling shares

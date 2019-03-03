@@ -16,6 +16,8 @@ import java.util.TreeSet;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.codec.binary.Hex;
+
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
@@ -36,7 +38,6 @@ import com.ibm.pross.server.app.avpss.exceptions.InvalidCiphertextException;
 import com.ibm.pross.server.app.avpss.exceptions.InvalidZeroKnowledgeProofException;
 import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
-import com.ibm.pross.server.communication.MessageDeliveryManager.StubbornSendTask;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
 import com.ibm.pross.server.messages.PublicMessage;
@@ -88,10 +89,10 @@ public class ApvssShareholder {
 	private volatile SharingType sharingType;
 
 	// Who stored the secret (if type = Stored)
-	private volatile int creatorId;
-	
+	//private volatile int creatorId;
+
 	private AtomicBoolean enabled = new AtomicBoolean(true);
-	
+
 	/*****************************************************************/
 
 	// The index of this shareholder (ourself) (one is the base index)
@@ -668,7 +669,7 @@ public class ApvssShareholder {
 	public ShamirShare getShare2() {
 		return share2;
 	}
-	
+
 	/**
 	 * Return the hash of the secret share of this shareholder for g^s
 	 * 
@@ -676,9 +677,14 @@ public class ApvssShareholder {
 	 * 
 	 * @return
 	 */
-	public byte[] getShare1Hash() {
+	public String getShare1Hash() {
 		try {
-			return MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM).digest(share1.getY().toByteArray());
+			if (share1 == null) {
+				return "[SHARE DELETED]";
+			} else {
+				return Hex.encodeHexString(MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM)
+						.digest(share1.getY().toByteArray()));
+			}
 		} catch (NoSuchAlgorithmException e) {
 			throw new RuntimeException(e);
 		}
@@ -744,13 +750,17 @@ public class ApvssShareholder {
 	public SharingType getSharingType() {
 		return this.sharingType;
 	}
-	
+
 	public boolean isEnabled() {
 		return this.enabled.get();
 	}
-	
+
 	public void setEnabled(boolean isEnabled) {
 		this.enabled.set(isEnabled);
+	}
+
+	public void deleteShare() {
+		this.share1 = null;
 	}
 
 	// TODO: Catch all instances of casting (check instance of) or catch
