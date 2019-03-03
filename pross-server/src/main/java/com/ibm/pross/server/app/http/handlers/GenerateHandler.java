@@ -18,6 +18,8 @@ import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundExcepti
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
+
 /**
  * This handler initiates a Distributed Key Generation for a secret. Client's
  * must have a specific authorization to be able to invoke this method. If the
@@ -43,16 +45,18 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 	public static final Permissions REQUEST_PERMISSION = Permissions.GENERATE;
 
 	// Request header names
-	//public static final String SECRET_NAME_FIELD = "X-Secret-Name";
+	// public static final String SECRET_NAME_FIELD = "X-Secret-Name";
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
-	
+
 	// Fields
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public GenerateHandler(AccessEnforcement accessEnforcement, ConcurrentMap<String, ApvssShareholder> shareholders) {
+	public GenerateHandler(final KeyLoader clientKeys, AccessEnforcement accessEnforcement,
+			ConcurrentMap<String, ApvssShareholder> shareholders) {
+		super(clientKeys);
 		this.shareholders = shareholders;
 		this.accessEnforcement = accessEnforcement;
 	}
@@ -62,7 +66,8 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException {
 
 		// Extract secret name from request
-		//final String secretName = exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
+		// final String secretName =
+		// exchange.getRequestHeaders().getFirst(SECRET_NAME_FIELD);
 		final String queryString = exchange.getRequestURI().getQuery();
 		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
 		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
@@ -85,7 +90,7 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 		// Create response
 		final String response = "The secret '" + secretName + "' has been generated in " + processingTimeMs + " ms.\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
-		
+
 		// Write headers
 		exchange.sendResponseHeaders(HttpStatusCode.SUCCESS, binaryResponse.length);
 

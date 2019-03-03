@@ -11,7 +11,10 @@ import java.security.cert.CertificateException;
 import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
+import org.apache.commons.codec.binary.Hex;
 import org.bouncycastle.util.io.pem.PemReader;
 
 import com.ibm.pross.common.util.serialization.Pem;
@@ -32,9 +35,11 @@ public class KeyLoader {
 	private final PrivateKey tlsKey;
 	private final PrivateKey signingKey;
 	private final PrivateKey decryptionKey;
+	
+	private final Map<String, Integer> tlsKeyMap = new ConcurrentHashMap<>();
 
-	public KeyLoader(final File keyPath, final int numServers, final int myIndex)
-			throws FileNotFoundException, IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException {
+	public KeyLoader(final File keyPath, final int numServers, final int myIndex) throws FileNotFoundException,
+			IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException {
 
 		this.tlsPublicKeys = new ArrayList<>(numServers);
 		this.verificationKeys = new ArrayList<>(numServers);
@@ -45,7 +50,10 @@ public class KeyLoader {
 			final File publicKeyFile = new File(keyPath, "public-" + keyIndex);
 
 			try (final PemReader reader = new PemReader(new FileReader(publicKeyFile.getAbsolutePath()))) {
-				this.tlsPublicKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
+				final PublicKey tlsPublicKey = (PublicKey) Pem.readObject(reader.readPemObject());
+				this.tlsPublicKeys.add(tlsPublicKey);
+				this.tlsKeyMap.put(Hex.encodeHexString(tlsPublicKey.getEncoded()), keyIndex);
+				
 				this.verificationKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
 				this.encryptionKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
 			}
@@ -60,12 +68,16 @@ public class KeyLoader {
 		}
 	}
 
-	public PublicKey getEncryptionKey(int serverIndex) {
-		return this.encryptionKeys.get(serverIndex - 1);
+	public PublicKey getEncryptionKey(int entityIndex) {
+		return this.encryptionKeys.get(entityIndex - 1);
 	}
 
-	public PublicKey getVerificationKey(int serverIndex) {
-		return this.verificationKeys.get(serverIndex - 1);
+	public PublicKey getVerificationKey(int entityIndex) {
+		return this.verificationKeys.get(entityIndex - 1);
+	}
+
+	public PublicKey getTlsPublicKey(int entityIndex) {
+		return this.tlsPublicKeys.get(entityIndex - 1);
 	}
 
 	public PrivateKey getTlsKey() {
@@ -79,11 +91,18 @@ public class KeyLoader {
 	public PrivateKey getDecryptionKey() {
 		return this.decryptionKey;
 	}
+	
+	public Integer getEntityIndex(final PublicKey tlsPublicKey)
+	{
+		
+		return this.tlsKeyMap.get(Hex.encodeHexString(tlsPublicKey.getEncoded()));
+	}
 
 	@Override
 	public String toString() {
-		return "KeyLoader [verificationKeys=" + verificationKeys + ", encryptionKeys=" + encryptionKeys
-				+ ", signingKey=" + signingKey + ", decryptionKey=" + decryptionKey + "]";
+		return "KeyLoader [tlsPublicKeys=" + tlsPublicKeys + ", verificationKeys=" + verificationKeys
+				+ ", encryptionKeys=" + encryptionKeys + ", tlsKey=" + tlsKey + ", signingKey=" + signingKey
+				+ ", decryptionKey=" + decryptionKey + "]";
 	}
 
 }

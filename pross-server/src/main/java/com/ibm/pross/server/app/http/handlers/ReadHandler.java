@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
@@ -21,6 +19,7 @@ import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundExcepti
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
@@ -41,8 +40,9 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public ReadHandler(final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
+	public ReadHandler(KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+		super(clientKeys);
 		this.shareholders = shareholders;
 		this.serverConfig = serverConfig;
 		this.accessEnforcement = accessEnforcement;

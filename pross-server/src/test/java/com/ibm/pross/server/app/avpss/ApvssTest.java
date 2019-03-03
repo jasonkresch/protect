@@ -56,7 +56,7 @@ public class ApvssTest {
 		final String baseDirectory = "config/server/";
 		
 		// Load keys
-		final File keysDirectory = new File(baseDirectory, ServerApplication.KEYS_DIRECTORY);
+		final File keysDirectory = new File(baseDirectory, ServerApplication.SERVER_KEYS_DIRECTORY);
 		return new KeyLoader(keysDirectory, numServers, serverIndex);
 	}
 	

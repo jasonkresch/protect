@@ -21,6 +21,8 @@ import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundExcepti
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
+
 /**
  * This handler returns information about a secret. Client's must have a
  * specific authorization to be able to invoke this method. If the secret is not
@@ -56,8 +58,9 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public ExponentiateHandler(final AccessEnforcement accessEnforcement,
+	public ExponentiateHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+		super(clientKeys);
 		this.shareholders = shareholders;
 		this.accessEnforcement = accessEnforcement;
 	}

@@ -28,6 +28,12 @@ public class AccessEnforcement {
 			throw new NotFoundException();
 		}
 		
+		if (clientId == null)
+		{
+			// Client is anonymous
+			throw new UnauthorizedException();
+		}
+		
 		// Get this client's permissions
 		final ClientPermissions clientPermissions = this.permissionMap.get(clientId);
 

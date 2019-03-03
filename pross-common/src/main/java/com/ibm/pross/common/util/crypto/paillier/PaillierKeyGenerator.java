@@ -2,7 +2,6 @@ package com.ibm.pross.common.util.crypto.paillier;
 
 import java.math.BigInteger;
 import java.security.SecureRandom;
-import java.security.spec.RSAPrivateKeySpec;
 
 public class PaillierKeyGenerator {
 

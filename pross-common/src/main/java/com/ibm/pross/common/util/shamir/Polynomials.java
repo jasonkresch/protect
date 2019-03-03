@@ -16,6 +16,7 @@ import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BadArgumentException;
 
 public class Polynomials {
 
@@ -39,7 +40,7 @@ public class Polynomials {
 		BigInteger y = BigInteger.ZERO;
 		BigInteger exponent = BigInteger.ZERO;
 		for (int i = 0; i < coefficients.length; i++) {
-			BigInteger xTerm = Exponentiation.modPow(x,  exponent,  m);
+			BigInteger xTerm = Exponentiation.modPow(x, exponent, m);
 			y = y.add(coefficients[i].multiply(xTerm));
 			exponent = exponent.add(BigInteger.ONE);
 		}
@@ -52,24 +53,17 @@ public class Polynomials {
 	 * position "i" using an x-coordinate position at "j". This can be used as a
 	 * step in partial rebuilding.
 	 * 
-	 * @param points
-	 *            The x-coordinates of the values being used in this
-	 *            interpolation
-	 * @param delta
-	 *            An optional additional multiplier to prevent use of fractions,
-	 *            e.g. n! when n is the maximum possible x-coordinate, otherwise
-	 *            may be 1.
-	 * @param i
-	 *            The x-coordinate which we are considering solving for
-	 * @param j
-	 *            The given x-coordinate we have and are considering using to
-	 *            solve for
+	 * @param points The x-coordinates of the values being used in this
+	 *               interpolation
+	 * @param i      The x-coordinate which we are considering solving for
+	 * @param j      The given x-coordinate we have and are considering using to
+	 *               solve for
 	 * @param m
-	 * @return Lambda_ij which when multiplied by the y-coordinate at j, will be
-	 *         a "partial" slice, which can be summed with others to yield F(i)
+	 * @return Lambda_ij which when multiplied by the y-coordinate at j, will be a
+	 *         "partial" slice, which can be summed with others to yield F(i)
 	 * @throws BadArgumentException
-	 * @throws Exception
-	 *             When the numerator is not evenly divisible by the denominator
+	 * @throws Exception            When the numerator is not evenly divisible by
+	 *                              the denominator
 	 */
 	public static BigInteger interpolatePartial(final BigInteger[] xCoords, final BigInteger i, final BigInteger j,
 			final BigInteger modulo) {
@@ -88,7 +82,8 @@ public class Polynomials {
 		return numerator.multiply(invDenominator).mod(modulo);
 	}
 
-	public static BigInteger interpolateComplete(final Collection<ShamirShare> shares, final int threshold, final int x) {
+	public static BigInteger interpolateComplete(final Collection<ShamirShare> shares, final int threshold,
+			final int x) {
 		if (shares.size() < threshold) {
 			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
 		}
@@ -118,14 +113,16 @@ public class Polynomials {
 
 		return sum;
 	}
-	
+
 	/**
-	 * Uses matrix inversion to recover the polynomial coefficients from at least a threshold number of shares
-	 *  
+	 * Uses matrix inversion to recover the polynomial coefficients from at least a
+	 * threshold number of shares
+	 * 
 	 * @param shares
 	 * @param threshold
 	 * 
-	 * @return An array of BigIntegers representing the coefficients of the polynomial that produced the shares
+	 * @return An array of BigIntegers representing the coefficients of the
+	 *         polynomial that produced the shares
 	 */
 	public static BigInteger[] interpolateCoefficients(final Collection<ShamirShare> shares, final int threshold) {
 		if (shares.size() < threshold) {
@@ -141,27 +138,26 @@ public class Polynomials {
 
 		final BigInteger[][] inverseMatrix = Matrices.generateInvertedCustomVandermondeFormMatrix(xCoords);
 
-		// Solve for coefficiencts of the polynomial by multiplying inverse matrix against shares
+		// Solve for coefficiencts of the polynomial by multiplying inverse matrix
+		// against shares
 		final BigInteger[] coefficients = Matrices.multiplyShareVector(inverseMatrix, shareList);
 
 		return coefficients;
 	}
 
 	/**
-	 * Combines a threshold number of derivation results computed from
-	 * individual shares to recover the derived result based on the secret
-	 * represent by those shares
+	 * Combines a threshold number of derivation results computed from individual
+	 * shares to recover the derived result based on the secret represent by those
+	 * shares
 	 * 
-	 * @param responses
-	 *            A response computed using one of the shares
-	 * @param threshold
-	 *            The recovery threshold for the secret sharing
-	 * @return The EcPoint which is equal to the point derived from multiplying
-	 *         the input point with the secret
+	 * @param responses A response computed using one of the shares
+	 * @param threshold The recovery threshold for the secret sharing
+	 * @return The EcPoint which is equal to the point derived from multiplying the
+	 *         input point with the secret
 	 * @throws IllegalArgumentException
 	 */
-	public static EcPoint interpolateExponents(final List<DerivationResult> responses, final int threshold, final int xPosition)
-			throws IllegalArgumentException {
+	public static EcPoint interpolateExponents(final List<DerivationResult> responses, final int threshold,
+			final int xPosition) throws IllegalArgumentException {
 
 		if (responses.size() < threshold) {
 			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
@@ -195,18 +191,19 @@ public class Polynomials {
 
 		return sum;
 	}
-	
-	
 
 	/**
-	 * Uses matrix inversion to recover the Feldman coefficients from at least a threshold number of share results
-	 *  
+	 * Uses matrix inversion to recover the Feldman coefficients from at least a
+	 * threshold number of share results
+	 * 
 	 * @param shares
 	 * @param threshold
 	 * 
-	 * @return An array of EcPoints representing the Feldman coefficients g^ai of the polynomial that produced the share results g^si
+	 * @return An array of EcPoints representing the Feldman coefficients g^ai of
+	 *         the polynomial that produced the share results g^si
 	 */
-	public static EcPoint[] interpolateCoefficientsExponents(final List<DerivationResult> responses, final int threshold) {
+	public static EcPoint[] interpolateCoefficientsExponents(final List<DerivationResult> responses,
+			final int threshold) {
 		if (responses.size() < threshold) {
 			throw new IllegalArgumentException("Fewer than a threshold number of results provided!");
 		}
@@ -220,9 +217,72 @@ public class Polynomials {
 
 		final BigInteger[][] inverseMatrix = Matrices.generateInvertedCustomVandermondeFormMatrix(xCoords);
 
-		// Solve for Feldman coefficiencts of the polynomial by multiplying inverse matrix against shares
+		// Solve for Feldman coefficiencts of the polynomial by multiplying inverse
+		// matrix against shares
 		final EcPoint[] feldmanCoefficients = Matrices.multiplyPointVector(inverseMatrix, responses);
 
 		return feldmanCoefficients;
+	}
+
+	/**
+	 * Computes n!
+	 * 
+	 * @param n
+	 * @return
+	 */
+	public static BigInteger factorial(BigInteger n) {
+		BigInteger result = BigInteger.ONE;
+
+		while (!n.equals(BigInteger.ZERO)) {
+			result = result.multiply(n);
+			n = n.subtract(BigInteger.ONE);
+		}
+
+		return result;
+	}
+	
+
+	/**
+	 * Uses Lagrange polynomial interpolation of the provided x-coordinates to
+	 * determine a multiplier to use when solving for another x-coordinate at
+	 * position "i" using an x-coordinate position at "j". This can be used as a
+	 * step in partial rebuilding.
+	 * 
+	 * @param points
+	 *            The x-coordinates of the values being used in this
+	 *            interpolation
+	 * @param delta
+	 *            An optional additional multiplier to prevent use of fractions,
+	 *            e.g. n! when n is the maximum possible x-coordinate, otherwise
+	 *            may be 1.
+	 * @param i
+	 *            The x-coordinate which we are considering solving for
+	 * @param j
+	 *            The given x-coordinate we have and are considering using to
+	 *            solve for
+	 * @param m
+	 * @return Lambda_ij which when multiplied by the y-coordinate at j, will be
+	 *         a "partial" slice, which can be summed with others to yield F(i)
+	 * @throws BadArgumentException 
+	 * @throws Exception
+	 *             When the numerator is not evenly divisible by the denominator
+	 */
+	public static BigInteger interpolateNoModulus(final BigInteger[] xCoords, final BigInteger delta, final BigInteger i, final BigInteger j) throws BadArgumentException  {
+		BigInteger numerator = delta;
+		BigInteger denominator = BigInteger.ONE;
+
+		for (int k = 0; k < xCoords.length; k++) {
+			BigInteger jPrime = xCoords[k];
+			if (!jPrime.equals(j)) {
+				numerator = numerator.multiply(i.subtract(jPrime));
+				denominator = denominator.multiply(j.subtract(jPrime));
+			}
+		}
+
+		if (!(numerator.mod(denominator.abs()).equals(BigInteger.ZERO))) {
+			throw new BadArgumentException("Denominator does not evenly divide numerator, use a different delta!");
+		}
+
+		return numerator.divide(denominator);
 	}
 }

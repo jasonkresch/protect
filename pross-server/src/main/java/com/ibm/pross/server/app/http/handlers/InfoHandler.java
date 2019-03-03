@@ -21,6 +21,7 @@ import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundExcepti
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
@@ -57,8 +58,9 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public InfoHandler(final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
+	public InfoHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+		super(clientKeys);
 		this.shareholders = shareholders;
 		this.serverConfig = serverConfig;
 		this.accessEnforcement = accessEnforcement;
@@ -91,8 +93,9 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
+		//exchange.getResponseHeaders().add("Strict-Transport-Security", "max-age=300; includeSubdomains");
 		exchange.sendResponseHeaders(HttpStatusCode.SUCCESS, binaryResponse.length);
-
+		
 		// Write response
 		try (final OutputStream os = exchange.getResponseBody();) {
 			os.write(binaryResponse);

@@ -1,6 +1,5 @@
 package com.ibm.pross.server.app.http;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.InetSocketAddress;
@@ -23,12 +22,12 @@ import java.util.concurrent.ConcurrentMap;
 import javax.net.ssl.KeyManagerFactory;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
 import javax.net.ssl.TrustManagerFactory;
 
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
+import com.ibm.pross.server.app.http.handlers.IdHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
@@ -37,6 +36,7 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
+import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 @SuppressWarnings("restriction")
@@ -53,58 +53,66 @@ public class HttpRequestProcessor {
 
 	public HttpRequestProcessor(final int serverIndex, final ServerConfiguration serverConfig,
 			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders,
-			final X509Certificate caCert, final X509Certificate hostCert, final PrivateKey privateKey)
+			final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey privateKey,
+			final KeyLoader clientKeys)
 			throws IOException, NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
 			UnrecoverableKeyException, CertificateException {
 
 		final int httpListenPort = BASE_HTTP_PORT + serverIndex;
 		this.server = HttpsServer.create(new InetSocketAddress(httpListenPort), 0);
 
-		setupTls(caCert, hostCert, privateKey);
+		setupTls(caCerts, hostCert, privateKey, serverIndex);
 
-		System.out.println("HTTP server listening on port: " + httpListenPort);
+		System.out.println("HTTPS server listening on port: " + httpListenPort);
 
-		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders);
+		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders, clientKeys);
+
+		System.out.println("Ready to process requests.");
 
 		// this.server.setExecutor(Executors.newFixedThreadPool(NUM_PROCESSING_THREADS));
 	}
 
 	public void addHandlers(final int serverIndex, final ServerConfiguration serverConfig,
-			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders) {
+			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders,
+			final KeyLoader clientKeys) {
+		
 		// Returns basic information about this server:
 		// quorum information, other servers)
 		this.server.createContext("/", new RootHandler(serverIndex, serverConfig, shareholders));
 
+		// Used to debug authentication problems
+		this.server.createContext("/id", new IdHandler(clientKeys));
+		
 		// Define request handlers for the supported client operations
-		this.server.createContext("/generate", new GenerateHandler(accessEnforcement, shareholders));
-		this.server.createContext("/info", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/generate", new GenerateHandler(clientKeys, accessEnforcement, shareholders));
+		this.server.createContext("/info", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Handlers for reading or storing shares
-		this.server.createContext("/read", new ReadHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/read", new ReadHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 		// this.server.createContext("/store", new InfoHandler(accessEnforcement,
 		// serverConfig, shareholders));
 		// implement as DKG with default value given to each shareholder (must use
 		// interpolation style DKG!)
 
 		// Handlers for deleting or recovering shares
-		this.server.createContext("/delete", new InfoHandler(accessEnforcement, serverConfig, shareholders));
-		this.server.createContext("/recover", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/delete", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/recover", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Handlers for enabling and disabling shares
-		this.server.createContext("/enable", new InfoHandler(accessEnforcement, serverConfig, shareholders));
-		this.server.createContext("/disable", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/enable", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/disable", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Handlers for using the shares to perform functions
-		this.server.createContext("/exponentiate", new ExponentiateHandler(accessEnforcement, shareholders));
-		this.server.createContext("/rsa_sign", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/exponentiate", new ExponentiateHandler(clientKeys, accessEnforcement, shareholders));
+		this.server.createContext("/rsa_sign", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Define server to server requests
-		this.server.createContext("/get_partial", new InfoHandler(accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/get_partial", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 	}
 
-	public void setupTls(final X509Certificate caCert, final X509Certificate hostCert, final PrivateKey hostKey)
-			throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException, CertificateException,
-			IOException, UnrecoverableKeyException {
+	public void setupTls(final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey hostKey,
+			final int serverIndex) throws NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
+			CertificateException, IOException, UnrecoverableKeyException {
 
 		// Configure SSL context
 		final SSLContext sslContext = SSLContext.getInstance(TLS_VERSION);
@@ -114,11 +122,16 @@ public class HttpRequestProcessor {
 		final char[] password = "password".toCharArray();
 		keyStore.load(null, password);
 
-		// Add the CA certificate
-		keyStore.setCertificateEntry("ca", caCert);
-		
+		// Add the CA certificates
+		int caIndex = 1;
+		for (final X509Certificate caCert : caCerts) {
+			keyStore.setCertificateEntry("ca-" + caIndex, caCert);
+			caIndex++;
+		}
+
 		// Add certificate and private key for the server
-		keyStore.setKeyEntry("host", hostKey, password, new X509Certificate[] { hostCert, caCert });
+		final X509Certificate ourCaCert = caCerts.get(serverIndex - 1);
+		keyStore.setKeyEntry("host", hostKey, password, new X509Certificate[] { hostCert, ourCaCert });
 
 		// Make Key Manager Factory
 		final KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");

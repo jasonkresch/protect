@@ -8,6 +8,8 @@ package com.ibm.pross.common.util.crypto.ecc;
 
 import java.math.BigInteger;
 
+import com.ibm.pross.common.util.Exponentiation;
+
 /**
  * Implements methods for hashing to an arbitrary point on an elliptic curve
  * 
@@ -40,9 +42,9 @@ public class SwuPointHasher extends PointHasher {
 
 		final BigInteger p = this.curve.getP();
 
-		final BigInteger tSquared = t.modPow(TWO, p);
+		final BigInteger tSquared = Exponentiation.modPow(t, TWO, p);
 		final BigInteger negativeTSquared = p.subtract(tSquared);
-		final BigInteger tToFourth = negativeTSquared.modPow(TWO, p);
+		final BigInteger tToFourth = Exponentiation.modPow(negativeTSquared, TWO, p);
 		final BigInteger tPowerSum = tToFourth.add(negativeTSquared);
 
 		final BigInteger inverseTPowerSum = tPowerSum.modInverse(p);

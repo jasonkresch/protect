@@ -11,6 +11,7 @@ import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.spec.InvalidKeySpecException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
@@ -45,15 +46,12 @@ public class ServerApplication {
 	}
 
 	public static String CONFIG_FILENAME = "common.config";
-	public static String KEYS_DIRECTORY = "keys";
+	public static String SERVER_KEYS_DIRECTORY = "keys";
 	public static String CERTS_DIRECTORY = "certs";
 	public static String SAVE_DIRECTORY = "state";
+	public static String CLIENT_KEYS_DIRECTORY = "../client/keys";
 	public static String AUTH_DIRECTORY = "../client/clients.config";
 	public static String CA_DIRECTORY = "../ca";
-
-	private final ServerConfiguration configuration;
-	private final KeyLoader keyLoader;
-	private final ChainBuildingMessageHandler chainBuilder;
 
 	public ServerApplication(final File baseDirectory, final int serverIndex)
 			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException,
@@ -61,12 +59,12 @@ public class ServerApplication {
 
 		// Load configuration
 		final File configFile = new File(baseDirectory, CONFIG_FILENAME);
-		this.configuration = ServerConfigurationLoader.load(configFile);
-		System.out.println(this.configuration);
+		final ServerConfiguration configuration = ServerConfigurationLoader.load(configFile);
+		System.out.println(configuration);
 
-		// Load keys
-		final File keysDirectory = new File(baseDirectory, KEYS_DIRECTORY);
-		this.keyLoader = new KeyLoader(keysDirectory, this.configuration.getNumServers(), serverIndex);
+		// Load server keys
+		final File keysDirectory = new File(baseDirectory, SERVER_KEYS_DIRECTORY);
+		final KeyLoader serverKeys = new KeyLoader(keysDirectory, configuration.getNumServers(), serverIndex);
 		System.out.println("Loaded encryption and verification keys");
 
 		// Load Client Access Controls
@@ -74,13 +72,13 @@ public class ServerApplication {
 				.load(new File(baseDirectory, AUTH_DIRECTORY));
 
 		// Setup persistent state for message broadcast and processing
-		final List<InetSocketAddress> serverAddresses = this.configuration.getServerAddresses();
+		final List<InetSocketAddress> serverAddresses = configuration.getServerAddresses();
 		final File saveDir = new File(baseDirectory, SAVE_DIRECTORY);
 		final File serverSaveDir = new File(saveDir, "server-" + serverIndex);
 		serverSaveDir.mkdirs();
 
 		// Wait for messages and begin processing them as they arrive
-		final int myPort = this.configuration.getServerAddresses().get(serverIndex - 1).getPort();
+		final int myPort = configuration.getServerAddresses().get(serverIndex - 1).getPort();
 		final MessageReceiver messageReceiver = new MessageReceiver(myPort);
 		messageReceiver.start();
 		System.out.println("Listening on port: " + myPort);
@@ -90,51 +88,63 @@ public class ServerApplication {
 		BenchmarkCli.runAllBenchmarks();
 
 		// Create message handler for the Certified Chain
-		final int optQuorum = (this.configuration.getNumServers() - this.configuration.getMaxLivenessFaults());
-		this.chainBuilder = new ChainBuildingMessageHandler(serverIndex, optQuorum, this.keyLoader, serverSaveDir);
+		final int optQuorum = (configuration.getNumServers() - configuration.getMaxLivenessFaults());
+		final ChainBuildingMessageHandler chainBuilder = new ChainBuildingMessageHandler(serverIndex, optQuorum,
+				serverKeys, serverSaveDir);
 
 		// Create message manager to manage messages received over point to point links;
 		final MessageDeliveryManager messageManager = new MessageDeliveryManager(serverAddresses, serverIndex,
-				this.keyLoader, serverSaveDir, this.chainBuilder, messageReceiver);
-		this.chainBuilder.setMessageManager(messageManager);
+				serverKeys, serverSaveDir, chainBuilder, messageReceiver);
+		chainBuilder.setMessageManager(messageManager);
 
 		// Create Shareholder for each secret to be maintained
 		final ConcurrentMap<String, ApvssShareholder> shareholders = new ConcurrentHashMap<>();
-		final int n = this.configuration.getNumServers();
-		final int k = this.configuration.getReconstructionThreshold();
-		final int f = this.configuration.getMaxSafetyFaults();
+		final int n = configuration.getNumServers();
+		final int k = configuration.getReconstructionThreshold();
+		final int f = configuration.getMaxSafetyFaults();
 		for (final String secretName : accessEnforcement.getKnownSecrets()) {
 			// Create Shareholder
 			System.out.println("Starting APVSS Shareholder for secret: " + secretName);
-			final ApvssShareholder shareholder = new ApvssShareholder(secretName, this.keyLoader, this.chainBuilder,
-					serverIndex, n, k, f);
+			final ApvssShareholder shareholder = new ApvssShareholder(secretName, serverKeys, chainBuilder, serverIndex,
+					n, k, f);
 			shareholder.start(false); // Start the message processing thread but don't start the DKG
 			shareholders.put(secretName, shareholder);
 		}
 
 		// Wait for BFT to setup
-		while (!this.chainBuilder.isBftReady()) {
+		while (!chainBuilder.isBftReady()) {
 			Thread.sleep(100);
 		}
-		System.out.println("System ready.");
+		System.out.println("BFT ready.");
 
 		// Load certificates to support TLS
 		final File caDirectory = new File(baseDirectory, CA_DIRECTORY);
-		final File caCertificateFile = new File(caDirectory, "ca-cert");
 		final File certDirectory = new File(baseDirectory, CERTS_DIRECTORY);
 		final File hostCertificateFile = new File(certDirectory, "cert-" + serverIndex);
-		final X509Certificate caCert = Pem.loadCertificateFromFile(caCertificateFile);
+		final List<X509Certificate> caCerts = new ArrayList<>();
+		for (int i = 1; i <= configuration.getNumServers(); i++) {
+			final File caCertificateFile = new File(caDirectory, "ca-cert-server-" + i + ".pem");
+			caCerts.add(Pem.loadCertificateFromFile(caCertificateFile));
+		}
+		final File caCertificateFile = new File(caDirectory, "ca-cert-clients.pem");
+		caCerts.add(Pem.loadCertificateFromFile(caCertificateFile));
 		final X509Certificate hostCert = Pem.loadCertificateFromFile(hostCertificateFile);
 
+		// Load client authentication keys
+		final File clientKeysDirectory = new File(baseDirectory, CLIENT_KEYS_DIRECTORY);
+		final KeyLoader clientKeys = new KeyLoader(clientKeysDirectory, configuration.getNumServers(), serverIndex);
+		System.out.println("Loaded client keys");
+		
 		// Start server to process client requests
-		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, this.configuration,
-				accessEnforcement, shareholders, caCert, hostCert, this.keyLoader.getTlsKey());
+		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, configuration,
+				accessEnforcement, shareholders, caCerts, hostCert, serverKeys.getTlsKey(), clientKeys);
 		requestProcessor.start();
 
 	}
 
-	public static void main(final String[] args) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
-			InterruptedException, CertificateException, KeyManagementException, UnrecoverableKeyException, KeyStoreException {
+	public static void main(final String[] args)
+			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException,
+			CertificateException, KeyManagementException, UnrecoverableKeyException, KeyStoreException {
 
 		// Configure logging
 		BasicConfigurator.configure();
