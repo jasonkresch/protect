@@ -80,6 +80,14 @@ public class RootHandler extends BaseHttpHandler {
 			final String linkUrl = "https://" + ourHost + ":" + ourPort + "/info?secretName=" + secretName;
 			stringBuilder.append(secretId + ". " + "<a href=\"" + linkUrl + "\">" + secretName + "</a><br/>\n");
 		}
+		stringBuilder.append("<p/>\n");
+
+		// User authentication
+		stringBuilder.append("<b>You:</b><br/>\n");
+		final String linkUrl = "https://" + ourHost + ":" + ourPort + "/id";
+		stringBuilder.append("(<a href=\"" + linkUrl + "\">" + "Who am I" + "</a>)<br/>\n");
+		stringBuilder.append("<p/>\n");
+
 		stringBuilder.append("</tt>\n");
 		stringBuilder.append("</body>\n");
 		stringBuilder.append("</html>\n");
