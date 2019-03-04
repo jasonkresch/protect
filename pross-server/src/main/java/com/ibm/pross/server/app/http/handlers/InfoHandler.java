@@ -153,6 +153,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("prime_modulus    =  " + CommonConfiguration.CURVE.getR() + "<br/>\n");
 			stringBuilder.append("curve_oid        =  " + CommonConfiguration.CURVE.getOid() + " ("
 					+ CommonConfiguration.CURVE.getName() + ")<br/>\n");
+			stringBuilder.append("g                =  " + CommonConfiguration.g + "<br/>\n");
 			stringBuilder.append("<p/>\n");
 
 			// Print share verification keys

@@ -114,7 +114,8 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		// Create response
 		final int serverIndex = shareholder.getIndex();
 		final String response = basePoint + "^{s_" + serverIndex + "} = \n" + result + "\n\n" + "Result computed in "
-				+ processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName + "\n";
+				+ processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName
+				+ "' from epoch " + shareholder.getEpoch() + "\n";
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
