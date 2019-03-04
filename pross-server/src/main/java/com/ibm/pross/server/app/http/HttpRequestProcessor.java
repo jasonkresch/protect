@@ -84,7 +84,7 @@ public class HttpRequestProcessor {
 		this.server.createContext("/", new RootHandler(serverIndex, serverConfig, shareholders));
 
 		// Used to debug authentication problems
-		this.server.createContext("/id", new IdHandler(clientKeys));
+		this.server.createContext("/id", new IdHandler(clientKeys, accessEnforcement, shareholders));
 		
 		// Define request handlers for the supported client operations
 		this.server.createContext("/generate", new GenerateHandler(clientKeys, accessEnforcement, shareholders));

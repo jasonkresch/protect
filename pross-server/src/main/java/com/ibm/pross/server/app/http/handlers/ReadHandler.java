@@ -105,7 +105,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		stringBuilder.append("<meta http-equiv=\"refresh\" content=\"10\">\n");
 		stringBuilder.append("</head>\n");
 		stringBuilder.append("<body>\n");
-		stringBuilder.append("<tt>\n");
+		stringBuilder.append("<pre>\n");
 
 		// Shareholder information
 		stringBuilder.append("This is <a href=\"/\">shareholder #" + serverIndex + "</a>"
@@ -114,31 +114,31 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		stringBuilder.append("<p/>\n");
 
 		// Secret Info
-		stringBuilder.append("<b>Share #" + serverIndex + " of \"<a href=\"" + infoUrl + "\">" + secretName + "</a>\":</b><br/>\n");
+		stringBuilder.append("<b>Share #" + serverIndex + " of \"<a href=\"" + infoUrl + "\">" + secretName + "</a>\":</b>\n");
 		if (shareholder.getSecretPublicKey() == null) {
 			throw new NotFoundException();
 		} else {
 			// Print share information
 			if (shareholder.getShare1() != null) {
-				stringBuilder.append("s_" + serverIndex + "     =  " + shareholder.getShare1().getY() + "<br/>\n");
+				stringBuilder.append("s_" + serverIndex + "          =  " + shareholder.getShare1().getY() + "\n");
 			} else {
-				stringBuilder.append("s_" + serverIndex + "     =  [SHARE DELETED]<br/>\n");
+				stringBuilder.append("s_" + serverIndex + "          =  [SHARE DELETED]\n");
 			}
-			stringBuilder.append("epoch        =  " + shareholder.getEpoch() + "<br/>\n");
-			stringBuilder.append("last_refresh =  " + shareholder.getLastRefreshTime() + "<br/>\n");
+			stringBuilder.append("epoch        =  " + shareholder.getEpoch() + "\n");
+			stringBuilder.append("last_refresh =  " + shareholder.getLastRefreshTime() + "\n");
 			stringBuilder.append("<p/>\n");
 
 			// Print Field Information
-			stringBuilder.append("<b>Field Information:</b><br/>\n");
-			stringBuilder.append("prime_modulus    =  " + CommonConfiguration.CURVE.getR() + "<br/>\n");
-			stringBuilder.append("curve_oid        =  " + CommonConfiguration.CURVE.getOid() + " ("
-					+ CommonConfiguration.CURVE.getName() + ")<br/>\n");
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<b>Field Information:</b>\n");
+			stringBuilder.append("prime_modulus   =  " + CommonConfiguration.CURVE.getR() + "\n");
+			stringBuilder.append("curve_oid       =  " + CommonConfiguration.CURVE.getOid() + " ("
+					+ CommonConfiguration.CURVE.getName() + ")\n");
+			stringBuilder.append("g               =  " + CommonConfiguration.g + "\n");
+			stringBuilder.append("<p/>");
 		}
 
 		// Peers
-		stringBuilder.append("<p/>\n");
-		stringBuilder.append("<b>Peers:</b><br/>\n");
+		stringBuilder.append("<b>Peers:</b>\n");
 
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
@@ -147,11 +147,11 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/read?secretName=" + secretName;
 			stringBuilder.append(
-					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
+					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
 		}
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<p/>");
 
-		stringBuilder.append("</tt>\n");
+		stringBuilder.append("</pre>\n");
 		stringBuilder.append("</body>\n");
 		stringBuilder.append("</html>\n");
 

@@ -8,8 +8,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
@@ -118,57 +116,58 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		stringBuilder.append("<meta http-equiv=\"refresh\" content=\"10\">\n");
 		stringBuilder.append("</head>\n");
 		stringBuilder.append("<body>\n");
-		stringBuilder.append("<tt>\n");
+		stringBuilder.append("<pre>\n");
 
 		// Shareholder information
 		stringBuilder.append("This is <a href=\"/\">shareholder #" + serverIndex + "</a>"
 				+ " running <a href=\"https://github.com/jasonkresch/protect\">PROTECT</a>,"
 				+ " a <b>P</b>latform for <b>Ro</b>bust <b>T</b>hr<b>e</b>shold <b>C</b>ryp<b>t</b>ography.\n");
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<p/>");
 
 		// Secret Info
-		stringBuilder.append("<b>Information for \"" + secretName + "\":</b><br/>\n");
+		stringBuilder.append("<b>Information for \"" + secretName + "\":</b>\n");
 		final int n = shareholder.getN();
 		final int k = shareholder.getK();
 		if (shareholder.getSecretPublicKey() == null) {
 			final String linkUrl = "https://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
-			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)<br/>\n");
+			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)\n");
+			stringBuilder.append("<p/>");
 		} else {
-			stringBuilder.append("sharing_type             =  " + shareholder.getSharingType() + "<br/>\n");
-			stringBuilder.append("g^{s}                    =  " + shareholder.getSecretPublicKey() + "<br/>\n");
-			stringBuilder.append("number_of_shares         =  " + shareholder.getN() + "<br/>\n");
-			stringBuilder.append("reconstruction_threshold =  " + shareholder.getK() + "<br/>\n");
-			stringBuilder.append("creation_time            =  " + shareholder.getCreationTime() + "<br/>\n");
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("sharing_type      =  " + shareholder.getSharingType() + "\n");
+			stringBuilder.append("g^{s}             =  " + shareholder.getSecretPublicKey() + "\n");
+			stringBuilder.append("number_of_shares  =  " + shareholder.getN() + "\n");
+			stringBuilder.append("threshold         =  " + shareholder.getK() + "\n");
+			stringBuilder.append("creation_time     =  " + shareholder.getCreationTime() + "\n");
+			stringBuilder.append("<p/>");
 
 			// Print Epoch information
-			stringBuilder.append("<b>Epoch:</b><br/>\n");
-			stringBuilder.append("epoch_number      =  " + shareholder.getEpoch() + "<br/>\n");
-			stringBuilder.append("last_refresh_time =  " + shareholder.getLastRefreshTime() + "<br/>\n");
-			stringBuilder.append("refresh_frequency =  " + shareholder.getRefreshFrequency() + " seconds<br/>\n");
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<b>Epoch:</b>\n");
+			stringBuilder.append("epoch_number      =  " + shareholder.getEpoch() + "\n");
+			stringBuilder.append("last_refresh_time =  " + shareholder.getLastRefreshTime() + "\n");
+			stringBuilder.append("refresh_frequency =  " + shareholder.getRefreshFrequency() + " seconds\n");
+			stringBuilder.append("<p/>");
 
 			// Print Field Information
-			stringBuilder.append("<b>Field Information:</b><br/>\n");
-			stringBuilder.append("prime_modulus    =  " + CommonConfiguration.CURVE.getR() + "<br/>\n");
-			stringBuilder.append("curve_oid        =  " + CommonConfiguration.CURVE.getOid() + " ("
-					+ CommonConfiguration.CURVE.getName() + ")<br/>\n");
-			stringBuilder.append("g                =  " + CommonConfiguration.g + "<br/>\n");
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<b>Field Information:</b>\n");
+			stringBuilder.append("prime_modulus     =  " + CommonConfiguration.CURVE.getR() + "\n");
+			stringBuilder.append("curve_oid         =  " + CommonConfiguration.CURVE.getOid() + " ("
+					+ CommonConfiguration.CURVE.getName() + ")\n");
+			stringBuilder.append("g                 =  " + CommonConfiguration.g + "\n");
+			stringBuilder.append("<p/>");
 
 			// Print share verification keys
-			stringBuilder.append("<b>Share Verification Keys:</b><br/>\n");
+			stringBuilder.append("<b>Share Verification Keys:</b>\n");
 			for (int i = 1; i <= n; i++) {
-				stringBuilder.append("g^{s_" + i + "} =  " + shareholder.getSharePublicKey(i) + "<br/>\n");
+				stringBuilder.append("g^{s_" + i + "} =  " + shareholder.getSharePublicKey(i) + "\n");
 			}
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<p/>");
 
 			// Print Feldman Coefficients
-			stringBuilder.append("<b>Feldman Coefficients:</b><br/>\n");
+			stringBuilder.append("<b>Feldman Coefficients:</b>\n");
 			for (int i = 0; i < k; i++) {
-				stringBuilder.append("g^{a_" + i + "} =  " + shareholder.getFeldmanValues(i) + "<br/>\n");
+				stringBuilder.append("g^{a_" + i + "} =  " + shareholder.getFeldmanValues(i) + "\n");
 			}
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<p/>");
 
 			// Print Share Information
 			final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
@@ -176,32 +175,31 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
 			final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
 			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
-			stringBuilder.append("<b>Share Information:</b><br/>\n");
-			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")        =  "
+			stringBuilder.append("<b>Share Information:</b>\n");
+			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
 					+ shareholder.getShare1Hash() + " (<a href=\"" + readLink
-					+ "\">View Share</a>) <br/>\n");
+					+ "\">View Share</a>) \n");
 			if (shareholder.getShare1() != null) {
-				stringBuilder.append("exists  =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) <br/>\n");
+				stringBuilder.append("exists        =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
 			} else {
-				stringBuilder.append("exists  =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) <br/>\n");
+				stringBuilder.append("exists        =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
 			}
 			if (shareholder.isEnabled()) {
-				stringBuilder.append("status  =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) <br/>\n");
+				stringBuilder.append("status        =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) \n");
 			} else {
-				stringBuilder.append("status  =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) <br/>\n");
+				stringBuilder.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
 			}
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("<p/>");
 			
-			stringBuilder.append("<b>Use Share:</b><br/>\n");
+			stringBuilder.append("<b>Use Share:</b>\n");
 			stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
 			stringBuilder.append("<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append("x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> <br/>\n");
-			stringBuilder.append("<p/>\n");
+			stringBuilder.append("x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
+			stringBuilder.append("<p/>");
 		}
 
 		// Peers
-		stringBuilder.append("<p/>\n");
-		stringBuilder.append("<b>Peers:</b><br/>\n");
+		stringBuilder.append("<b>Peers:</b>\n");
 
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
@@ -210,11 +208,11 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
 			stringBuilder.append(
-					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
+					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
 		}
 		stringBuilder.append("<p/>\n");
 
-		stringBuilder.append("</tt>\n");
+		stringBuilder.append("</pre>\n");
 		stringBuilder.append("</body>\n");
 		stringBuilder.append("</html>\n");
 

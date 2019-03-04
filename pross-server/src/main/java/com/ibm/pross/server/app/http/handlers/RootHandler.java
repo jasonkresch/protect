@@ -40,24 +40,23 @@ public class RootHandler extends BaseHttpHandler {
 		final StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("<html>\n");
 		stringBuilder.append("<body>\n");
-		stringBuilder.append("<tt>\n");
+		stringBuilder.append("<pre>\n");
 		stringBuilder.append("This is <a href=\"/\">shareholder #" + this.serverIndex + "</a>"
 				+ " running <a href=\"https://github.com/jasonkresch/protect\">PROTECT</a>,"
 				+ " a <b>P</b>latform for <b>Ro</b>bust <b>T</b>hr<b>e</b>shold <b>C</b>ryp<b>t</b>ography.\n");
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<p/>");
 
 		// Config
-		stringBuilder.append("<b>System Configuration:</b><br/>\n");
-		stringBuilder.append("num_servers = " + serverConfiguration.getNumServers() + "<br/>\n");
-		stringBuilder
-				.append("reconstruction_threshold = " + serverConfiguration.getReconstructionThreshold() + "<br/>\n");
-		stringBuilder.append("max_safety_faults = " + serverConfiguration.getMaxSafetyFaults() + "<br/>\n");
-		stringBuilder.append("max_liveness_faults = " + serverConfiguration.getMaxLivenessFaults() + "<br/>\n");
-		stringBuilder.append("max_bft_faults = " + serverConfiguration.getMaxBftFaults() + "<br/>\n");
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<b>System Configuration:</b>\n");
+		stringBuilder.append("num_servers          = " + serverConfiguration.getNumServers() + "\n");
+		stringBuilder.append("threshold            = " + serverConfiguration.getReconstructionThreshold() + "\n");
+		stringBuilder.append("max_safety_faults    = " + serverConfiguration.getMaxSafetyFaults() + "\n");
+		stringBuilder.append("max_liveness_faults  = " + serverConfiguration.getMaxLivenessFaults() + "\n");
+		stringBuilder.append("max_bft_faults       = " + serverConfiguration.getMaxBftFaults() + "\n");
+		stringBuilder.append("<p/>");
 
 		// Peers
-		stringBuilder.append("<b>Peers:</b><br/>\n");
+		stringBuilder.append("<b>Peers:</b>\n");
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
@@ -65,12 +64,12 @@ public class RootHandler extends BaseHttpHandler {
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/";
 			stringBuilder.append(
-					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a><br/>\n");
+					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
 		}
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<p/>");
 
 		// Secrets
-		stringBuilder.append("<b>Secrets:</b><br/>\n");
+		stringBuilder.append("<b>Secrets:</b>\n");
 		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex - 1).getHostString();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + this.serverIndex;
 		int secretId = 0;
@@ -78,14 +77,14 @@ public class RootHandler extends BaseHttpHandler {
 			secretId++;
 			final String secretName = entry.getKey();
 			final String linkUrl = "https://" + ourHost + ":" + ourPort + "/info?secretName=" + secretName;
-			stringBuilder.append(secretId + ". " + "<a href=\"" + linkUrl + "\">" + secretName + "</a><br/>\n");
+			stringBuilder.append(secretId + ". " + "<a href=\"" + linkUrl + "\">" + secretName + "</a>\n");
 		}
-		stringBuilder.append("<p/>\n");
+		stringBuilder.append("<p/>");
 
 		// User authentication
-		stringBuilder.append("<b>You:</b><br/>\n");
+		stringBuilder.append("<b>You:</b>\n");
 		final String linkUrl = "https://" + ourHost + ":" + ourPort + "/id";
-		stringBuilder.append("(<a href=\"" + linkUrl + "\">" + "Who am I" + "</a>)<br/>\n");
+		stringBuilder.append("(<a href=\"" + linkUrl + "\">" + "Who am I" + "</a>)\n");
 		stringBuilder.append("<p/>\n");
 
 		stringBuilder.append("</tt>\n");

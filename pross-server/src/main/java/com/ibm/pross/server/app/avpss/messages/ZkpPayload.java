@@ -1,4 +1,4 @@
-package com.ibm.pross.server.app.avpss;
+package com.ibm.pross.server.app.avpss.messages;
 
 import java.io.Serializable;
 

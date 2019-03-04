@@ -106,7 +106,7 @@ public class GenerateHandler extends AuthenticatedClientRequestHandler {
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
 
 		// Initiate the DKG
-		boolean started = shareholder.broadcastPublicSharing();
+		boolean started = shareholder.broadcastPublicSharing(0);
 
 		if (started) {
 			// Wait for share to be established

@@ -3,8 +3,14 @@ package com.ibm.pross.server.app.http.handlers;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Set;
+import java.util.concurrent.ConcurrentMap;
 
+import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpStatusCode;
+import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
+import com.ibm.pross.server.configuration.permissions.ClientPermissions;
+import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
@@ -18,8 +24,13 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 @SuppressWarnings("restriction")
 public class IdHandler extends AuthenticatedClientRequestHandler {
 
-	public IdHandler(final KeyLoader clientKeys) {
+	private final AccessEnforcement accessEnforcement;
+	private final ConcurrentMap<String, ApvssShareholder> shareholders;
+
+	public IdHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(clientKeys);
+		this.accessEnforcement = accessEnforcement;
+		this.shareholders = shareholders;
 	}
 
 	@Override
@@ -27,12 +38,16 @@ public class IdHandler extends AuthenticatedClientRequestHandler {
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
 		// Create response
-		final String response;
+		final String authenticatedAs;
 		if (clientId != null) {
-			response = "You have authenticated as Client " + clientId + ".\n";
+			authenticatedAs = "You have authenticated as Client " + clientId + ".\n";
 		} else {
-			response = "You have failed to authenticate and are Anonymous.\n";
+			authenticatedAs = "You have failed to authenticate and are Anonymous.\n";
 		}
+
+		final String permissionList = getPermissions(clientId, shareholders.keySet());
+
+		final String response = authenticatedAs + permissionList;
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -42,6 +57,29 @@ public class IdHandler extends AuthenticatedClientRequestHandler {
 		try (final OutputStream os = exchange.getResponseBody();) {
 			os.write(binaryResponse);
 		}
+	}
+
+	private String getPermissions(final Integer clientId, final Set<String> secretNames) throws NotFoundException {
+
+		final StringBuilder stringBuilder = new StringBuilder();
+		
+		for (String secretName : secretNames) {
+			
+			stringBuilder.append("\n");
+			stringBuilder.append("Permissions for '" + secretName + "':\n");
+			
+			for (Permissions permission : ClientPermissions.Permissions.values()) {
+				try {
+					accessEnforcement.enforceAccess(clientId, secretName, permission);
+					stringBuilder.append("  " + permission + "\n");
+				} catch (UnauthorizedException e) {
+					// Ignore
+				}
+			}
+		}
+		
+		return stringBuilder.toString();
+
 	}
 
 }
