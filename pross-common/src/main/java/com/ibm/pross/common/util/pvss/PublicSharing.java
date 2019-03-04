@@ -141,6 +141,21 @@ public class PublicSharing implements Serializable {
 		return PedersenEqRangeProofVerifier.isValid(proof, encryptedShare1, encryptedShare2, shareCommitment,
 				encryptionKey);
 	}
+	
+
+	/**
+	 * Return the Pedersen commitment to the secret that is shared
+	 * @return
+	 */
+	public EcPoint getSecretCommitment() {
+
+		// Use the Pedersen commitments to determine g^secret using polynomial evaluation "in the exponent"
+		final BigInteger xPosition = BigInteger.ZERO;
+		final EcPoint secretCommitment = PublicSharingGenerator.interpolatePedersonCommitments(xPosition,
+				this.pedersenCommitments);
+
+		return secretCommitment;
+	}
 
 	/**
 	 * Decrypt a first share from the public sharing using the appropriate private key

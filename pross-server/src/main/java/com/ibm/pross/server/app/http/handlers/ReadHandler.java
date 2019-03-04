@@ -133,7 +133,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("prime_modulus   =  " + CommonConfiguration.CURVE.getR() + "\n");
 			stringBuilder.append("curve_oid       =  " + CommonConfiguration.CURVE.getOid() + " ("
 					+ CommonConfiguration.CURVE.getName() + ")\n");
-			stringBuilder.append("g               =  " + CommonConfiguration.g + "\n");
+			stringBuilder.append("generator       =  " + CommonConfiguration.g + "\n");
 			stringBuilder.append("<p/>");
 		}
 

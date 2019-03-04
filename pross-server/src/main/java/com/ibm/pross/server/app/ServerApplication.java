@@ -106,7 +106,7 @@ public class ServerApplication {
 			// Create Shareholder
 			System.out.println("Starting APVSS Shareholder for secret: " + secretName);
 			final ApvssShareholder shareholder = new ApvssShareholder(secretName, serverKeys, chainBuilder, serverIndex,
-					n, k, f);
+					n, k);
 			shareholder.start(false); // Start the message processing thread but don't start the DKG
 			shareholders.put(secretName, shareholder);
 		}

@@ -29,17 +29,23 @@ public class PublicSharingGenerator {
 	}
 
 	public PublicSharing shareRandomSecret(final PaillierPublicKey[] shareholderKeys) {
-		final BigInteger randomSecret = RandomNumberGenerator.generateRandomInteger(curve.getR());
-		return shareSecret(randomSecret, shareholderKeys);
+		final BigInteger secret = RandomNumberGenerator.generateRandomInteger(curve.getR());
+		return shareSecret(secret, shareholderKeys);
+	}
+	
+	public PublicSharing shareSecret(final BigInteger secret, final PaillierPublicKey[] shareholderKeys) {
+		final BigInteger randomness = RandomNumberGenerator.generateRandomInteger(curve.getR());
+		return shareSecretAndRandomness(secret, randomness, shareholderKeys);
 	}
 
-	public PublicSharing shareSecret(final BigInteger secret, final PaillierPublicKey[] shareholderKeys) {
+	public PublicSharing shareSecretAndRandomness(final BigInteger secret, final BigInteger randomness, final PaillierPublicKey[] shareholderKeys) {
 		// The secret is held in the first element of the array: polynomial[0]
 		final BigInteger[] polynomial1 = Shamir.generateCoefficients(this.threshold);
 		polynomial1[0] = secret;
 
 		// The second polynomial is to blind information in the commitment
 		final BigInteger[] polynomial2 = Shamir.generateCoefficients(this.threshold);
+		polynomial2[0] = randomness;
 
 		// Compute shares for i = 1 to N
 		final ShamirShare[] shares1 = Shamir.generateShares(polynomial1, this.numShares);

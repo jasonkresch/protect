@@ -26,6 +26,8 @@ public class AlertLog {
 
 	public void reportError(final int reporterIndex, final int reportedIndex, final ErrorCondition error) {
 
+		System.err.println(reportedIndex + ": " + error);
+		
 		// Add error report to error log
 		alerts.add(new SimpleEntry<Integer, ErrorCondition>(reportedIndex, error));
 

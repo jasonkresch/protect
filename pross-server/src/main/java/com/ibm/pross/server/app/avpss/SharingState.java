@@ -1,11 +1,16 @@
 package com.ibm.pross.server.app.avpss;
 
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.Date;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.apache.commons.codec.binary.Hex;
+
+import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
 import com.ibm.pross.common.util.pvss.PublicSharing;
@@ -104,6 +109,19 @@ public class SharingState {
 
 	public ShamirShare getShare2() {
 		return share2;
+	}
+	
+	public String getShare1Hash() {
+		try {
+			if (getShare1() == null) {
+				return "[SHARE DELETED]";
+			} else {
+				return Hex.encodeHexString(MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM)
+						.digest(getShare1().getY().toByteArray()));
+			}
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public void setShare2(ShamirShare share2) {

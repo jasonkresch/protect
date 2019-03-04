@@ -10,6 +10,7 @@ import java.util.concurrent.ConcurrentMap;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
+import com.ibm.pross.server.app.avpss.SharingState;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
@@ -50,14 +51,15 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
+	public static final String EPOCH_NUMBER_FIELD = "epochNumber";
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public InfoHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
-			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+	public InfoHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement,
+			final ServerConfiguration serverConfig, final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(clientKeys);
 		this.shareholders = shareholders;
 		this.serverConfig = serverConfig;
@@ -86,14 +88,24 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			throw new NotFoundException();
 		}
 
+		// Get epoch number from request
+		final Long epochNumber;
+		final List<String> epochNumbers = params.get(EPOCH_NUMBER_FIELD);
+		if ((epochNumbers != null) && (epochNumbers.size() == 1)) {
+			epochNumber = Long.parseLong(epochNumbers.get(0));
+		} else {
+			epochNumber = shareholder.getEpoch();
+		}
+
 		// Create response
-		final String response = getSecretInfo(shareholder, secretName, serverConfig);
+		final String response = getSecretInfo(shareholder, secretName, epochNumber, serverConfig);
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
-		//exchange.getResponseHeaders().add("Strict-Transport-Security", "max-age=300; includeSubdomains");
+		// exchange.getResponseHeaders().add("Strict-Transport-Security", "max-age=300;
+		// includeSubdomains");
 		exchange.sendResponseHeaders(HttpStatusCode.SUCCESS, binaryResponse.length);
-		
+
 		// Write response
 		try (final OutputStream os = exchange.getResponseBody();) {
 			os.write(binaryResponse);
@@ -101,7 +113,12 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 	}
 
 	private static String getSecretInfo(final ApvssShareholder shareholder, final String secretName,
-			final ServerConfiguration serverConfig) {
+			final Long epochNumber, final ServerConfiguration serverConfig) throws BadRequestException {
+
+		// Prevent invalid epochs from being accessed
+		if ((epochNumber < 0) || (epochNumber > shareholder.getEpoch())) {
+			throw new BadRequestException();
+		}
 
 		// This server
 		final int serverIndex = shareholder.getIndex();
@@ -113,7 +130,11 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		final StringBuilder stringBuilder = new StringBuilder();
 		stringBuilder.append("<html>\n");
 		stringBuilder.append("<head>\n");
-		stringBuilder.append("<meta http-equiv=\"refresh\" content=\"10\">\n");
+		if (epochNumber == shareholder.getEpoch()) {
+			// Refresh only if looking at the latest
+			final String linkUrl = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName;
+			stringBuilder.append("<meta http-equiv=\"refresh\" content=\"10;URL='" + linkUrl + "'\">\n");
+		}
 		stringBuilder.append("</head>\n");
 		stringBuilder.append("<body>\n");
 		stringBuilder.append("<pre>\n");
@@ -138,12 +159,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("number_of_shares  =  " + shareholder.getN() + "\n");
 			stringBuilder.append("threshold         =  " + shareholder.getK() + "\n");
 			stringBuilder.append("creation_time     =  " + shareholder.getCreationTime() + "\n");
-			stringBuilder.append("<p/>");
-
-			// Print Epoch information
-			stringBuilder.append("<b>Epoch:</b>\n");
-			stringBuilder.append("epoch_number      =  " + shareholder.getEpoch() + "\n");
-			stringBuilder.append("last_refresh_time =  " + shareholder.getLastRefreshTime() + "\n");
+			stringBuilder.append("last_refresh      =  " + shareholder.getLastRefreshTime() + "\n");
 			stringBuilder.append("refresh_frequency =  " + shareholder.getRefreshFrequency() + " seconds\n");
 			stringBuilder.append("<p/>");
 
@@ -152,20 +168,45 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			stringBuilder.append("prime_modulus     =  " + CommonConfiguration.CURVE.getR() + "\n");
 			stringBuilder.append("curve_oid         =  " + CommonConfiguration.CURVE.getOid() + " ("
 					+ CommonConfiguration.CURVE.getName() + ")\n");
-			stringBuilder.append("g                 =  " + CommonConfiguration.g + "\n");
+			stringBuilder.append("generator         =  " + CommonConfiguration.g + "\n");
+			stringBuilder.append("<p/>");
+			
+			// Print Epoch information
+			final SharingState sharingState = shareholder.getSharing(epochNumber);
+			stringBuilder.append("<b>Epoch:</b>\n");
+			final long firstEpoch = 0;
+			final long previousEpoch = epochNumber - 1;
+			final long nextEpoch = epochNumber + 1;
+			final long latestEpoch = shareholder.getEpoch();
+			final String infoFirstEpoch = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName
+					+ "&epochNumber=" + firstEpoch;
+			final String infoPreviousEpoch = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName
+					+ "&epochNumber=" + previousEpoch;
+			final String infoNextEpoch = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName
+					+ "&epochNumber=" + nextEpoch;
+			final String infoLastEpoch = "https://" + ourIp + ":" + ourPort + "/info?secretName=" + secretName
+					+ "&epochNumber=" + latestEpoch;
+			stringBuilder.append("epoch_number      =  ");
+			stringBuilder.append("<a href=\"" + infoFirstEpoch + "\"><<</a> ");
+			stringBuilder.append("<a href=\"" + infoPreviousEpoch + "\"><</a> ");
+			stringBuilder.append(epochNumber);
+			stringBuilder.append(" <a href=\"" + infoNextEpoch + "\">></a> ");
+			stringBuilder.append("<a href=\"" + infoLastEpoch + "\">>></a>\n");
+			stringBuilder.append("completion_time   =  " + sharingState.getCreationTime() + "\n");
+
 			stringBuilder.append("<p/>");
 
 			// Print share verification keys
 			stringBuilder.append("<b>Share Verification Keys:</b>\n");
 			for (int i = 1; i <= n; i++) {
-				stringBuilder.append("g^{s_" + i + "} =  " + shareholder.getSharePublicKey(i) + "\n");
+				stringBuilder.append("g^{s_" + i + "} =  " + sharingState.getSharePublicKeys()[i] + "\n");
 			}
 			stringBuilder.append("<p/>");
 
 			// Print Feldman Coefficients
 			stringBuilder.append("<b>Feldman Coefficients:</b>\n");
 			for (int i = 0; i < k; i++) {
-				stringBuilder.append("g^{a_" + i + "} =  " + shareholder.getFeldmanValues(i) + "\n");
+				stringBuilder.append("g^{a_" + i + "} =  " + sharingState.getFeldmanValues()[i] + "\n");
 			}
 			stringBuilder.append("<p/>");
 
@@ -177,9 +218,8 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
 			stringBuilder.append("<b>Share Information:</b>\n");
 			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
-					+ shareholder.getShare1Hash() + " (<a href=\"" + readLink
-					+ "\">View Share</a>) \n");
-			if (shareholder.getShare1() != null) {
+					+ sharingState.getShare1Hash() + " (<a href=\"" + readLink + "\">View Share</a>) \n");
+			if (sharingState.getShare1() != null) {
 				stringBuilder.append("exists        =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
 			} else {
 				stringBuilder.append("exists        =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
@@ -190,11 +230,13 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 				stringBuilder.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
 			}
 			stringBuilder.append("<p/>");
-			
+
 			stringBuilder.append("<b>Use Share:</b>\n");
 			stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
-			stringBuilder.append("<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append("x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
+			stringBuilder.append(
+					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append(
+					"x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
 			stringBuilder.append("<p/>");
 		}
 
@@ -207,8 +249,8 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			final String serverIp = serverAddress.getHostString();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
-			stringBuilder.append(
-					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
+			stringBuilder
+					.append("server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
 		}
 		stringBuilder.append("<p/>\n");
 

@@ -1,10 +1,7 @@
 package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -19,8 +16,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.apache.commons.codec.binary.Hex;
-
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
@@ -32,7 +27,6 @@ import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProver;
 import com.ibm.pross.common.util.pvss.PublicSharing;
 import com.ibm.pross.common.util.pvss.PublicSharingGenerator;
 import com.ibm.pross.common.util.shamir.Polynomials;
-import com.ibm.pross.common.util.shamir.Shamir;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.app.avpss.channel.FifoAtomicBroadcastChannel;
 import com.ibm.pross.server.app.avpss.exceptions.DuplicateMessageReceivedException;
@@ -99,24 +93,22 @@ public class ApvssShareholder {
 	// The recovery threshold of the secret
 	private final int k;
 
-	// The maximum number of failures
-	private final int f;
-
 	// Used to misbehave
 	private final boolean sendValidCommitments;
 
 	// Track each epoch separately
 	private final Map<Long, SharingState> sharingStates = new ConcurrentHashMap<>();
 	private final AtomicLong currentEpoch = new AtomicLong(0);
+	private final AtomicLong nextEpoch = new AtomicLong(0);
 	private final AtomicLong[] shareholderMessageCounts;
 
 	public ApvssShareholder(final String secretName, final KeyLoader keyLoader,
-			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k, final int f) {
-		this(secretName, keyLoader, channel, index, n, k, f, true);
+			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k) {
+		this(secretName, keyLoader, channel, index, n, k, true);
 	}
 
 	public ApvssShareholder(final String secretName, final KeyLoader keyLoader,
-			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k, final int f,
+			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k,
 			final boolean sendValidCommitments) {
 
 		this.secretName = secretName;
@@ -140,13 +132,11 @@ public class ApvssShareholder {
 		this.channel = channel;
 		this.n = n;
 		this.k = k; // reconstruction threshold (usually f_S + 1)
-		this.f = f; // f_S = maximum safety failures
 
 		this.messageProcessingThread = createMessageProcessingThread(this.channel);
 	}
 
 	public Thread createMessageProcessingThread(final FifoAtomicBroadcastChannel channel) {
-
 		return new Thread(new Runnable() {
 
 			@Override
@@ -173,11 +163,11 @@ public class ApvssShareholder {
 	public class RefreshTask extends TimerTask {
 		@Override
 		public void run() {
-
-			System.out.println("Performing Refresh for secret '" + ApvssShareholder.this.secretName + "'");
-
-			// TODO: Send a refresh message to the channel (instead of starting a new DKG)
-			broadcastPublicSharing(ApvssShareholder.this.currentEpoch.get() + 1);
+			final long currentEpoch = ApvssShareholder.this.nextEpoch.get();
+			final long nextEpoch = ApvssShareholder.this.nextEpoch.incrementAndGet();
+			System.out.println("Performing Refresh for secret '" + ApvssShareholder.this.secretName + "' epoch: ("
+					+ currentEpoch + " -> " + nextEpoch + ")");
+			broadcastPublicSharing(nextEpoch);
 		}
 	}
 
@@ -213,8 +203,14 @@ public class ApvssShareholder {
 			final int senderId = message.getSenderIndex();
 			final long messageCount = this.shareholderMessageCounts[senderId - 1].getAndIncrement();
 			final long senderEpoch = messageCount / 2;
-
+			
 			try {
+				
+				// Make sure the sender hasn't gotten too far ahead (we should have the previous sharing already)
+				if (senderEpoch > this.nextEpoch.get()) {
+					//throw new StateViolationException("Sender is getting too far ahead");
+				}
+				
 				switch (opcode) {
 				case PS:
 					deliverPublicSharing(senderEpoch, (PublicMessage) message);
@@ -266,7 +262,7 @@ public class ApvssShareholder {
 		return currentEpoch.get();
 	}
 
-	private SharingState getSharing(final long epochNumber) {
+	public SharingState getSharing(final long epochNumber) {
 		synchronized (this.sharingStates) {
 			this.sharingStates.putIfAbsent(epochNumber, new SharingState(n, k, epochNumber));
 			return this.sharingStates.get(epochNumber);
@@ -290,7 +286,6 @@ public class ApvssShareholder {
 
 		if (sharingState.getBroadcastSharing().compareAndSet(false, true)) {
 
-			System.out.println("Starting DKG operation!");
 			sharingState.setStartTime(System.nanoTime());
 
 			// Get shareholder public encryption keys
@@ -299,17 +294,19 @@ public class ApvssShareholder {
 				publicKeys[i - 1] = (PaillierPublicKey) this.keyLoader.getEncryptionKey(i);
 			}
 
-			// Create Public Sharing of a random secret (if first DKG, otherwise use our
-			// share)
+			// Create Public Sharing (if first DKG use random, otherwise use share)
 			final PublicSharingGenerator generator = new PublicSharingGenerator(this.n, this.k);
 			final PublicSharing publicSharing;
-			if (this.currentEpoch.get() == 0) {
+			if (epoch == 0) {
+				System.out.println("Starting DKG operation!");
 				publicSharing = generator.shareRandomSecret(publicKeys);
 			} else {
-				publicSharing = generator.shareSecret(this.getShare1().getY(), publicKeys);
+				final BigInteger share1 = getSharing(epoch - 1).getShare1().getY();
+				final BigInteger share2 = getSharing(epoch - 1).getShare2().getY();
+				publicSharing = generator.shareSecretAndRandomness(share1, share2, publicKeys);
 			}
 
-			// Create a semi-private message
+			// Create a message
 			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
 			final String channelName = this.secretName;
 			final Message publicSharingMessage = new PublicMessage(channelName, this.index, payload);
@@ -330,17 +327,18 @@ public class ApvssShareholder {
 	 * @throws DuplicateMessageReceivedException
 	 * @throws InvalidCiphertextException
 	 * @throws InconsistentShareException
+	 * @throws StateViolationException 
 	 */
 	protected synchronized void deliverPublicSharing(final long senderEpoch, final PublicMessage message)
-			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException {
-
+			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException, StateViolationException {
+		
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getSharing(senderEpoch);
 
 		// A DKG is starting, broadcast sharing if we have not already done so
-		if (this.currentEpoch.get() == 0) {
+		if ((senderEpoch == 0) && (this.currentEpoch.get() == 0) && (this.getSecretPublicKey() == null)) {
 			if (!sharingState.getBroadcastSharing().get()) {
-				broadcastPublicSharing(0);
+				broadcastPublicSharing(0); // First DKG triggered by someone else, all other proactive by us
 			}
 		}
 
@@ -366,13 +364,26 @@ public class ApvssShareholder {
 
 		// Get shareholder public encryption keys
 		final PaillierPublicKey[] shareholderKeys = new PaillierPublicKey[n];
-		for (int i = 1; i <= n; i++) {
+		for (int i = 1; i <= this.n; i++) {
 			shareholderKeys[i - 1] = (PaillierPublicKey) this.keyLoader.getEncryptionKey(i);
 		}
 
 		// Verify the shares are correct
 		if (!publicSharing.verifyAllShares(shareholderKeys)) {
 			throw new InvalidCiphertextException("Public Sharing was not valid");
+		}
+
+		// Verify consistency with the previous commitment g_^{s_i} * h^{r_i}
+		if (senderEpoch > 0) {
+			final EcPoint secretCommitment = publicSharing.getSecretCommitment();
+			
+			final SharingState previousSharing = this.getSharing(senderEpoch - 1);
+			final EcPoint previousShareCommitment = PublicSharingGenerator.interpolatePedersonCommitments(BigInteger.valueOf(senderIndex),
+					previousSharing.getPedersenCommitments());
+			
+			if (!secretCommitment.equals(previousShareCommitment)) {
+				throw new InconsistentShareException("Shareholder sent an invalid sharing");
+			}
 		}
 
 		// It is valid, increment success count
@@ -384,9 +395,7 @@ public class ApvssShareholder {
 
 		if (successes == this.k) {
 			// We have reached a threshold to proceed to next phase
-			if (this.currentEpoch.get() == 0) {
-				assembleCombinedShareByInterpolation(senderEpoch);
-			}
+			assembleCombinedShareByInterpolation(senderEpoch);
 		}
 	}
 
@@ -403,9 +412,7 @@ public class ApvssShareholder {
 		final List<Integer> contributors = new ArrayList<>(sharingState.getQualifiedSharings().keySet());
 		Collections.sort(contributors);
 		final BigInteger[] xCoords = contributors.stream().map(i -> BigInteger.valueOf(i)).toArray(BigInteger[]::new);
-		
-		System.err.print("Contributors: " + Arrays.toString(xCoords));
-		
+
 		// final BigInteger[] xCoords =
 		// sharingState.getQualifiedSharings().keySet().stream()
 		// .map(i -> BigInteger.valueOf(i)).toArray(BigInteger[]::new);
@@ -446,63 +453,6 @@ public class ApvssShareholder {
 				final EcPoint interpolatedCommitment = curve.multiply(commitments[i], l);
 				combinedPedersenCommitments[i] = curve.addPoints(combinedPedersenCommitments[i],
 						interpolatedCommitment);
-			}
-		}
-
-		// We have our shares
-		sharingState.setShare1(new ShamirShare(BigInteger.valueOf(this.index), share1Y));
-		sharingState.setShare2(new ShamirShare(BigInteger.valueOf(this.index), share2Y));
-
-		// We have our Pedersen commitments
-		sharingState.setPedersenCommitments(combinedPedersenCommitments);
-
-		// Broadcast ZKP of a splitting
-		broadcastZkp(senderEpoch);
-
-		sharingState.setQualSetDefined(true);
-
-		final long shareEnd = System.nanoTime();
-		final long startTime = sharingState.getStartTime();
-		System.out.println("Time to establish share:             "
-				+ (((double) (shareEnd - startTime)) / 1_000_000_000.0) + " seconds");
-	}
-
-	/**
-	 * Complete the DKG by combining all the PVSSs in Qual (via summation, rather
-	 * than interpolation)
-	 */
-	private synchronized void assembleCombinedShareBySummation(final long senderEpoch) {
-
-		// Get sharing state for the current epoch
-		final SharingState sharingState = getSharing(senderEpoch);
-
-		// Start counters at zero
-		BigInteger share1Y = BigInteger.ZERO;
-		BigInteger share2Y = BigInteger.ZERO;
-		EcPoint[] combinedPedersenCommitments = new EcPoint[this.k];
-		for (int i = 0; i < this.k; i++) {
-			combinedPedersenCommitments[i] = EcPoint.pointAtInfinity;
-		}
-
-		// Use our decryption key to access our shares
-		final PaillierPrivateKey decryptionKey = (PaillierPrivateKey) this.keyLoader.getDecryptionKey();
-
-		// Iterate over every public sharing in qual
-		for (final PublicSharing sharing : sharingState.getQualifiedSharings().values()) {
-			// Decrypt our shares
-			final ShamirShare share1 = sharing.accessShare1(index - 1, decryptionKey);
-			final ShamirShare share2 = sharing.accessShare2(index - 1, decryptionKey);
-
-			// Get the commitments
-			final EcPoint[] commitments = sharing.getPedersenCommitments();
-
-			// Add the shares to our running sum
-			share1Y = share1Y.add(share1.getY()).mod(curve.getR());
-			share2Y = share2Y.add(share2.getY()).mod(curve.getR());
-
-			// Add Pedersen commitments to our running sum
-			for (int i = 0; i < this.k; i++) {
-				combinedPedersenCommitments[i] = curve.addPoints(combinedPedersenCommitments[i], commitments[i]);
 			}
 		}
 
@@ -567,7 +517,7 @@ public class ApvssShareholder {
 	 */
 	protected synchronized void deliverProofMessage(final long senderEpoch, final PublicMessage message)
 			throws DuplicateMessageReceivedException, StateViolationException, InvalidZeroKnowledgeProofException {
-
+		
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getSharing(senderEpoch);
 
@@ -673,12 +623,28 @@ public class ApvssShareholder {
 		sharingState.setCreationTime(new Date());
 		this.sharingType = SharingType.PEDERSEN_DKG;
 
-		System.out.println("DKG Complete!");
+		if (senderEpoch == 0) {
+			System.out.println("DKG Complete!");
+		} else {
+			System.out.print("Refresh Complete!");
+			
+			// Sanity check, make sure public keys match before advancing epoch state
+			if (this.getCurrentSharing().getSharePublicKeys()[0].equals(sharingState.getSharePublicKeys()[0])) {
+				System.out.println(" Consistency with previous epoch has been verified.");
+				
+				// Delete the previous share
+				this.getCurrentSharing().setShare1(null);
+				
+			} else {
+				throw new RuntimeException("Our new sharing is inconsistent with the previous epoch.");
+			}
+			
+		}
 
 		// Schedule Proactive Refresh Task
-		System.out.println("Scheduling Refresh to occur every " + this.getRefreshFrequency() + " seconds");
+		System.out.println("Scheduling next Refresh to occur in " + this.getRefreshFrequency() + " seconds");
 		final int refreshPeriodMillis = this.getRefreshFrequency() * 1000;
-		this.timer.scheduleAtFixedRate(new RefreshTask(), refreshPeriodMillis, refreshPeriodMillis);
+		this.timer.schedule(new RefreshTask(), refreshPeriodMillis);
 
 		// System.out.println("Signatures generated: " + SigningUtil.signCount.get());
 		// System.out.println("Signatures verified: " + SigningUtil.verCount.get());
@@ -767,26 +733,6 @@ public class ApvssShareholder {
 	 */
 	public ShamirShare getShare2() {
 		return getCurrentSharing().getShare2();
-	}
-
-	/**
-	 * Return the hash of the secret share of this shareholder for g^s
-	 * 
-	 * (Only used in tests)
-	 * 
-	 * @return
-	 */
-	public String getShare1Hash() {
-		try {
-			if (getShare1() == null) {
-				return "[SHARE DELETED]";
-			} else {
-				return Hex.encodeHexString(MessageDigest.getInstance(CommonConfiguration.HASH_ALGORITHM)
-						.digest(getShare1().getY().toByteArray()));
-			}
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	/**

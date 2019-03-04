@@ -69,13 +69,12 @@ public class ApvssTest {
 		// Define parameters
 		final int n = 5;
 		final int k = 3;
-		final int f = 1;
 		
 		// Create shareholders
 		final List<ApvssShareholder> shareholders = new ArrayList<>();
 		for (int i = 1; i <= n; i++) {
 			final KeyLoader keyLoader = createKeyLoader(n, i);
-			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, f, true);
+			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, true);
 			shareholders.add(shareholder);
 		}
 
@@ -165,7 +164,7 @@ public class ApvssTest {
 		final List<ApvssShareholder> shareholders = new ArrayList<>();
 		for (int i = 1; i <= n; i++) {
 			final KeyLoader keyLoader = createKeyLoader(n, i);
-			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, f, true);
+			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, true);
 			shareholders.add(shareholder);
 		}
 
@@ -259,13 +258,13 @@ public class ApvssTest {
 
 		// Create bad shareholder
 		final KeyLoader keyLoader1 = createKeyLoader(n, 1);
-		final ApvssShareholder badShareholder = new ApvssShareholder("test", keyLoader1, channel, 1, n, k, f, false);
+		final ApvssShareholder badShareholder = new ApvssShareholder("test", keyLoader1, channel, 1, n, k, false);
 		shareholders.add(badShareholder);
 
 		// Create good shareholders
 		for (int i = 2; i <= n; i++) {
 			final KeyLoader keyLoader = createKeyLoader(n, i);
-			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, f, true);
+			final ApvssShareholder shareholder = new ApvssShareholder("test", keyLoader, channel, i, n, k, true);
 			shareholders.add(shareholder);
 		}
 
