@@ -13,7 +13,6 @@ import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.Security;
 import java.security.spec.ECGenParameterSpec;
-import java.util.TreeSet;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.junit.Assert;
@@ -21,9 +20,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.server.messages.MessageSignature;
-import com.ibm.pross.server.messages.PublicMessage;
-import com.ibm.pross.server.messages.payloads.refresh.RefreshAccusations;
+import com.ibm.pross.server.app.avpss.messages.NoOp;
 import com.ibm.pross.server.util.MessageSigningUtil;
 
 public class SigningTest {
@@ -54,7 +51,7 @@ public class SigningTest {
 
 		final KeyPair keyPair = generateKeyPair();
 
-		final PublicMessage message = new PublicMessage("none", 0, new RefreshAccusations(1, new TreeSet<Integer>()));
+		final PublicMessage message = new PublicMessage("none", 0, new NoOp());
 		final MessageSignature signature = MessageSigningUtil.createSignature(message, keyPair.getPrivate());
 
 		Assert.assertTrue(MessageSigningUtil.verifySignature(message, signature, keyPair.getPublic()));

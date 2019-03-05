@@ -11,7 +11,6 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.security.MessageDigest;
-import java.security.SignedObject;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -39,6 +38,7 @@ import bftsmart.tom.leaderchange.LCMessage;
 import bftsmart.tom.leaderchange.RequestsTimer;
 import bftsmart.tom.util.BatchBuilder;
 import bftsmart.tom.util.BatchReader;
+import bftsmart.tom.util.InternalSignedObject;
 import bftsmart.tom.util.Logger;
 import bftsmart.tom.util.TOMUtil;
 
@@ -77,7 +77,7 @@ public class Synchronizer {
 	// if state transfer is required for synchronization
 	private int tempRegency = -1;
 	private CertifiedDecision tempLastHighestCID = null;
-	private HashSet<SignedObject> tempSignedCollects = null;
+	private HashSet<InternalSignedObject> tempSignedCollects = null;
 	private byte[] tempPropose = null;
 	private int tempBatchSize = -1;
 	private boolean tempIAmLeader = false;
@@ -236,14 +236,13 @@ public class Synchronizer {
 	}
 
 	// Processes STOPDATA messages that were not process upon reception, because
-	// they were
-	// ahead of the replica's expected regency
+	// they were ahead of the replica's expected regency
 	private void processSTOPDATA(LCMessage msg, int regency) {
 
 		// TODO: It is necessary to verify the proof of the last decided
 		// consensus and the signature of the state of the current consensus!
 		CertifiedDecision lastData = null;
-		SignedObject signedCollect = null;
+		InternalSignedObject signedCollect = null;
 
 		int last = -1;
 		byte[] lastValue = null;
@@ -271,7 +270,7 @@ public class Synchronizer {
 
 			lcManager.addLastCID(regency, lastData);
 
-			signedCollect = (SignedObject) ois.readObject();
+			signedCollect = (InternalSignedObject) ois.readObject();
 
 			ois.close();
 			bis.close();
@@ -309,7 +308,7 @@ public class Synchronizer {
 
 		CertifiedDecision lastHighestCID = null;
 		int currentCID = -1;
-		HashSet<SignedObject> signedCollects = null;
+		HashSet<InternalSignedObject> signedCollects = null;
 		byte[] propose = null;
 		int batchSize = -1;
 
@@ -322,7 +321,7 @@ public class Synchronizer {
 			ois = new ObjectInputStream(bis);
 
 			lastHighestCID = (CertifiedDecision) ois.readObject();
-			signedCollects = (HashSet<SignedObject>) ois.readObject();
+			signedCollects = (HashSet<InternalSignedObject>) ois.readObject();
 			propose = (byte[]) ois.readObject();
 			batchSize = ois.readInt();
 
@@ -698,7 +697,7 @@ public class Synchronizer {
 						CollectData collect = new CollectData(this.controller.getStaticConf().getProcessId(), in,
 								regency, quorumWrites, writeSet);
 
-						SignedObject signedCollect = tom.sign(collect);
+						InternalSignedObject signedCollect = tom.sign(collect);
 
 						out.writeObject(signedCollect);
 
@@ -727,7 +726,7 @@ public class Synchronizer {
 						CollectData collect = new CollectData(this.controller.getStaticConf().getProcessId(), last + 1,
 								regency, new TimestampValuePair(0, new byte[0]), new HashSet<TimestampValuePair>());
 
-						SignedObject signedCollect = tom.sign(collect);
+						InternalSignedObject signedCollect = tom.sign(collect);
 
 						out.writeObject(signedCollect);
 
@@ -896,7 +895,7 @@ public class Synchronizer {
 							new TimestampValuePair(0, new byte[0]), new HashSet<TimestampValuePair>());
 				}
 
-				SignedObject signedCollect = tom.sign(collect);
+				InternalSignedObject signedCollect = tom.sign(collect);
 
 				lcManager.addCollect(regency, signedCollect);
 
@@ -1090,7 +1089,7 @@ public class Synchronizer {
 		CertifiedDecision lastHighestCID = lcManager.getHighestLastCID(regency);
 
 		int currentCID = lastHighestCID.getCID() + 1;
-		HashSet<SignedObject> signedCollects = null;
+		HashSet<InternalSignedObject> signedCollects = null;
 		byte[] propose = null;
 		int batchSize = -1;
 
@@ -1181,7 +1180,7 @@ public class Synchronizer {
 
 	// this method is called on all replicas, and serves to verify and apply the
 	// information sent in the catch-up message
-	private void finalise(int regency, CertifiedDecision lastHighestCID, HashSet<SignedObject> signedCollects,
+	private void finalise(int regency, CertifiedDecision lastHighestCID, HashSet<InternalSignedObject> signedCollects,
 			byte[] propose, int batchSize, boolean iAmLeader) {
 
 		int currentCID = lastHighestCID.getCID() + 1;

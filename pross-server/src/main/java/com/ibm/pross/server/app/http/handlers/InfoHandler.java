@@ -170,7 +170,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 					+ CommonConfiguration.CURVE.getName() + ")\n");
 			stringBuilder.append("generator         =  " + CommonConfiguration.g + "\n");
 			stringBuilder.append("<p/>");
-			
+
 			// Print Epoch information
 			final SharingState sharingState = shareholder.getSharing(epochNumber);
 			stringBuilder.append("<b>Epoch:</b>\n");
@@ -210,34 +210,41 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			}
 			stringBuilder.append("<p/>");
 
-			// Print Share Information
-			final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
-			final String enableLink = "https://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
-			final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
-			final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
-			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
-			stringBuilder.append("<b>Share Information:</b>\n");
-			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
-					+ sharingState.getShare1Hash() + " (<a href=\"" + readLink + "\">View Share</a>) \n");
-			if (sharingState.getShare1() != null) {
-				stringBuilder.append("exists        =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
-			} else {
-				stringBuilder.append("exists        =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
-			}
-			if (shareholder.isEnabled()) {
-				stringBuilder.append("status        =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) \n");
-			} else {
-				stringBuilder.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
-			}
-			stringBuilder.append("<p/>");
+			if (epochNumber == shareholder.getEpoch()) {
 
-			stringBuilder.append("<b>Use Share:</b>\n");
-			stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
-			stringBuilder.append(
-					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append(
-					"x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
-			stringBuilder.append("<p/>");
+				// Print Share Information
+				final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
+				final String enableLink = "https://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
+				final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
+				final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
+				final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
+				stringBuilder.append("<b>Share Information:</b>\n");
+				stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
+						+ sharingState.getShare1Hash() + " (<a href=\"" + readLink + "\">View Share</a>) \n");
+				if (sharingState.getShare1() != null) {
+					stringBuilder.append("exists        =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
+				} else {
+					stringBuilder
+							.append("exists        =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
+				}
+				if (shareholder.isEnabled()) {
+					stringBuilder
+							.append("status        =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) \n");
+				} else {
+					stringBuilder
+							.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
+				}
+				stringBuilder.append("<p/>");
+
+				stringBuilder.append("<b>Use Share:</b>\n");
+				stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
+				stringBuilder.append(
+						"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+				stringBuilder.append(
+						"x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
+				stringBuilder.append("<p/>");
+
+			}
 		}
 
 		// Peers

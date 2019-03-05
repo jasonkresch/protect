@@ -174,13 +174,13 @@ public class ApvssShareholder {
 	 * A message is available on the queue, get it and deliver it for processing
 	 */
 	private synchronized void messageIsAvailable() {
-		
+
 		final long messageId = this.currentMessageId.incrementAndGet();
 		final Message message = this.channel.getMessage(messageId);
-		
+
 		// TODO: Remove this debugging text
-		//long messageCount = this.channel.getMessageCount();
-		//System.err.println(messageCount + ";" + messageId);
+		// long messageCount = this.channel.getMessageCount();
+		// System.err.println(messageCount + ";" + messageId);
 
 		// Deliver only if this message is relevant for the given epoch and secret
 		final String channelName = this.secretName;
@@ -207,20 +207,24 @@ public class ApvssShareholder {
 			final int senderId = message.getSenderIndex();
 			final long messageCount = this.shareholderMessageCounts[senderId - 1].getAndIncrement();
 			final long senderEpoch = messageCount / 2;
-			
+
 			try {
-				
-				// Make sure the sender hasn't gotten too far ahead (we should have the previous sharing already)
+
+				// Make sure the sender hasn't gotten too far ahead (we should have the previous
+				// sharing already)
 				if (senderEpoch > this.nextEpoch.get()) {
-					//throw new StateViolationException("Sender is getting too far ahead");
+					// throw new StateViolationException("Sender is getting too far ahead");
 				}
-				
+
 				switch (opcode) {
 				case PS:
 					deliverPublicSharing(senderEpoch, (PublicMessage) message);
 					break;
 				case ZK:
 					deliverProofMessage(senderEpoch, (PublicMessage) message);
+					break;
+				case NOOP:
+					// Do nothing
 					break;
 				default:
 					throw new UnrecognizedMessageTypeException();
@@ -305,9 +309,14 @@ public class ApvssShareholder {
 				System.out.println("Starting DKG operation!");
 				publicSharing = generator.shareRandomSecret(publicKeys);
 			} else {
-				final BigInteger share1 = getSharing(epoch - 1).getShare1().getY();
-				final BigInteger share2 = getSharing(epoch - 1).getShare2().getY();
-				publicSharing = generator.shareSecretAndRandomness(share1, share2, publicKeys);
+				if (getSharing(epoch - 1).getShare1() != null) {
+					final BigInteger share1 = getSharing(epoch - 1).getShare1().getY();
+					final BigInteger share2 = getSharing(epoch - 1).getShare2().getY();
+					publicSharing = generator.shareSecretAndRandomness(share1, share2, publicKeys);
+				} else {
+					// Share was deleted, send a null contribution
+					publicSharing = null;
+				}
 			}
 
 			// Create a message
@@ -331,11 +340,12 @@ public class ApvssShareholder {
 	 * @throws DuplicateMessageReceivedException
 	 * @throws InvalidCiphertextException
 	 * @throws InconsistentShareException
-	 * @throws StateViolationException 
+	 * @throws StateViolationException
 	 */
 	protected synchronized void deliverPublicSharing(final long senderEpoch, final PublicMessage message)
-			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException, StateViolationException {
-		
+			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException,
+			StateViolationException {
+
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getSharing(senderEpoch);
 
@@ -354,6 +364,11 @@ public class ApvssShareholder {
 
 		// Extract the payload
 		final PublicSharing publicSharing = (PublicSharing) message.getPayload().getData();
+
+		if (publicSharing == null) {
+			// This shareholder lost a share, ignore
+			return;
+		}
 
 		// Save it
 		sharingState.getReceivedSharings()[senderIndex - 1] = publicSharing;
@@ -380,11 +395,11 @@ public class ApvssShareholder {
 		// Verify consistency with the previous commitment g_^{s_i} * h^{r_i}
 		if (senderEpoch > 0) {
 			final EcPoint secretCommitment = publicSharing.getSecretCommitment();
-			
+
 			final SharingState previousSharing = this.getSharing(senderEpoch - 1);
-			final EcPoint previousShareCommitment = PublicSharingGenerator.interpolatePedersonCommitments(BigInteger.valueOf(senderIndex),
-					previousSharing.getPedersenCommitments());
-			
+			final EcPoint previousShareCommitment = PublicSharingGenerator.interpolatePedersonCommitments(
+					BigInteger.valueOf(senderIndex), previousSharing.getPedersenCommitments());
+
 			if (!secretCommitment.equals(previousShareCommitment)) {
 				throw new InconsistentShareException("Shareholder sent an invalid sharing");
 			}
@@ -487,18 +502,25 @@ public class ApvssShareholder {
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getSharing(senderEpoch);
 
-		// S = g^s_i
-		// R = h^r_i
-		final BigInteger s = sharingState.getShare1().getY();
-		final BigInteger r = sharingState.getShare2().getY();
-
-		// Prove: g^s_i * h^r_i = S (Pedersen commitment)
 		final ZeroKnowledgeProof proof;
-		if (this.sendValidCommitments) {
-			proof = ZeroKnowledgeProver.createProof(s, r);
+		if (sharingState.getShare1() != null) {
+
+			// S = g^s_i
+			// R = h^r_i
+			final BigInteger s = sharingState.getShare1().getY();
+			final BigInteger r = sharingState.getShare2().getY();
+
+			// Prove: g^s_i * h^r_i = S (Pedersen commitment)
+
+			if (this.sendValidCommitments) {
+				proof = ZeroKnowledgeProver.createProof(s, r);
+			} else {
+				// Simulate malfunction
+				proof = ZeroKnowledgeProver.createProof(s, r.add(BigInteger.ONE));
+			}
 		} else {
-			// Simulate malfunction
-			proof = ZeroKnowledgeProver.createProof(s, r.add(BigInteger.ONE));
+			// Our share is missing, send a null proof
+			proof = null;
 		}
 
 		// Send message out
@@ -521,7 +543,7 @@ public class ApvssShareholder {
 	 */
 	protected synchronized void deliverProofMessage(final long senderEpoch, final PublicMessage message)
 			throws DuplicateMessageReceivedException, StateViolationException, InvalidZeroKnowledgeProofException {
-		
+
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getSharing(senderEpoch);
 
@@ -539,6 +561,11 @@ public class ApvssShareholder {
 		// The accuser is indicated in the rebuttal message
 		final ZeroKnowledgeProof proof = (ZeroKnowledgeProof) message.getPayload().getData();
 
+		if (proof == null) {
+			// Sender lost their share, ignore
+			return;
+		}
+		
 		// Ignore this proof, we've already received enough
 		if (sharingState.getQualifiedProofs().size() < this.k) {
 
@@ -609,7 +636,7 @@ public class ApvssShareholder {
 		// Print our share
 		System.out.println();
 		System.out.println("Sharing Result:");
-		System.out.println("This Server's Share:     s_" + this.index + "     =  " + this.getShare1());
+		System.out.println("This Server's Share:     s_" + this.index + "     =  " + sharingState.getShare1());
 
 		// Print secret verification key
 		System.out.println("Secret Verification key: g^{s}   =  " + sharingState.getSharePublicKeys()[0]);
@@ -631,18 +658,18 @@ public class ApvssShareholder {
 			System.out.println("DKG Complete!");
 		} else {
 			System.out.print("Refresh Complete!");
-			
+
 			// Sanity check, make sure public keys match before advancing epoch state
 			if (this.getCurrentSharing().getSharePublicKeys()[0].equals(sharingState.getSharePublicKeys()[0])) {
 				System.out.println(" Consistency with previous epoch has been verified.");
-				
+
 				// Delete the previous share
 				this.getCurrentSharing().setShare1(null);
-				
+
 			} else {
 				throw new RuntimeException("Our new sharing is inconsistent with the previous epoch.");
 			}
-			
+
 		}
 
 		// Schedule Proactive Refresh Task

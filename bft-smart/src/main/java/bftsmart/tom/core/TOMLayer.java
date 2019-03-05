@@ -19,8 +19,6 @@ package bftsmart.tom.core;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.PrivateKey;
-import java.security.Signature;
-import java.security.SignedObject;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
@@ -44,6 +42,7 @@ import bftsmart.tom.server.Recoverable;
 import bftsmart.tom.server.RequestVerifier;
 import bftsmart.tom.util.BatchBuilder;
 import bftsmart.tom.util.BatchReader;
+import bftsmart.tom.util.InternalSignedObject;
 import bftsmart.tom.util.Logger;
 
 /**
@@ -81,7 +80,6 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 	private int lastExecuted = -1;
 
 	public MessageDigest md;
-	private Signature engine;
 
 	private ReentrantLock hashLock = new ReentrantLock();
 
@@ -144,12 +142,6 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 			e.printStackTrace(System.out);
 		}
 
-		try {
-			this.engine = Signature.getInstance("SHA1withRSA");
-		} catch (Exception e) {
-			e.printStackTrace(System.err);
-		}
-
 		this.prk = this.controller.getStaticConf().getPrivateKey();
 		this.dt = new DeliveryThread(this, receiver, recoverer, this.controller); // Create delivery thread
 		this.dt.start();
@@ -180,9 +172,9 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 		return ret;
 	}
 
-	public SignedObject sign(Serializable obj) {
+	public InternalSignedObject sign(Serializable obj) {
 		try {
-			return new SignedObject(obj, prk, engine);
+			return new InternalSignedObject(obj, prk);
 		} catch (Exception e) {
 			e.printStackTrace(System.err);
 			return null;
@@ -198,9 +190,9 @@ public final class TOMLayer extends Thread implements RequestReceiver {
 	 *            Replica id that supposedly signed this object
 	 * @return True if the signature is valid, false otherwise
 	 */
-	public boolean verifySignature(SignedObject so, int sender) {
+	public boolean verifySignature(InternalSignedObject so, int sender) {
 		try {
-			return so.verify(controller.getStaticConf().getPublicKey(sender), engine);
+			return so.verify(controller.getStaticConf().getPublicKey(sender));
 		} catch (Exception e) {
 			e.printStackTrace();
 		}

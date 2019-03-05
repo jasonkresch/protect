@@ -13,42 +13,10 @@ public class Payload implements Serializable {
 	private static final long serialVersionUID = 5006028177758309022L;
 
 	public enum OpCode {
-
-		NA, // NA (e.g., for private paylods)
-
-		/***** Distributed Key Generation *****/
-
-		// DKG: Initial establishment of the secret (x)
-		DKG_VSS, // Distributed key generation init
-		DKG_ACCUSATIONS, // Accusations
-		DKG_REBUTTAL, // Rebuttals
-
-		/***** Proactive Secret Sharing *****/
-
-		// PROSS: Refresh operation
-		REFRESH_VSS, // Verifiable SS
-		REFRESH_ACCUSATIONS, // Accusations
-		REFRESH_REBUTTAL, // Rebuttals
-
-		// PROSS: Reconstruction operation
-		RECONSTRUCTION_DETECT_CORRUPT, // Detection
-		RECONSTRUCTION_VSS, // Reconstruction VSS
-		RECONSTRUCTION_ACCUSATIONS, // Accusations
-		RECONSTRUCTION_REBUTTAL, // Rebuttals
-		RECONSTRUCTION_CONTRIBUTION, // Contribution
-
-		// PROSS: Dynamic rekey operation
-		DYNAMIC_REKEY, // New public keys
-
-		// NEW-DKG:
-		MS, // Penderson Commitment and Shares
-		VV, // Verification Vector
-		RB, // Rebuttal
-		ZK, // Zero Knowledge
-		BP, // Bulk Proofs
-
 		// AVSS
 		PS, // Public Sharing
+		ZK, // Zero Knowledge
+		NOOP, // No-Op
 		BFT_CERTIFICATION; // Certification of message sent over BFT
 	}
 

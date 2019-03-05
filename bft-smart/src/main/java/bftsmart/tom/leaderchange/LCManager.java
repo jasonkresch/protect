@@ -40,6 +40,7 @@ import bftsmart.consensus.messages.ConsensusMessage;
 import bftsmart.reconfiguration.ServerViewController;
 import bftsmart.tom.core.TOMLayer;
 import bftsmart.tom.core.messages.TOMMessage;
+import bftsmart.tom.util.InternalSignedObject;
 import bftsmart.tom.util.TOMUtil;
 
 /**
@@ -65,7 +66,7 @@ public class LCManager {
 	// data structures for info in stop, sync and catch-up messages
 	private HashMap<Integer, HashSet<Integer>> stops;
 	private HashMap<Integer, HashSet<CertifiedDecision>> lastCIDs;
-	private HashMap<Integer, HashSet<SignedObject>> collects;
+	private HashMap<Integer, HashSet<InternalSignedObject>> collects;
 
 	// stuff from the TOM layer that this object needss
 	private ServerViewController SVController;
@@ -91,7 +92,7 @@ public class LCManager {
 
 		this.stops = new HashMap<Integer, HashSet<Integer>>();
 		this.lastCIDs = new HashMap<Integer, HashSet<CertifiedDecision>>();
-		this.collects = new HashMap<Integer, HashSet<SignedObject>>();
+		this.collects = new HashMap<Integer, HashSet<InternalSignedObject>>();
 
 		this.SVController = SVController;
 		this.md = md;
@@ -362,11 +363,11 @@ public class LCManager {
 	 * @param signedCollect
 	 *            the signed collect data
 	 */
-	public void addCollect(int regency, SignedObject signedCollect) {
+	public void addCollect(int regency, InternalSignedObject signedCollect) {
 
-		HashSet<SignedObject> c = collects.get(regency);
+		HashSet<InternalSignedObject> c = collects.get(regency);
 		if (c == null)
-			c = new HashSet<SignedObject>();
+			c = new HashSet<InternalSignedObject>();
 		c.add(signedCollect);
 		collects.put(regency, c);
 	}
@@ -397,7 +398,7 @@ public class LCManager {
 	 */
 	public int getCollectsSize(int regency) {
 
-		HashSet<SignedObject> c = collects.get(regency);
+		HashSet<InternalSignedObject> c = collects.get(regency);
 		return c == null ? 0 : c.size();
 	}
 
@@ -408,7 +409,7 @@ public class LCManager {
 	 *            Regency for collects
 	 * @return a set of collect data
 	 */
-	public HashSet<SignedObject> getCollects(int regency) {
+	public HashSet<InternalSignedObject> getCollects(int regency) {
 		return collects.get(regency);
 	}
 
@@ -420,7 +421,7 @@ public class LCManager {
 	 * @param colls
 	 *            a set of collect data
 	 */
-	public void setCollects(int regency, HashSet<SignedObject> colls) {
+	public void setCollects(int regency, HashSet<InternalSignedObject> colls) {
 
 		collects.put(regency, colls);
 	}
@@ -799,7 +800,7 @@ public class LCManager {
 	 */
 	public HashSet<CollectData> selectCollects(int regency, int cid) {
 
-		HashSet<SignedObject> c = collects.get(regency);
+		HashSet<InternalSignedObject> c = collects.get(regency);
 
 		if (c == null)
 			return null;
@@ -818,7 +819,7 @@ public class LCManager {
 	 *            the CID to which to normalize the collects
 	 * @return a set of correctly signed and normalized collect data structures
 	 */
-	public HashSet<CollectData> selectCollects(HashSet<SignedObject> signedObjects, int cid, int regency) {
+	public HashSet<CollectData> selectCollects(HashSet<InternalSignedObject> signedObjects, int cid, int regency) {
 
 		if (signedObjects == null)
 			return null;
@@ -828,11 +829,11 @@ public class LCManager {
 	}
 
 	// Filters the correctly signed collects
-	private HashSet<CollectData> getSignedCollects(HashSet<SignedObject> signedCollects) {
+	private HashSet<CollectData> getSignedCollects(HashSet<InternalSignedObject> signedCollects) {
 
 		HashSet<CollectData> colls = new HashSet<CollectData>();
 
-		for (SignedObject so : signedCollects) {
+		for (InternalSignedObject so : signedCollects) {
 
 			CollectData c;
 			try {
