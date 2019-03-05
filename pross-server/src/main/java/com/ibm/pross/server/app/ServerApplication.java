@@ -134,10 +134,10 @@ public class ServerApplication {
 		final File clientKeysDirectory = new File(baseDirectory, CLIENT_KEYS_DIRECTORY);
 		final KeyLoader clientKeys = new KeyLoader(clientKeysDirectory, configuration.getNumServers(), serverIndex);
 		System.out.println("Loaded client keys");
-		
+
 		// Start server to process client requests
 		final HttpRequestProcessor requestProcessor = new HttpRequestProcessor(serverIndex, configuration,
-				accessEnforcement, shareholders, caCerts, hostCert, serverKeys.getTlsKey(), clientKeys);
+				accessEnforcement, shareholders, caCerts, hostCert, serverKeys.getTlsKey(), clientKeys, serverKeys);
 		requestProcessor.start();
 
 	}

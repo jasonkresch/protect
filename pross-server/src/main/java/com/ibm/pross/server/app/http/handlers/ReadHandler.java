@@ -29,7 +29,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * found a 404 is returned. If the client is not authorized a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class ReadHandler extends AuthenticatedClientRequestHandler {
+public class ReadHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.READ;
 
@@ -41,7 +41,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public ReadHandler(KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
+	public ReadHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(clientKeys);
 		this.shareholders = shareholders;

@@ -359,7 +359,7 @@ public class ShamirTest {
 
 			for (final BigInteger j : xCoords) {
 				// j is the index of the shareholder who provided us with a contribution
-				final BigInteger contrib = allRecoverySharings[j.intValue()-1][k-1].getY();
+				final BigInteger contrib = allRecoverySharings[j.intValue() - 1][k - 1].getY();
 
 				// Lagrange co-efficient
 				final BigInteger l = Polynomials.interpolatePartial(xCoords, BigInteger.ZERO, j, r);
@@ -382,10 +382,95 @@ public class ShamirTest {
 		final BigInteger secret2 = Polynomials.interpolateComplete(newShareSet, threshold, 0);
 		Assert.assertEquals(secret, secret2);
 
-		// Verify all the new shares are different
+		// Verify all the new shares are the same
 		for (int i = 0; i < n; i++) {
 			Assert.assertEquals(shares[i], newShares[i]);
 		}
+	}
+
+	@Test
+	public void testShareRecoverySingle() {
+
+		final int n = 9;
+		final int threshold = 5;
+
+		final int lostIndex = 3;
+
+		// Create coefficients
+		final BigInteger[] coefficients = Shamir.generateCoefficients(threshold);
+
+		final BigInteger secret = RandomNumberGenerator.generateRandomInteger(r);
+		coefficients[0] = secret;
+
+		// Create shares
+		final ShamirShare[] shares = Shamir.generateShares(coefficients, n);
+		System.out.println("Original Shares: " + Arrays.toString(shares));
+		final Set<ShamirShare> shareSet = new HashSet<>(Arrays.asList(shares));
+
+		// Use shares as inputs to new T new sharings
+		int count = 0;
+		final Map<BigInteger, ShamirShare[]> subSharings = new HashMap<>();
+		final BigInteger[] xCoords = new BigInteger[threshold];
+		for (final ShamirShare share : shareSet) {
+			xCoords[count++] = share.getX();
+			final BigInteger[] subCoefficients = Shamir.generateCoefficients(threshold);
+			subCoefficients[0] = share.getY();
+			final ShamirShare[] subShares = Shamir.generateShares(subCoefficients, n);
+			subSharings.put(share.getX(), subShares);
+			if (count == threshold) {
+				break;
+			}
+		}
+		
+		/*** Begin recovery ***/
+
+		// Each party (i) computes its contributions for shareholder at lostIndex
+		final ShamirShare recoverySharings[] = new ShamirShare[n];
+		for (int i = 1; i <= n; i++) {
+
+			// Shareholder_i will create a contribution for shareholder k
+
+			final BigInteger K = BigInteger.valueOf(lostIndex);
+
+			// Use each of the j subsharings
+			BigInteger y = BigInteger.ZERO;
+			for (final BigInteger j : xCoords) {
+				// j is the index of the shareholder who provided us with our share
+				final ShamirShare[] subShares = subSharings.get(j);
+
+				// jY is j's share for us
+				final BigInteger jY = subShares[i - 1].getY();
+
+				// Lagrange co-efficient
+				final BigInteger l = Polynomials.interpolatePartial(xCoords, K, j, r);
+
+				// Compute sum
+				y = y.add(jY.multiply(l).mod(r));
+			}
+
+			recoverySharings[i - 1] = new ShamirShare(K, y.mod(r));
+		}
+
+		// Compute sum to form new share for shareholder i
+		final BigInteger K = BigInteger.valueOf(lostIndex);
+		BigInteger y = BigInteger.ZERO;
+
+		for (final BigInteger j : xCoords) {
+			// j is the index of the shareholder who provided us with a contribution
+			final BigInteger contrib = recoverySharings[j.intValue() - 1].getY();
+
+			// Lagrange co-efficient
+			final BigInteger l = Polynomials.interpolatePartial(xCoords, BigInteger.ZERO, j, r);
+
+			// Compute sum
+			y = y.add(contrib.multiply(l).mod(r));
+		}
+
+		final ShamirShare newShare = new ShamirShare(K, y.mod(r));
+		System.out.println("New Share:      " + newShare);
+
+		// Verify all the new shares are different
+		Assert.assertEquals(shares[lostIndex-1], newShare);
 	}
 
 	@Test

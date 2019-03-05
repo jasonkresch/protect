@@ -28,7 +28,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class EnableHandler extends AuthenticatedClientRequestHandler {
+public class EnableHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.ENABLE;
 

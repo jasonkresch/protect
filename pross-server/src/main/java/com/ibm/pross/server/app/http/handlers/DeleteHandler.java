@@ -32,7 +32,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * period to make recovery impossible.
  */
 @SuppressWarnings("restriction")
-public class DeleteHandler extends AuthenticatedClientRequestHandler {
+public class DeleteHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.DELETE;
 

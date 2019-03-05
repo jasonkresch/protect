@@ -33,7 +33,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class StoreHandler extends AuthenticatedClientRequestHandler {
+public class StoreHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.STORE;
 

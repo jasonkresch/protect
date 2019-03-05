@@ -30,6 +30,7 @@ import com.ibm.pross.server.app.http.handlers.DisableHandler;
 import com.ibm.pross.server.app.http.handlers.EnableHandler;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
+import com.ibm.pross.server.app.http.handlers.GetPartialHandler;
 import com.ibm.pross.server.app.http.handlers.IdHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
@@ -58,7 +59,7 @@ public class HttpRequestProcessor {
 	public HttpRequestProcessor(final int serverIndex, final ServerConfiguration serverConfig,
 			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders,
 			final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey privateKey,
-			final KeyLoader clientKeys)
+			final KeyLoader clientKeys, final KeyLoader serverKeys)
 			throws IOException, NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
 			UnrecoverableKeyException, CertificateException {
 
@@ -69,7 +70,7 @@ public class HttpRequestProcessor {
 
 		System.out.println("HTTPS server listening on port: " + httpListenPort);
 
-		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders, clientKeys);
+		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders, clientKeys, serverKeys);
 
 		System.out.println("Ready to process requests.");
 
@@ -78,7 +79,7 @@ public class HttpRequestProcessor {
 
 	public void addHandlers(final int serverIndex, final ServerConfiguration serverConfig,
 			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders,
-			final KeyLoader clientKeys) {
+			final KeyLoader clientKeys, final KeyLoader serverKeys) {
 		
 		// Returns basic information about this server:
 		// quorum information, other servers)
@@ -108,7 +109,7 @@ public class HttpRequestProcessor {
 		this.server.createContext("/rsa_sign", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Define server to server requests
-		this.server.createContext("/get_partial", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/get_partial", new GetPartialHandler(serverKeys, shareholders));
 	}
 
 	public void setupTls(final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey hostKey,

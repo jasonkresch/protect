@@ -22,7 +22,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * This handler returns the id of the authenticated client
  */
 @SuppressWarnings("restriction")
-public class IdHandler extends AuthenticatedClientRequestHandler {
+public class IdHandler extends AuthenticatedRequestHandler {
 
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;

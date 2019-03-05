@@ -45,7 +45,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class InfoHandler extends AuthenticatedClientRequestHandler {
+public class InfoHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.INFO;
 

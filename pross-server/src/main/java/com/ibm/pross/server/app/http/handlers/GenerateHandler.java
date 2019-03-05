@@ -40,7 +40,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class GenerateHandler extends AuthenticatedClientRequestHandler {
+public class GenerateHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.GENERATE;
 

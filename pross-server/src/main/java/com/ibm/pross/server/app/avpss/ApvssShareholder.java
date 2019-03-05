@@ -11,6 +11,7 @@ import java.util.SortedSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeSet;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -19,6 +20,7 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
@@ -100,7 +102,7 @@ public class ApvssShareholder {
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong nextEpoch = new AtomicLong(0);
 	private final AtomicLong[] shareholderMessageCounts;
-	
+
 	// Used to hold an initial share of a secret (to supported stored secrets)
 	private volatile BigInteger storedShareOfSecret = null;
 
@@ -577,7 +579,7 @@ public class ApvssShareholder {
 			// Sender lost their share, ignore
 			return;
 		}
-		
+
 		// Ignore this proof, we've already received enough
 		if (sharingState.getQualifiedProofs().size() < this.k) {
 
@@ -690,6 +692,54 @@ public class ApvssShareholder {
 
 		// System.out.println("Signatures generated: " + SigningUtil.signCount.get());
 		// System.out.println("Signatures verified: " + SigningUtil.verCount.get());
+	}
+
+	public SimpleEntry<BigInteger, BigInteger> computeEncryptedPartial(final int requesterIndex) {
+
+		// Get sharing state for the current epoch
+		final SharingState sharingState = getCurrentSharing();
+
+		final long partialEpoch = sharingState.getEpochNumber();
+
+		// K is the index of the share to compute a partial for
+		final BigInteger k = BigInteger.valueOf(requesterIndex);
+
+		// Determine list of contributors
+		final List<Integer> contributors = new ArrayList<>(sharingState.getQualifiedSharings().keySet());
+		Collections.sort(contributors);
+		final BigInteger[] xCoords = contributors.stream().map(i -> BigInteger.valueOf(i)).toArray(BigInteger[]::new);
+
+		// Use our decryption key to access our shares
+		final PaillierPrivateKey decryptionKey = (PaillierPrivateKey) this.keyLoader.getDecryptionKey();
+
+		// Use the sub sharings from the current epoch to produce the partial
+		BigInteger share1Part = BigInteger.ZERO;
+		BigInteger share2Part = BigInteger.ZERO;
+		for (final BigInteger j : xCoords) {
+
+			// j is the index of the shareholder who provided us with our share
+			final PublicSharing subSharing = sharingState.getQualifiedSharings().get(j.intValue());
+
+			// Decrypt our shares
+			final ShamirShare share1j = subSharing.accessShare1(index - 1, decryptionKey);
+			final ShamirShare share2j = subSharing.accessShare2(index - 1, decryptionKey);
+
+			// Compute Lagrange co-efficient
+			final BigInteger L_kj = Polynomials.interpolatePartial(xCoords, k, j, curve.getR());
+
+			// Compute sum
+			share1Part = share1Part.add(share1j.getY().multiply(L_kj));
+			share2Part = share2Part.add(share2j.getY().multiply(L_kj));
+		}
+		share1Part = share1Part.mod(curve.getR());
+		share2Part = share2Part.mod(curve.getR());
+		
+		// Encrypt the partial with recipient's public key
+		final PaillierPublicKey encryptionKey = (PaillierPublicKey) this.keyLoader.getEncryptionKey(requesterIndex);
+		final BigInteger encryptedShare1Part = PaillierCipher.encrypt(encryptionKey, share1Part);
+		final BigInteger encryptedShare2Part = PaillierCipher.encrypt(encryptionKey, share2Part);
+
+		return new SimpleEntry<BigInteger, BigInteger>(encryptedShare1Part, encryptedShare2Part);
 	}
 
 	/**
@@ -839,7 +889,7 @@ public class ApvssShareholder {
 	public void setEnabled(boolean isEnabled) {
 		this.enabled.set(isEnabled);
 	}
-	
+
 	public BigInteger getStoredShareOfSecret() {
 		return storedShareOfSecret;
 	}

@@ -31,7 +31,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * is returned.
  */
 @SuppressWarnings("restriction")
-public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
+public class ExponentiateHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.EXPONENTIATE;
 
