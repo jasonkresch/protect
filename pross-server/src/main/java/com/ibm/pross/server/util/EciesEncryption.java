@@ -33,7 +33,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.crypto.kdf.EntropyExtractor;
 import com.ibm.pross.common.util.serialization.Parse;
-import com.ibm.pross.common.util.serialization.Serialization;
+import com.ibm.pross.common.util.serialization.ClassSerialization;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Payload;
 
