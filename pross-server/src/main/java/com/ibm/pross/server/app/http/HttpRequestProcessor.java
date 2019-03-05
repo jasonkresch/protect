@@ -34,6 +34,7 @@ import com.ibm.pross.server.app.http.handlers.IdHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
+import com.ibm.pross.server.app.http.handlers.StoreHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
@@ -92,10 +93,7 @@ public class HttpRequestProcessor {
 
 		// Handlers for reading or storing shares
 		this.server.createContext("/read", new ReadHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
-		// this.server.createContext("/store", new InfoHandler(accessEnforcement,
-		// serverConfig, shareholders));
-		// implement as DKG with default value given to each shareholder (must use
-		// interpolation style DKG!)
+		this.server.createContext("/store", new StoreHandler(clientKeys, accessEnforcement, shareholders));
 
 		// Handlers for deleting or recovering shares
 		this.server.createContext("/delete", new DeleteHandler(clientKeys, accessEnforcement, shareholders));

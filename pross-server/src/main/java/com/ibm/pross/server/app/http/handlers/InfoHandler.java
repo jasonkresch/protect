@@ -152,6 +152,16 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		if (shareholder.getSecretPublicKey() == null) {
 			final String linkUrl = "https://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
 			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)\n");
+			
+			
+			//stringBuilder.append("<b>Store Share:</b>\n");
+			stringBuilder.append("<form action=\"/store\" method=\"get\">");
+			stringBuilder.append(
+					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append(
+					"s_" + serverIndex + ": <input type=\"text\" name=\"share\"> <input type=\"submit\" value=\"Store Share\"> \n");
+			stringBuilder.append("<p/>");
+			
 			stringBuilder.append("<p/>");
 		} else {
 			stringBuilder.append("sharing_type      =  " + shareholder.getSharingType() + "\n");

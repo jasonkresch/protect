@@ -32,11 +32,12 @@ import bftsmart.tom.server.defaultservices.DefaultSingleRecoverable;
  * 
  * @author jresch
  */
-
 public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFOExecutable {
 
 	private final ChannelListener listener;
 	private volatile ServiceReplica serviceReplica;
+
+	final BftLog state = new BftLog();
 
 	public BftListenerWrapper(final ChannelListener listener) {
 		this.listener = listener;
@@ -56,6 +57,56 @@ public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFO
 	}
 
 	@Override
+	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
+		return processCommand(command);
+	}
+
+	private synchronized byte[] processCommand(byte[] command) {
+		try {
+			synchronized (this.state) {
+				// Save state to support recovery
+				this.state.addMessage(command);
+
+				// Process message
+				this.listener.receiveSerializedMessage(command);
+			}
+
+		} catch (ClassNotFoundException | BadPaddingException | IllegalBlockSizeException | IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+		return command;
+	}
+
+	@Override
+	public byte[] getSnapshot() {
+		
+		// FIXEME: Although this isn't too important since the certification layer ensures all messages received
+		// Though it is needed to-re-receive messages if the locally persisted state is lost.
+		return new byte[1];
+		
+		//synchronized (this.state) {
+		//	return Parse.concatenate(this.state.getMessageLog());
+		//}
+	}
+
+	@Override
+	public void installSnapshot(byte[] state) {
+		synchronized (this.state) {
+
+			//final byte[][] messageLog = Parse.splitArrays(state);
+
+			// Process all commands
+			//for (final byte[] command : messageLog) {
+				//processCommand(command);
+			//}
+
+		}
+	}
+
+	/*** Unsupported operations ***/
+
+	@Override
 	public byte[] appExecuteUnordered(final byte[] command, final MessageContext msgCtx) {
 		throw new RuntimeException("Unused method was invoked!");
 	}
@@ -69,27 +120,4 @@ public class BftListenerWrapper extends DefaultSingleRecoverable implements FIFO
 	public byte[] executeUnorderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
 		throw new RuntimeException("Unused method was invoked!");
 	}
-
-	@Override
-	public byte[] executeOrderedFIFO(byte[] command, MessageContext msgCtx, int clientId, int operationId) {
-		try {
-			this.listener.receiveSerializedMessage(command);
-		} catch (ClassNotFoundException | BadPaddingException | IllegalBlockSizeException | IOException e) {
-			e.printStackTrace();
-			return null;
-		}
-		return command;
-	}
-
-	@Override
-	public void installSnapshot(byte[] state) {
-		throw new RuntimeException("Not yet implemented!");
-	}
-
-	@Override
-	public byte[] getSnapshot() {
-		// Not yet implemented
-		return new byte[0];
-	}
-
 }

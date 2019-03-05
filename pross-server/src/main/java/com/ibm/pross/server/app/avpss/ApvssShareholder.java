@@ -100,6 +100,9 @@ public class ApvssShareholder {
 	private final AtomicLong currentEpoch = new AtomicLong(0);
 	private final AtomicLong nextEpoch = new AtomicLong(0);
 	private final AtomicLong[] shareholderMessageCounts;
+	
+	// Used to hold an initial share of a secret (to supported stored secrets)
+	private volatile BigInteger storedShareOfSecret = null;
 
 	public ApvssShareholder(final String secretName, final KeyLoader keyLoader,
 			final FifoAtomicBroadcastChannel channel, final int index, final int n, final int k) {
@@ -307,7 +310,16 @@ public class ApvssShareholder {
 			final PublicSharing publicSharing;
 			if (epoch == 0) {
 				System.out.println("Starting DKG operation!");
-				publicSharing = generator.shareRandomSecret(publicKeys);
+				if (storedShareOfSecret == null) {
+					// No share was stored, do a DKG of a random value
+					publicSharing = generator.shareRandomSecret(publicKeys);
+					this.sharingType = SharingType.PEDERSEN_DKG;
+				} else {
+					// A share was pre-stored, do a DKG using this value
+					publicSharing = generator.shareSecret(storedShareOfSecret, publicKeys);
+					this.storedShareOfSecret = null; // Wipe it for proactive security
+					this.sharingType = SharingType.STORED;
+				}
 			} else {
 				if (getSharing(epoch - 1).getShare1() != null) {
 					final BigInteger share1 = getSharing(epoch - 1).getShare1().getY();
@@ -652,7 +664,6 @@ public class ApvssShareholder {
 		}
 
 		sharingState.setCreationTime(new Date());
-		this.sharingType = SharingType.PEDERSEN_DKG;
 
 		if (senderEpoch == 0) {
 			System.out.println("DKG Complete!");
@@ -827,6 +838,14 @@ public class ApvssShareholder {
 
 	public void setEnabled(boolean isEnabled) {
 		this.enabled.set(isEnabled);
+	}
+	
+	public BigInteger getStoredShareOfSecret() {
+		return storedShareOfSecret;
+	}
+
+	public void setStoredShareOfSecret(BigInteger storedShareOfSecret) {
+		this.storedShareOfSecret = storedShareOfSecret;
 	}
 
 	public void deleteShare() {

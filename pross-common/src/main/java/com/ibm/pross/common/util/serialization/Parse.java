@@ -94,6 +94,30 @@ public class Parse {
 			throw new RuntimeException(e);
 		}
 	}
+	
+	/**
+	 * Generates a deterministic serialization of a list of byte arrays
+	 * 
+	 * @param arrays
+	 * @return
+	 * @throws IOException
+	 */
+	public static byte[] concatenate(final List<byte[]> list) {
+		try {
+			final ByteArrayOutputStream bos = new ByteArrayOutputStream();
+			final DataOutputStream dos = new DataOutputStream(bos);
+			for (byte[] array : list) {
+				dos.writeInt(array.length);
+				dos.write(array);
+			}
+
+			dos.flush();
+			bos.flush();
+			return bos.toByteArray();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
 
 	/**
 	 * Splits an array (generated from concatenate()) into its constituent
