@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
@@ -25,20 +25,20 @@ import com.ibm.pross.common.util.shamir.Polynomials;
  * The client drives OPRF computations or T-OPRF computations against the
  * shareholders
  */
-public class ThresholdDerivation implements PseudoRandomFunction {
+public class ThresholdDerivation implements EcPseudoRandomFunction {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	final public static BigInteger r = curve.getR();
 	final public static EcPoint G = curve.getG();
 
-	private final Map<PseudoRandomFunction, BigInteger> shareholders = new HashMap<>();
+	private final Map<EcPseudoRandomFunction, BigInteger> shareholders = new HashMap<>();
 	private final int threshold;
 
 	// The public key of the thresholdized secret
 	private final EcPoint publicKey;
 
-	public ThresholdDerivation(final PseudoRandomFunction[] shareholders, final int threshold) {
+	public ThresholdDerivation(final EcPseudoRandomFunction[] shareholders, final int threshold) {
 		for (int i = 0; i < shareholders.length; i++) {
 			this.shareholders.put(shareholders[i], BigInteger.valueOf(i + 1));
 		}
@@ -46,7 +46,7 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 		this.publicKey = computePublicKey(shareholders);
 	}
 	
-	public ThresholdDerivation(final PseudoRandomFunction[] shareholders, final int threshold, final EcPoint publicKey) {
+	public ThresholdDerivation(final EcPseudoRandomFunction[] shareholders, final int threshold, final EcPoint publicKey) {
 		for (int i = 0; i < shareholders.length; i++) {
 			this.shareholders.put(shareholders[i], BigInteger.valueOf(i + 1));
 		}
@@ -54,7 +54,7 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 		this.publicKey = publicKey;
 	}
 
-	protected EcPoint computePublicKey(PseudoRandomFunction[] shareholders) {
+	protected EcPoint computePublicKey(EcPseudoRandomFunction[] shareholders) {
 
 		// Use interpolation to derive the public key of the overall secret
 		// This is the public key of the overall secret (which is thresholdized)
@@ -62,7 +62,7 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 		final List<DerivationResult> results = new ArrayList<>();
 
 		// Send derive operation to each server
-		for (PseudoRandomFunction shareholder : this.shareholders.keySet()) {
+		for (EcPseudoRandomFunction shareholder : this.shareholders.keySet()) {
 			final EcPoint result = shareholder.getPublicKey();
 			results.add(new DerivationResult(this.shareholders.get(shareholder), result));
 			if (results.size() >= this.threshold) {
@@ -81,9 +81,9 @@ public class ThresholdDerivation implements PseudoRandomFunction {
 		final List<DerivationResult> results = new ArrayList<>();
 
 		// Send derive operation to each server
-		List<PseudoRandomFunction> shareholderList = new ArrayList<>(this.shareholders.keySet());
+		List<EcPseudoRandomFunction> shareholderList = new ArrayList<>(this.shareholders.keySet());
 		Collections.shuffle(shareholderList);
-		for (PseudoRandomFunction shareholder : shareholderList) {
+		for (EcPseudoRandomFunction shareholder : shareholderList) {
 
 			final BigInteger shareholderIndex = this.shareholders.get(shareholder);
 

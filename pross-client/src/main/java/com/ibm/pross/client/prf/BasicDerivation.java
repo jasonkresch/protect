@@ -9,19 +9,19 @@ package com.ibm.pross.client.prf;
 import java.math.BigInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 
-public class BasicDerivation implements PseudoRandomFunction {
+public class BasicDerivation implements EcPseudoRandomFunction {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	final public static BigInteger r = curve.getR();
 
-	private final PseudoRandomFunction derivation;
+	private final EcPseudoRandomFunction derivation;
 
-	public BasicDerivation(final PseudoRandomFunction derivation) {
+	public BasicDerivation(final EcPseudoRandomFunction derivation) {
 		this.derivation = derivation;
 	}
 

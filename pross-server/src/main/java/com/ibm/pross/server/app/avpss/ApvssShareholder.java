@@ -13,7 +13,6 @@ import java.util.TimerTask;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import com.ibm.pross.common.CommonConfiguration;
@@ -63,7 +62,7 @@ public class ApvssShareholder {
 
 	// Channel-related variables
 	private final FifoAtomicBroadcastChannel channel;
-	private final AtomicInteger currentMessageId = new AtomicInteger(0);
+	private final AtomicLong currentMessageId = new AtomicLong(0);
 
 	// Our message processing thread
 	private final Thread messageProcessingThread;
@@ -149,7 +148,7 @@ public class ApvssShareholder {
 
 					try {
 						synchronized (channel) {
-							channel.wait(1000);
+							channel.wait(100);
 						}
 					} catch (InterruptedException e) {
 						// Ignore
@@ -175,8 +174,13 @@ public class ApvssShareholder {
 	 * A message is available on the queue, get it and deliver it for processing
 	 */
 	private synchronized void messageIsAvailable() {
-		int messageId = this.currentMessageId.getAndIncrement();
+		
+		final long messageId = this.currentMessageId.incrementAndGet();
 		final Message message = this.channel.getMessage(messageId);
+		
+		// TODO: Remove this debugging text
+		//long messageCount = this.channel.getMessageCount();
+		//System.err.println(messageCount + ";" + messageId);
 
 		// Deliver only if this message is relevant for the given epoch and secret
 		final String channelName = this.secretName;

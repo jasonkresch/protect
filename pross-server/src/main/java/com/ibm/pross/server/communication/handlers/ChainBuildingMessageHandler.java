@@ -8,6 +8,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ConcurrentSkipListSet;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
@@ -35,6 +36,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	// Two chains which are maintained
 	private final ConcurrentMap<Long, SignedMessage> bftChain = new ConcurrentHashMap<>();
 	private final ConcurrentMap<Long, SignedMessage> optChain = new ConcurrentHashMap<>();
+	private final AtomicInteger contiguousOptMessages = new AtomicInteger(0);
 
 	// Maintain track of votes for various positions
 	private final ConcurrentMap<Long, ConcurrentMap<SignedMessage, Set<Integer>>> votes = new ConcurrentHashMap<>();
@@ -125,11 +127,16 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			// System.err.println("QUORUM MET, added " + (optChain.size() + 1) + "th message
 			// to Opt-BFT Chain: " /*+ bftMessage*/);
 			synchronized (this.optChain) {
-				final int messageIndex = optChain.size() + 1;
 
-				System.out.println("Certified message #" + messageIndex + " is available.");
-				if (this.optChain.putIfAbsent(messagePosition, bftMessage) == null) {
-					final String msgFileName = String.format("%08d", messageIndex) + ".msg";
+				System.out.println("Certified message #" + (messagePosition + 1) + " is available.");
+				if (this.optChain.putIfAbsent(messagePosition + 1, bftMessage) == null) {
+
+					// Increment contiguousOptMessages if we are contiguous
+					while (this.optChain.containsKey(new Long(contiguousOptMessages.get() + 1))) {
+						contiguousOptMessages.incrementAndGet();
+					}
+
+					final String msgFileName = String.format("%08d", messagePosition + 1) + ".msg";
 					final File messageFile = new File(this.certifiedMessageFolder, msgFileName);
 					try {
 						AtomicFileOperations.atomicWriteSignedMessage(messageFile, bftMessage);
@@ -210,13 +217,22 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		this.sender.broadcast(signedMessage);
 	}
 
-	public int getMessageCount() {
-		return this.optChain.size();
+	public synchronized int getMessageCount() {
+		synchronized (this.optChain) {
+			// Must return only the size of contiguous messages
+			return contiguousOptMessages.get();
+		}
 	}
 
-	public Message getMessage(final long messageId) {
-		// We don't need to return the signed message we we have already validated its
-		// signature
-		return this.optChain.get(messageId).getMessage();
+	public synchronized Message getMessage(final long messageId) {
+		synchronized (this.optChain) {
+			// We don't return the signed message we we have already validated its signature
+			final SignedMessage signedMessage = this.optChain.get(messageId);
+			if (signedMessage == null) {
+				return null; // We might have certified messages in different orders
+			} else {
+				return signedMessage.getMessage();
+			}
+		}
 	}
 }

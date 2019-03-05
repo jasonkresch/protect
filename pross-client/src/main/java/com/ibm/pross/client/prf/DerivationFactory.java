@@ -6,7 +6,7 @@
 
 package com.ibm.pross.client.prf;
 
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 
 /**
  * This class implements convinence methods for properly constructing
@@ -33,12 +33,12 @@ public class DerivationFactory {
 	 * @return A threshold derivation that can detect and exclude malfunctioning
 	 *         shareholders
 	 */
-	public static ThresholdDerivation createRobustThresholdDerivation(final PseudoRandomFunction[] shareholders,
+	public static ThresholdDerivation createRobustThresholdDerivation(final EcPseudoRandomFunction[] shareholders,
 			final int threshold) {
 
 		final VerifiedDerivation[] verifiedDerivations = new VerifiedDerivation[shareholders.length];
 		for (int i = 0; i < shareholders.length; i++) {
-			PseudoRandomFunction unverifiedDerivation = shareholders[i];
+			EcPseudoRandomFunction unverifiedDerivation = shareholders[i];
 			verifiedDerivations[i] = new VerifiedDerivation(unverifiedDerivation, unverifiedDerivation);
 		}
 
@@ -63,7 +63,7 @@ public class DerivationFactory {
 	 * @return A threshold derivation that can detect and exclude malfunctioning
 	 *         shareholders and provides obliviousness for the client
 	 */
-	public static PseudoRandomFunction createObliviousRobustThresholdDerivation(final PseudoRandomFunction[] shareholders,
+	public static EcPseudoRandomFunction createObliviousRobustThresholdDerivation(final EcPseudoRandomFunction[] shareholders,
 			final int threshold) {
 
 		// Create robust derivation based on a threshold of shareholders
@@ -88,7 +88,7 @@ public class DerivationFactory {
 	 *         shareholders and provides obliviousness and verifiability for the
 	 *         client
 	 */
-	public static PseudoRandomFunction createVerifiedObliviousRobustThresholdDerivation(final PseudoRandomFunction[] shareholders,
+	public static EcPseudoRandomFunction createVerifiedObliviousRobustThresholdDerivation(final EcPseudoRandomFunction[] shareholders,
 			final int threshold) {
 
 		// Create robust derivation based on a threshold of shareholders

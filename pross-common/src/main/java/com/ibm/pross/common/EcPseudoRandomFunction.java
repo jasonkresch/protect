@@ -12,7 +12,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
  * Implementers of this interface perform ECDH derivation, by performing a
  * scalar multiplication of an input point by a private factor.
  */
-public interface PseudoRandomFunction {
+public interface EcPseudoRandomFunction {
 
 	/**
 	 * Performs ECDH key derivation using a constant private key

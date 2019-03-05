@@ -9,21 +9,21 @@ package com.ibm.pross.client.prf;
 import java.math.BigInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 
 
-public class ObliviousDerivation implements PseudoRandomFunction {
+public class ObliviousDerivation implements EcPseudoRandomFunction {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	final public static BigInteger r = curve.getR();
 
-	private final PseudoRandomFunction derivation;
+	private final EcPseudoRandomFunction derivation;
 
-	public ObliviousDerivation(final PseudoRandomFunction derivation) {
+	public ObliviousDerivation(final EcPseudoRandomFunction derivation) {
 		this.derivation = derivation;
 	}
 

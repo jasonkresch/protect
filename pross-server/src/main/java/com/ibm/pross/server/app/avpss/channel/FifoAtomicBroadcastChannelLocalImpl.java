@@ -18,11 +18,11 @@ public class FifoAtomicBroadcastChannelLocalImpl implements FifoAtomicBroadcastC
 		notifyAll();
 	}
 
-	public Message getMessage(final long messageIndex) {
-		return messageLog.get((int)messageIndex);
+	public synchronized Message getMessage(final long messageIndex) {
+		return messageLog.get((int) messageIndex);
 	}
 	
-	public int getMessageCount()
+	public synchronized int getMessageCount()
 	{
 		synchronized (this.messageLog)
 		{

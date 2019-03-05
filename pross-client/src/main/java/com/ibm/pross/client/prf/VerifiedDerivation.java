@@ -9,7 +9,7 @@ package com.ibm.pross.client.prf;
 import java.math.BigInteger;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
@@ -17,15 +17,15 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 /**
  * Implements verifiable derivation
  */
-public class VerifiedDerivation implements PseudoRandomFunction {
+public class VerifiedDerivation implements EcPseudoRandomFunction {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	final public static BigInteger r = curve.getR();
 
 	// Private fields
-	private final PseudoRandomFunction firstDerivation;
-	private final PseudoRandomFunction secondDerivation;
+	private final EcPseudoRandomFunction firstDerivation;
+	private final EcPseudoRandomFunction secondDerivation;
 
 	/**
 	 * Constructs a verifiable derivation
@@ -40,7 +40,7 @@ public class VerifiedDerivation implements PseudoRandomFunction {
 	 *            The second derivation is used to obtain the challenge
 	 *            response, it may be identical to the first derivation.
 	 */
-	public VerifiedDerivation(final PseudoRandomFunction firstDerivation, final PseudoRandomFunction secondDerivation) {
+	public VerifiedDerivation(final EcPseudoRandomFunction firstDerivation, final EcPseudoRandomFunction secondDerivation) {
 		
 		this.firstDerivation = firstDerivation;
 		this.secondDerivation = secondDerivation;

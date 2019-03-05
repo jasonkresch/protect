@@ -7,7 +7,7 @@
 package com.ibm.pross.client;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.PseudoRandomFunction;
+import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
@@ -18,9 +18,9 @@ public class PrfClient {
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
 	
-	private final PseudoRandomFunction derivation;
+	private final EcPseudoRandomFunction derivation;
 	
-	public PrfClient(final PseudoRandomFunction derivation)
+	public PrfClient(final EcPseudoRandomFunction derivation)
 	{
 		this.derivation = derivation;
 	}
