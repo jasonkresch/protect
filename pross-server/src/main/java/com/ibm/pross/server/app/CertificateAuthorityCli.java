@@ -280,7 +280,7 @@ public class CertificateAuthorityCli {
 			if (altNameIp != null) {
 				final GeneralNames generalNames = new GeneralNames();
 				generalNames.add(new GeneralName(new IPAddressName(altNameIp)));
-				//generalNames.add(new GeneralName(new DNSName(altNameHost)));
+				generalNames.add(new GeneralName(new DNSName(altNameHost)));
 				final SubjectAlternativeNameExtension san = new SubjectAlternativeNameExtension(false, generalNames);
 				extensions.set(SubjectAlternativeNameExtension.NAME, san);
 			}
