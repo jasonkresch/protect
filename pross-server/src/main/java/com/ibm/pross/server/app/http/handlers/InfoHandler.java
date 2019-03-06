@@ -123,7 +123,7 @@ public class InfoHandler extends AuthenticatedRequestHandler {
 		// This server
 		final int serverIndex = shareholder.getIndex();
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
-		final String ourIp = thisServerAddress.getHostString();
+		final String ourIp = thisServerAddress.getAddress().getHostAddress();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
 
 		// Create response
@@ -263,7 +263,7 @@ public class InfoHandler extends AuthenticatedRequestHandler {
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
 			serverId++;
-			final String serverIp = serverAddress.getHostString();
+			final String serverIp = serverAddress.getAddress().getHostAddress();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
 			stringBuilder

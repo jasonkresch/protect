@@ -60,7 +60,7 @@ public class RootHandler extends BaseHttpHandler {
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
-			final String serverIp = serverAddress.getHostString();
+			final String serverIp = serverAddress.getAddress().getHostAddress();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/";
 			stringBuilder.append(
