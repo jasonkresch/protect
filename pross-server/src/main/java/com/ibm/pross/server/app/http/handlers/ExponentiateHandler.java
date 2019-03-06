@@ -31,7 +31,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * is returned.
  */
 @SuppressWarnings("restriction")
-public class ExponentiateHandler extends AuthenticatedRequestHandler {
+public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.EXPONENTIATE;
 
@@ -52,7 +52,7 @@ public class ExponentiateHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId) throws IOException,
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username) throws IOException,
 			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
@@ -65,7 +65,7 @@ public class ExponentiateHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Ensure shareholder exists
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);

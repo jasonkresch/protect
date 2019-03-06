@@ -22,7 +22,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * This handler returns the id of the authenticated client
  */
 @SuppressWarnings("restriction")
-public class IdHandler extends AuthenticatedRequestHandler {
+public class IdHandler extends AuthenticatedClientRequestHandler {
 
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
@@ -34,18 +34,18 @@ public class IdHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
 		// Create response
 		final String authenticatedAs;
-		if (clientId != null) {
-			authenticatedAs = "You have authenticated as Client " + clientId + ".\n";
+		if (username != null) {
+			authenticatedAs = "You have authenticated as Client " + username + ".\n";
 		} else {
 			authenticatedAs = "You have failed to authenticate and are Anonymous.\n";
 		}
 
-		final String permissionList = getPermissions(clientId, shareholders.keySet());
+		final String permissionList = getPermissions(username, shareholders.keySet());
 
 		final String response = authenticatedAs + permissionList;
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
@@ -59,7 +59,7 @@ public class IdHandler extends AuthenticatedRequestHandler {
 		}
 	}
 
-	private String getPermissions(final Integer clientId, final Set<String> secretNames) throws NotFoundException {
+	private String getPermissions(final String username, final Set<String> secretNames) throws NotFoundException {
 
 		final StringBuilder stringBuilder = new StringBuilder();
 		
@@ -70,7 +70,7 @@ public class IdHandler extends AuthenticatedRequestHandler {
 			
 			for (Permissions permission : ClientPermissions.Permissions.values()) {
 				try {
-					accessEnforcement.enforceAccess(clientId, secretName, permission);
+					accessEnforcement.enforceAccess(username, secretName, permission);
 					stringBuilder.append("  " + permission + "\n");
 				} catch (UnauthorizedException e) {
 					// Ignore

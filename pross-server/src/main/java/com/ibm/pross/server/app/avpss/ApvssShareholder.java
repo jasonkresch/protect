@@ -49,7 +49,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 public class ApvssShareholder {
 
 	public enum SharingType {
-		PEDERSEN_DKG, FELDMAN_DKG, STORED;
+		PEDERSEN_DKG, FELDMAN_DKG, STORED, RSA_STORED;
 	}
 
 	// Group Constants

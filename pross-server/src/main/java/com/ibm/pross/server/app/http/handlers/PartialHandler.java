@@ -31,7 +31,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * authorized a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class PartialHandler extends AuthenticatedRequestHandler {
+public class PartialHandler extends AuthenticatedServerRequestHandler {
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
@@ -45,7 +45,7 @@ public class PartialHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer requesterId) throws IOException,
+	public void authenticatedServerHandle(final HttpExchange exchange, final Integer requesterId) throws IOException,
 			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request

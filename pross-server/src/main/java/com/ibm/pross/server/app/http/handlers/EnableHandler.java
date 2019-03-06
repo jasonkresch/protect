@@ -28,7 +28,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class EnableHandler extends AuthenticatedRequestHandler {
+public class EnableHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.ENABLE;
 
@@ -47,7 +47,7 @@ public class EnableHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
@@ -60,7 +60,7 @@ public class EnableHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Do processing
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);

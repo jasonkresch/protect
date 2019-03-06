@@ -12,6 +12,7 @@ import java.security.spec.InvalidKeySpecException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.codec.binary.Hex;
@@ -35,8 +36,12 @@ public class KeyLoader {
 	private final PrivateKey tlsKey;
 	private final PrivateKey signingKey;
 	private final PrivateKey decryptionKey;
-	
-	private final Map<String, Integer> tlsKeyMap = new ConcurrentHashMap<>();
+
+	// Keys to user ids
+	private final Map<String, Integer> serverTlsKeyMap = new ConcurrentHashMap<>();
+
+	// Keys to user names
+	private final Map<String, String> userTlsKeyMap = new ConcurrentHashMap<>();
 
 	public KeyLoader(final File keyPath, final int numServers, final int myIndex) throws FileNotFoundException,
 			IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException {
@@ -52,8 +57,8 @@ public class KeyLoader {
 			try (final PemReader reader = new PemReader(new FileReader(publicKeyFile.getAbsolutePath()))) {
 				final PublicKey tlsPublicKey = (PublicKey) Pem.readObject(reader.readPemObject());
 				this.tlsPublicKeys.add(tlsPublicKey);
-				this.tlsKeyMap.put(Hex.encodeHexString(tlsPublicKey.getEncoded()), keyIndex);
-				
+				this.serverTlsKeyMap.put(Hex.encodeHexString(tlsPublicKey.getEncoded()), keyIndex);
+
 				this.verificationKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
 				this.encryptionKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
 			}
@@ -66,6 +71,32 @@ public class KeyLoader {
 			this.signingKey = (PrivateKey) Pem.readObject(reader.readPemObject());
 			this.decryptionKey = (PrivateKey) Pem.readObject(reader.readPemObject());
 		}
+	}
+
+	public KeyLoader(final File keyPath, final Set<String> keyNames) throws FileNotFoundException, IOException,
+			NoSuchAlgorithmException, InvalidKeySpecException, CertificateException {
+
+		this.tlsPublicKeys = new ArrayList<>(keyNames.size());
+		this.verificationKeys = new ArrayList<>(keyNames.size());
+		this.encryptionKeys = new ArrayList<>(keyNames.size());
+
+		// Load all public keys
+		for (String username : keyNames) {
+			final File publicKeyFile = new File(keyPath, "public-" + username);
+
+			try (final PemReader reader = new PemReader(new FileReader(publicKeyFile.getAbsolutePath()))) {
+				final PublicKey tlsPublicKey = (PublicKey) Pem.readObject(reader.readPemObject());
+				this.tlsPublicKeys.add(tlsPublicKey);
+				this.userTlsKeyMap.put(Hex.encodeHexString(tlsPublicKey.getEncoded()), username);
+
+				this.verificationKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
+				this.encryptionKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
+			}
+		}
+		
+		this.tlsKey = null;
+		this.signingKey = null;
+		this.decryptionKey = null;
 	}
 
 	public PublicKey getEncryptionKey(int entityIndex) {
@@ -91,11 +122,13 @@ public class KeyLoader {
 	public PrivateKey getDecryptionKey() {
 		return this.decryptionKey;
 	}
-	
-	public Integer getEntityIndex(final PublicKey tlsPublicKey)
-	{
-		
-		return this.tlsKeyMap.get(Hex.encodeHexString(tlsPublicKey.getEncoded()));
+
+	public Integer getEntityIndex(final PublicKey peerPublicKey) {
+		return this.serverTlsKeyMap.get(Hex.encodeHexString(peerPublicKey.getEncoded()));
+	}
+
+	public String getUsername(final PublicKey peerPublicKey) {
+		return this.userTlsKeyMap.get(Hex.encodeHexString(peerPublicKey.getEncoded()));
 	}
 
 	@Override

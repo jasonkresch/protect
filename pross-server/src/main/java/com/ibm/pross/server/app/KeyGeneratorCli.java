@@ -44,11 +44,11 @@ public class KeyGeneratorCli {
 
 		// Check usage
 		if (args.length < 2) {
-			System.err.println("USAGE: key-path index");
+			System.err.println("USAGE: key-path key-name");
 			System.exit(1);
 		}
 		final File keyPath = new File(args[0]);
-		final int keyIndex = Integer.parseInt(args[1]);
+		final String keyName = args[1];
 
 		// Generate EC Key Pair
 		final KeyPair tlsKeyPair = EcKeyGeneration.generateKeyPair();
@@ -63,7 +63,7 @@ public class KeyGeneratorCli {
 		final KeyPair encryptionKeyPair = convertFromPaillier(paillierKeyPair);
 
 		// Write public keys
-		final File publicKeyFile = new File(keyPath, "public-" + keyIndex);
+		final File publicKeyFile = new File(keyPath, "public-" + keyName);
 		try (PemWriter writer = new PemWriter(new FileWriter(publicKeyFile.getAbsolutePath()))) {
 			Pem.writeObject(tlsKeyPair.getPublic(), writer);
 			Pem.writeObject(signingKeyPair.getPublic(), writer);
@@ -78,7 +78,7 @@ public class KeyGeneratorCli {
 		}
 
 		// Write private keys
-		final File privateKeyFile = new File(keyPath, "private-" + keyIndex);
+		final File privateKeyFile = new File(keyPath, "private-" + keyName);
 		try (PemWriter writer = new PemWriter(new FileWriter(privateKeyFile.getAbsolutePath()))) {
 			Pem.writeObject(tlsKeyPair.getPrivate(), writer);
 			Pem.writeObject(signingKeyPair.getPrivate(), writer);

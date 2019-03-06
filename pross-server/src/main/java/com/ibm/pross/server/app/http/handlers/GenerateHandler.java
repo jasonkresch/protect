@@ -40,7 +40,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class GenerateHandler extends AuthenticatedRequestHandler {
+public class GenerateHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.GENERATE;
 
@@ -59,7 +59,7 @@ public class GenerateHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException {
 
 		// Extract secret name from request
@@ -74,7 +74,7 @@ public class GenerateHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Do processing
 		final long startTime = System.nanoTime();

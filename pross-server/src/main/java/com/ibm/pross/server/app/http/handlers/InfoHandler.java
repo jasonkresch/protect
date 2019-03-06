@@ -45,7 +45,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * </pre>
  */
 @SuppressWarnings("restriction")
-public class InfoHandler extends AuthenticatedRequestHandler {
+public class InfoHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.INFO;
 
@@ -67,20 +67,20 @@ public class InfoHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException {
 
 		// Extract secret name from request
 		final String queryString = exchange.getRequestURI().getQuery();
 		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
-		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
-		if (secretNames == null || secretNames.size() != 1) {
+
+		final String secretName = HttpRequestProcessor.getParameterValue(params, SECRET_NAME_FIELD);
+		if (secretName == null) {
 			throw new BadRequestException();
 		}
-		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Do processing
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
@@ -150,18 +150,35 @@ public class InfoHandler extends AuthenticatedRequestHandler {
 		final int n = shareholder.getN();
 		final int k = shareholder.getK();
 		if (shareholder.getSecretPublicKey() == null) {
-			final String linkUrl = "https://" + ourIp + ":" + ourPort + "/generate?secretName=" + secretName;
-			stringBuilder.append("Secret not yet established. (<a href=\"" + linkUrl + "\">Perform DKG</a>)\n");
-			
-			
-			//stringBuilder.append("<b>Store Share:</b>\n");
+			// final String linkUrl = "https://" + ourIp + ":" + ourPort +
+			// "/generate?secretName=" + secretName;
+			stringBuilder.append("Secret not yet established.\n\n");
+
+			/// "(<a href=\"" + linkUrl + "\">Perform DKG</a>)\n");
+
+			stringBuilder.append("<b>Create Share:</b>\n");
+			stringBuilder.append("<form action=\"/generate\" method=\"get\">");
+			stringBuilder.append(
+					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append("<input type=\"submit\" value=\"Initiate DKG\"> </form>\n");
+			stringBuilder.append("<p/>");
+
+			stringBuilder.append("<b>Prepare Share for DKG:</b>\n");
 			stringBuilder.append("<form action=\"/store\" method=\"get\">");
 			stringBuilder.append(
 					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append(
-					"s_" + serverIndex + ": <input type=\"text\" name=\"share\"> <input type=\"submit\" value=\"Store Share\"> \n");
+			stringBuilder.append("s_" + serverIndex
+					+ ": <input type=\"text\" name=\"share\"> <input type=\"submit\" value=\"Store Share\"> </form>\n");
 			stringBuilder.append("<p/>");
-			
+
+			stringBuilder.append("<b>Set RSA Share and Modulus:</b>\n");
+			stringBuilder.append("<form action=\"/store\" method=\"get\">");
+			stringBuilder.append(
+					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append("s_" + serverIndex
+					+ ": <input type=\"text\" name=\"share\"> modulus: <input type=\"text\" name=\"modulus\"> <input type=\"submit\" value=\"Store RSA Share\"> </form>\n");
+			stringBuilder.append("<p/>");
+
 			stringBuilder.append("<p/>");
 		} else {
 			stringBuilder.append("sharing_type      =  " + shareholder.getSharingType() + "\n");

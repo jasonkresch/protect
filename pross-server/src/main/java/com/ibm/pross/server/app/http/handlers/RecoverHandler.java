@@ -66,7 +66,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * to obtain encrypted partial contributions to the recovery of the share.
  */
 @SuppressWarnings("restriction")
-public class RecoverHandler extends AuthenticatedRequestHandler {
+public class RecoverHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.RECOVER;
 
@@ -99,7 +99,7 @@ public class RecoverHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException, ConflictException,
 			ResourceUnavailableException {
 
@@ -113,7 +113,7 @@ public class RecoverHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Do processing
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);

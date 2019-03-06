@@ -19,12 +19,12 @@ import com.sun.net.httpserver.HttpsExchange;
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 @SuppressWarnings("restriction")
-public abstract class AuthenticatedRequestHandler extends BaseHttpHandler {
+public abstract class AuthenticatedServerRequestHandler extends BaseHttpHandler {
 
-	private final KeyLoader requesterKeys;
+	private final KeyLoader serverKeys;
 
-	public AuthenticatedRequestHandler(final KeyLoader requesterKeys) {
-		this.requesterKeys = requesterKeys;
+	public AuthenticatedServerRequestHandler(final KeyLoader serverKeys) {
+		this.serverKeys = serverKeys;
 	}
 
 	@Override
@@ -37,10 +37,10 @@ public abstract class AuthenticatedRequestHandler extends BaseHttpHandler {
 			final HttpsExchange secureExchange = (HttpsExchange) exchange;
 			final SSLSession sslSession = secureExchange.getSSLSession();
 
-			final Integer entityId = determineEntityIdentity(this.requesterKeys, sslSession);
+			final Integer entityId = determineServerIdentity(this.serverKeys, sslSession);
 
 			// Invoke the sub-class's handler with the detected entity id
-			this.authenticatedClientHandle(exchange, entityId);
+			this.authenticatedServerHandle(exchange, entityId);
 
 		} else {
 			throw new RuntimeException("HTTPS is required");
@@ -58,7 +58,7 @@ public abstract class AuthenticatedRequestHandler extends BaseHttpHandler {
 	 * @param session
 	 * @return
 	 */
-	protected static Integer determineEntityIdentity(final KeyLoader keyLoader, final SSLSession sslSession) {
+	protected static Integer determineServerIdentity(final KeyLoader keyLoader, final SSLSession sslSession) {
 
 		try {
 			final Certificate[] certs = sslSession.getPeerCertificates();
@@ -87,7 +87,7 @@ public abstract class AuthenticatedRequestHandler extends BaseHttpHandler {
 	 * @throws BadRequestException
 	 * @throws ResourceUnavailableException
 	 */
-	public abstract void authenticatedClientHandle(final HttpExchange exchange, final Integer entityId)
+	public abstract void authenticatedServerHandle(final HttpExchange exchange, final Integer serverId)
 			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException,
 			ResourceUnavailableException;
 

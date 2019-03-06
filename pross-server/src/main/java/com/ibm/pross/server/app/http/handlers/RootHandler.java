@@ -70,7 +70,7 @@ public class RootHandler extends BaseHttpHandler {
 
 		// Secrets
 		stringBuilder.append("<b>Secrets:</b>\n");
-		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex - 1).getHostString();
+		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex - 1).getAddress().getHostAddress();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + this.serverIndex;
 		int secretId = 0;
 		for (final Entry<String, ApvssShareholder> entry : this.shareholders.entrySet()) {

@@ -68,8 +68,7 @@ public class ServerApplication {
 		System.out.println("Loaded encryption and verification keys");
 
 		// Load Client Access Controls
-		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File(baseDirectory, AUTH_DIRECTORY));
+		final AccessEnforcement accessEnforcement = ClientPermissionLoader.loadIniFile(new File(baseDirectory, AUTH_DIRECTORY));
 
 		// Setup persistent state for message broadcast and processing
 		final List<InetSocketAddress> serverAddresses = configuration.getServerAddresses();
@@ -101,7 +100,6 @@ public class ServerApplication {
 		final ConcurrentMap<String, ApvssShareholder> shareholders = new ConcurrentHashMap<>();
 		final int n = configuration.getNumServers();
 		final int k = configuration.getReconstructionThreshold();
-		final int f = configuration.getMaxSafetyFaults();
 		for (final String secretName : accessEnforcement.getKnownSecrets()) {
 			// Create Shareholder
 			System.out.println("Starting APVSS Shareholder for secret: " + secretName);
@@ -132,7 +130,7 @@ public class ServerApplication {
 
 		// Load client authentication keys
 		final File clientKeysDirectory = new File(baseDirectory, CLIENT_KEYS_DIRECTORY);
-		final KeyLoader clientKeys = new KeyLoader(clientKeysDirectory, configuration.getNumServers(), serverIndex);
+		final KeyLoader clientKeys = new KeyLoader(clientKeysDirectory, accessEnforcement.getKnownUsers());
 		System.out.println("Loaded client keys");
 
 		// Start server to process client requests

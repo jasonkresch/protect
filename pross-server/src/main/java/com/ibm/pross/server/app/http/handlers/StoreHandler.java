@@ -33,13 +33,18 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class StoreHandler extends AuthenticatedRequestHandler {
+public class StoreHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.STORE;
 
-	// Query names
+	// Required parameters
 	public static final String SECRET_NAME_FIELD = "secretName";
 	public static final String SHARE_VALUE = "share";
+	
+	// RSA query parameters
+	public static final String MODULUS_VALUE = "N";
+	public static final String PUBLIC_EXPONENT_VALUE = "e";
+	public static final String VERIFICATION_BASE = "V";
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
@@ -53,7 +58,7 @@ public class StoreHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId) throws IOException,
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username) throws IOException,
 			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException, ConflictException {
 
 		// Extract secret name from request
@@ -66,7 +71,7 @@ public class StoreHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Ensure shareholder exists
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
@@ -77,8 +82,8 @@ public class StoreHandler extends AuthenticatedRequestHandler {
 		if (!shareholder.isEnabled()) {
 			throw new ResourceUnavailableException();
 		}
-		// If DKG already started, it is too late
-		if (shareholder.getSharingType() != null) {
+		// If DKG already started, it is too late, but we allow RSA keys to be updated
+		if ((shareholder.getSharingType() != null)) {
 			throw new ConflictException();
 		}
 

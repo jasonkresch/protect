@@ -194,5 +194,16 @@ public class HttpRequestProcessor {
 		}
 		return queryPairs;
 	}
+	
+	public static String getParameterValue(Map<String, List<String>> params, final String parameterName) {
+		final List<String> parameterValues = params.get(parameterName);
+		if ((parameterValues == null) || (parameterValues.size() != 1) || (parameterValues.get(0) == null)) {
+			return null;
+		} else {
+			return parameterValues.get(0);
+		}
+	}
+	
+
 
 }

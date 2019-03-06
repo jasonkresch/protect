@@ -12,15 +12,17 @@ import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedExc
 
 public class AccessEnforcement {
 
-	private final ConcurrentMap<Integer, ClientPermissions> permissionMap;
+	// Map of usernames to their associated permissions
+	private final ConcurrentMap<String, ClientPermissions> permissionMap;
+	
 	private final Set<String> knownSecrets;
 
-	public AccessEnforcement(final Map<Integer, ClientPermissions> permissionMap, Set<String> knownSecrets) {
+	public AccessEnforcement(final Map<String, ClientPermissions> permissionMap, Set<String> knownSecrets) {
 		this.permissionMap = new ConcurrentHashMap<>(permissionMap);
 		this.knownSecrets = Collections.unmodifiableSet(knownSecrets);;
 	}
 
-	public void enforceAccess(final Integer clientId, final String secretName, final Permissions permission)
+	public void enforceAccess(final String username, final String secretName, final Permissions permission)
 			throws UnauthorizedException, NotFoundException {
 
 		if (!knownSecrets.contains(secretName))
@@ -28,14 +30,14 @@ public class AccessEnforcement {
 			throw new NotFoundException();
 		}
 		
-		if (clientId == null)
+		if (username == null)
 		{
 			// Client is anonymous
 			throw new UnauthorizedException();
 		}
 		
 		// Get this client's permissions
-		final ClientPermissions clientPermissions = this.permissionMap.get(clientId);
+		final ClientPermissions clientPermissions = this.permissionMap.get(username);
 
 		if (clientPermissions == null) {
 			// Client is unknown
@@ -54,6 +56,11 @@ public class AccessEnforcement {
 		return knownSecrets;
 	}
 
+	public Set<String> getKnownUsers()
+	{
+		return Collections.unmodifiableSet(permissionMap.keySet());
+	}
+	
 	private static final class DummyAccessEnforcement extends AccessEnforcement {
 
 		public DummyAccessEnforcement() {
@@ -61,7 +68,7 @@ public class AccessEnforcement {
 		}
 
 		@Override
-		public void enforceAccess(final Integer clientId, final String secretName, final Permissions permission)
+		public void enforceAccess(final String username, final String secretName, final Permissions permission)
 				throws UnauthorizedException {
 			// Always allow
 		}

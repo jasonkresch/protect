@@ -17,16 +17,16 @@ public class ClientPermissionLoaderTest {
 	public static final String mySecret = "my-secret";
 
 	// Users
-	public static final Integer admin = 1;
-	public static final Integer secOfficer = 2;
-	public static final Integer expUser = 3;
-	public static final Integer storeUser = 4;
+	public static final String admin = "administrator";
+	public static final String secOfficer = "security_officer";
+	public static final String expUser = "prf_user";
+	public static final String storeUser = "storage_user";
 
 	@Test
 	public void testNotFoundSecret() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File("config/client/clients.config"));
+				.loadIniFile(new File("config/client/clients.config"));
 
 		Assert.assertNotNull(accessEnforcement);
 
@@ -42,7 +42,7 @@ public class ClientPermissionLoaderTest {
 	public void testAdminPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File("config/client/clients.config"));
+				.loadIniFile(new File("config/client/clients.config"));
 
 		Assert.assertNotNull(accessEnforcement);
 
@@ -109,7 +109,7 @@ public class ClientPermissionLoaderTest {
 	public void testSecOfficerPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File("config/client/clients.config"));
+				.loadIniFile(new File("config/client/clients.config"));
 
 		Assert.assertNotNull(accessEnforcement);
 		// Check sec officer permissions for PRF Secret
@@ -195,7 +195,7 @@ public class ClientPermissionLoaderTest {
 	public void testExpUserPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File("config/client/clients.config"));
+				.loadIniFile(new File("config/client/clients.config"));
 
 		Assert.assertNotNull(accessEnforcement);
 
@@ -290,7 +290,7 @@ public class ClientPermissionLoaderTest {
 	public void testStoreUserPermissions() throws IOException, UnauthorizedException, NotFoundException {
 
 		final AccessEnforcement accessEnforcement = ClientPermissionLoader
-				.load(new File("config/client/clients.config"));
+				.loadIniFile(new File("config/client/clients.config"));
 
 		Assert.assertNotNull(accessEnforcement);
 

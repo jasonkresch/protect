@@ -32,7 +32,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * period to make recovery impossible.
  */
 @SuppressWarnings("restriction")
-public class DeleteHandler extends AuthenticatedRequestHandler {
+public class DeleteHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.DELETE;
 
@@ -51,7 +51,7 @@ public class DeleteHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId) throws IOException,
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username) throws IOException,
 			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
@@ -64,7 +64,7 @@ public class DeleteHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Do processing
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);

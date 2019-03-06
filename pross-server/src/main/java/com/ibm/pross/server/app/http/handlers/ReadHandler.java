@@ -29,7 +29,7 @@ import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
  * found a 404 is returned. If the client is not authorized a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class ReadHandler extends AuthenticatedRequestHandler {
+public class ReadHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.READ;
 
@@ -50,7 +50,7 @@ public class ReadHandler extends AuthenticatedRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final Integer clientId)
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
@@ -63,7 +63,7 @@ public class ReadHandler extends AuthenticatedRequestHandler {
 		final String secretName = secretNames.get(0);
 
 		// Perform authentication
-		accessEnforcement.enforceAccess(clientId, secretName, REQUEST_PERMISSION);
+		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
 
 		// Ensure shareholder exists
 		final ApvssShareholder shareholder = this.shareholders.get(secretName);
