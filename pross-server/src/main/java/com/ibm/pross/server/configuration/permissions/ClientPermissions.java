@@ -19,15 +19,24 @@ public class ClientPermissions {
 	 * #   - read:         The ability to recover a secret from its shares (should only be used for secrets that can be stored)
 	 * #   - info:         The ability to request information about this key, including the name, creation time, epoch, last-refresh time, prime field and group information (RSA/DH/EC)
 	 * #   - delete:       The ability to destroy the shares associated with this key, resetting its state and allowing a new key of this name to be created or stored.
+	 * #   - recover       The ability to initiate a share recovery for shares of this key after one the shares becomes lost or deleted.
 	 * #   - disable:      The ability to temporarily disable client actions from being performed against the shares of this key (note: does not prevent delete/enable/info)
 	 * #   - enable:       The ability to re-enable client actions from being performed against shares of this key
 	 * #   - exponentiate: The ability to compute an exponentiation (scalar multiply for EC curves) on a client-supplied base point: base^secret
-	 * #   - rsa_sign:     The ability to perform an RSA signature operation on a client-supplied message: message^(secret=d) mod N.  Secrets of this form must be stored.
+	 * #   - sign:         The ability to perform an signature operation on a client-supplied message: message^(secret=d) mod N.  Secrets of this form must be stored and be under RSA or BLS groups.
 	 * </pre>
 	 */
 	public enum Permissions {
-		GENERATE(1 << 0), STORE(1 << 1), READ(1 << 2), INFO(1 << 3), DELETE(1 << 4), DISABLE(1 << 5), ENABLE(1 << 6),
-		EXPONENTIATE(1 << 7), RSA_SIGN(1 << 8);
+		GENERATE(1 << 0), 
+		STORE(1 << 1), 
+		READ(1 << 2), 
+		INFO(1 << 3), 
+		DELETE(1 << 4),
+		RECOVER(1 << 5), 
+		DISABLE(1 << 6),
+		ENABLE(1 << 7),
+		EXPONENTIATE(1 << 8),
+		SIGN(1 << 9);
 
 		private final int permissionCode;
 

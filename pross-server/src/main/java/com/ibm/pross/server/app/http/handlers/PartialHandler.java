@@ -31,7 +31,7 @@ import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
  * authorized a 403 is returned.
  */
 @SuppressWarnings("restriction")
-public class GetPartialHandler extends AuthenticatedRequestHandler {
+public class PartialHandler extends AuthenticatedRequestHandler {
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
@@ -39,7 +39,7 @@ public class GetPartialHandler extends AuthenticatedRequestHandler {
 	// Fields
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public GetPartialHandler(final KeyLoader serverKeys, final ConcurrentMap<String, ApvssShareholder> shareholders) {
+	public PartialHandler(final KeyLoader serverKeys, final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(serverKeys);
 		this.shareholders = shareholders;
 	}
@@ -105,12 +105,12 @@ public class GetPartialHandler extends AuthenticatedRequestHandler {
 
 		// Return the result in json
 		final JSONObject obj = new JSONObject();
-		obj.put("sender", new Integer(serverIndex));
+		obj.put("responder", new Integer(serverIndex));
 		obj.put("requester", new Integer(requesterId));
 		obj.put("epoch", new Long(epoch));
 		obj.put("share1_part", encryptedShare1Part.toString());
 		obj.put("share2_part", encryptedShare2Part.toString());
-		return obj.toJSONString();
+		return obj.toJSONString() + "\n";
 
 	}
 

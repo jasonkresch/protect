@@ -68,7 +68,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(admin, prfSecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(admin, prfSecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -99,7 +99,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(admin, mySecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(admin, mySecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -146,7 +146,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(secOfficer, prfSecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(secOfficer, prfSecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -185,7 +185,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(secOfficer, mySecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(secOfficer, mySecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -233,7 +233,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(expUser, prfSecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(expUser, prfSecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -280,7 +280,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(expUser, mySecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(expUser, mySecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -320,7 +320,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(storeUser, mySecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(storeUser, mySecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}
@@ -367,7 +367,7 @@ public class ClientPermissionLoaderTest {
 		} catch (UnauthorizedException expected) {
 		}
 		try {
-			accessEnforcement.enforceAccess(storeUser, prfSecret, Permissions.RSA_SIGN);
+			accessEnforcement.enforceAccess(storeUser, prfSecret, Permissions.SIGN);
 			Assert.fail("Expected unauthorized exception");
 		} catch (UnauthorizedException expected) {
 		}

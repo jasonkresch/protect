@@ -2,6 +2,7 @@ package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
 import java.util.List;
@@ -694,11 +695,13 @@ public class ApvssShareholder {
 		// System.out.println("Signatures verified: " + SigningUtil.verCount.get());
 	}
 
+
 	public SimpleEntry<BigInteger, BigInteger> computeEncryptedPartial(final int requesterIndex) {
 
 		// Get sharing state for the current epoch
 		final SharingState sharingState = getCurrentSharing();
 
+		// TODO: Include this in the response
 		final long partialEpoch = sharingState.getEpochNumber();
 
 		// K is the index of the share to compute a partial for
@@ -733,13 +736,86 @@ public class ApvssShareholder {
 		}
 		share1Part = share1Part.mod(curve.getR());
 		share2Part = share2Part.mod(curve.getR());
-		
+
 		// Encrypt the partial with recipient's public key
 		final PaillierPublicKey encryptionKey = (PaillierPublicKey) this.keyLoader.getEncryptionKey(requesterIndex);
 		final BigInteger encryptedShare1Part = PaillierCipher.encrypt(encryptionKey, share1Part);
 		final BigInteger encryptedShare2Part = PaillierCipher.encrypt(encryptionKey, share2Part);
 
 		return new SimpleEntry<BigInteger, BigInteger>(encryptedShare1Part, encryptedShare2Part);
+	}
+	
+
+	public void recoverShare(final SharingState sharingState,
+			final ConcurrentHashMap<Long, SimpleEntry<BigInteger, BigInteger>> verifiedResults) {
+
+		// Determine list of contributors
+		final List<Long> contributors = new ArrayList<>(verifiedResults.keySet());
+		Collections.sort(contributors);
+		final BigInteger[] xCoords = contributors.stream().map(i -> BigInteger.valueOf(i)).toArray(BigInteger[]::new);
+
+		System.err.println(Arrays.toString(xCoords));
+		
+		// Start counters at zero
+		BigInteger share1Y = BigInteger.ZERO;
+		BigInteger share2Y = BigInteger.ZERO;
+		//EcPoint[] combinedPedersenCommitments = new EcPoint[this.k];
+		//for (int i = 0; i < this.k; i++) {
+		//	combinedPedersenCommitments[i] = EcPoint.pointAtInfinity;
+		//}
+
+		// Iterate over every public sharing in qual
+		for (final Long contributor : contributors) {
+
+			final BigInteger j = BigInteger.valueOf(contributor);
+			//final PublicSharing sharing = sharingState.getQualifiedSharings().get(contributor);
+
+			// Decrypt our shares
+			final BigInteger share1 = verifiedResults.get(contributor).getKey();
+			final BigInteger share2 = verifiedResults.get(contributor).getValue();
+
+			// Get the commitments
+			//final EcPoint[] commitments = sharing.getPedersenCommitments();
+
+			// Compute lagrange co-efficient
+			final BigInteger l = Polynomials.interpolatePartial(xCoords, BigInteger.ZERO, j, curve.getR());
+
+			// Add the shares to our running sum
+			share1Y = share1Y.add(share1.multiply(l)).mod(curve.getR());
+			share2Y = share2Y.add(share2.multiply(l)).mod(curve.getR());
+
+			// Add Pedersen commitments to our running sum
+			//for (int i = 0; i < this.k; i++) {
+			//	final EcPoint interpolatedCommitment = curve.multiply(commitments[i], l);
+			//	combinedPedersenCommitments[i] = curve.addPoints(combinedPedersenCommitments[i],
+			//			interpolatedCommitment);
+			//}
+		}
+
+		// Verify we have the correct share (by comparing against public key
+		final EcPoint sharePublicKey1 = curve.multiply(g, share1Y);
+		
+		System.out.println("Share1: " + share1Y);
+		System.out.println("Share2: " + share2Y);
+		
+		if (!sharePublicKey1.equals(sharingState.getSharePublicKeys()[this.index])) {
+			System.err.println(sharePublicKey1);
+			throw new IllegalArgumentException("Failed to recover same public key");
+		}
+		
+		final EcPoint sharePublicKey2 = curve.multiply(h, share2Y);
+		final EcPoint recoveredCommitment = curve.addPoints(sharePublicKey1, sharePublicKey2);
+		
+		final EcPoint previousCommitment = PublicSharingGenerator.interpolatePedersonCommitments(
+				BigInteger.valueOf(this.index), sharingState.getPedersenCommitments());
+		
+		if (!recoveredCommitment.equals(previousCommitment)) {
+			throw new IllegalArgumentException("Failed to recover same commitment");
+		}
+		
+		// We have our shares
+		sharingState.setShare1(new ShamirShare(BigInteger.valueOf(this.index), share1Y));
+		sharingState.setShare2(new ShamirShare(BigInteger.valueOf(this.index), share2Y));
 	}
 
 	/**

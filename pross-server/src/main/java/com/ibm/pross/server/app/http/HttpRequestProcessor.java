@@ -30,10 +30,11 @@ import com.ibm.pross.server.app.http.handlers.DisableHandler;
 import com.ibm.pross.server.app.http.handlers.EnableHandler;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
-import com.ibm.pross.server.app.http.handlers.GetPartialHandler;
+import com.ibm.pross.server.app.http.handlers.PartialHandler;
 import com.ibm.pross.server.app.http.handlers.IdHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
+import com.ibm.pross.server.app.http.handlers.RecoverHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
 import com.ibm.pross.server.app.http.handlers.StoreHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
@@ -70,7 +71,7 @@ public class HttpRequestProcessor {
 
 		System.out.println("HTTPS server listening on port: " + httpListenPort);
 
-		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders, clientKeys, serverKeys);
+		addHandlers(serverIndex, serverConfig, accessEnforcement, shareholders, clientKeys, serverKeys, caCerts, hostCert, privateKey);
 
 		System.out.println("Ready to process requests.");
 
@@ -79,13 +80,12 @@ public class HttpRequestProcessor {
 
 	public void addHandlers(final int serverIndex, final ServerConfiguration serverConfig,
 			final AccessEnforcement accessEnforcement, final ConcurrentMap<String, ApvssShareholder> shareholders,
-			final KeyLoader clientKeys, final KeyLoader serverKeys) {
+			final KeyLoader clientKeys, final KeyLoader serverKeys, final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey privateKey) {
 		
-		// Returns basic information about this server:
-		// quorum information, other servers)
+		// Returns basic information about this server: (quorum information, other servers)
 		this.server.createContext("/", new RootHandler(serverIndex, serverConfig, shareholders));
 
-		// Used to debug authentication problems
+		// Used to debug authentication and access control problems
 		this.server.createContext("/id", new IdHandler(clientKeys, accessEnforcement, shareholders));
 		
 		// Define request handlers for the supported client operations
@@ -98,7 +98,7 @@ public class HttpRequestProcessor {
 
 		// Handlers for deleting or recovering shares
 		this.server.createContext("/delete", new DeleteHandler(clientKeys, accessEnforcement, shareholders));
-		this.server.createContext("/recover", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/recover", new RecoverHandler(clientKeys, accessEnforcement, serverConfig, shareholders, caCerts, serverKeys, hostCert, privateKey));
 
 		// Handlers for enabling and disabling shares
 		this.server.createContext("/enable", new EnableHandler(clientKeys, accessEnforcement, shareholders));
@@ -106,10 +106,10 @@ public class HttpRequestProcessor {
 
 		// Handlers for using the shares to perform functions
 		this.server.createContext("/exponentiate", new ExponentiateHandler(clientKeys, accessEnforcement, shareholders));
-		this.server.createContext("/rsa_sign", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/sign", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
 
 		// Define server to server requests
-		this.server.createContext("/get_partial", new GetPartialHandler(serverKeys, shareholders));
+		this.server.createContext("/partial", new PartialHandler(serverKeys, shareholders));
 	}
 
 	public void setupTls(final List<X509Certificate> caCerts, final X509Certificate hostCert, final PrivateKey hostKey,

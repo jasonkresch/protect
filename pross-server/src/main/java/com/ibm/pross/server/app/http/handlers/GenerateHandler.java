@@ -44,9 +44,6 @@ public class GenerateHandler extends AuthenticatedRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.GENERATE;
 
-	// Request header names
-	// public static final String SECRET_NAME_FIELD = "X-Secret-Name";
-
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
 
