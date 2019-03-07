@@ -152,32 +152,34 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		if (shareholder.getSecretPublicKey() == null) {
 			// final String linkUrl = "https://" + ourIp + ":" + ourPort +
 			// "/generate?secretName=" + secretName;
-			stringBuilder.append("Secret not yet established.\n\n");
+			stringBuilder.append("<p>Secret not yet established.\n\n");
 
 			/// "(<a href=\"" + linkUrl + "\">Perform DKG</a>)\n");
 
-			stringBuilder.append("<b>Create Share:</b>\n");
-			stringBuilder.append("<form action=\"/generate\" method=\"get\">");
-			stringBuilder.append(
-					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append("<input type=\"submit\" value=\"Initiate DKG\"> </form>\n");
-			stringBuilder.append("<p/>");
-
-			stringBuilder.append("<b>Prepare Share for DKG:</b>\n");
 			stringBuilder.append("<form action=\"/store\" method=\"get\">");
+			stringBuilder.append("<b>Prepare Share for DKG (optional):</b> ");
 			stringBuilder.append(
 					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
 			stringBuilder.append("s_" + serverIndex
 					+ ": <input type=\"text\" name=\"share\"> <input type=\"submit\" value=\"Store Share\"> </form>\n");
-			stringBuilder.append("<p/>");
 
-			stringBuilder.append("<b>Set RSA Share and Modulus:</b>\n");
-			stringBuilder.append("<form action=\"/store\" method=\"get\">");
+			stringBuilder.append("<form action=\"/generate\" method=\"get\">");
+			stringBuilder.append("<b>Create Shared Secret:</b> ");
 			stringBuilder.append(
 					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-			stringBuilder.append("s_" + serverIndex
-					+ ": <input type=\"text\" name=\"share\"> modulus: <input type=\"text\" name=\"modulus\"> <input type=\"submit\" value=\"Store RSA Share\"> </form>\n");
+			stringBuilder.append("<input type=\"submit\" value=\"Initiate DKG\"></form>\n");
 			stringBuilder.append("<p/>");
+
+			// stringBuilder.append("<b>Set RSA Share and Modulus:</b>\n");
+			// stringBuilder.append("<form action=\"/store\" method=\"get\">");
+			// stringBuilder.append(
+			// "<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" +
+			// secretName + "\">");
+			// stringBuilder.append("s_" + serverIndex
+			// + ": <input type=\"text\" name=\"share\"> modulus: <input type=\"text\"
+			// name=\"modulus\"> <input type=\"submit\" value=\"Store RSA Share\">
+			// </form>\n");
+			// stringBuilder.append("<p/>");
 
 			stringBuilder.append("<p/>");
 		} else {
@@ -237,41 +239,39 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			}
 			stringBuilder.append("<p/>");
 
-			if (epochNumber == shareholder.getEpoch()) {
-
-				// Print Share Information
-				final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
-				final String enableLink = "https://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
-				final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
-				final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
-				final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
-				stringBuilder.append("<b>Share Information:</b>\n");
-				stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
-						+ sharingState.getShare1Hash() + " (<a href=\"" + readLink + "\">View Share</a>) \n");
-				if (sharingState.getShare1() != null) {
-					stringBuilder.append("exists        =  TRUE (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
-				} else {
-					stringBuilder
-							.append("exists        =  FALSE (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
-				}
-				if (shareholder.isEnabled()) {
-					stringBuilder
-							.append("status        =  ENABLED (<a href=\"" + disableLink + "\">Disable Share</a>) \n");
-				} else {
-					stringBuilder
-							.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
-				}
-				stringBuilder.append("<p/>");
-
-				stringBuilder.append("<b>Use Share:</b>\n");
-				stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
-				stringBuilder.append(
-						"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
-				stringBuilder.append(
-						"x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
-				stringBuilder.append("<p/>");
-
+			// Print Share Information
+			final String readLink = "https://" + ourIp + ":" + ourPort + "/read?secretName=" + secretName;
+			final String enableLink = "https://" + ourIp + ":" + ourPort + "/enable?secretName=" + secretName;
+			final String disableLink = "https://" + ourIp + ":" + ourPort + "/disable?secretName=" + secretName;
+			final String deleteLink = "https://" + ourIp + ":" + ourPort + "/delete?secretName=" + secretName;
+			final String recoverLink = "https://" + ourIp + ":" + ourPort + "/recover?secretName=" + secretName;
+			stringBuilder.append("<b>Share Information:</b>\n");
+			stringBuilder.append(CommonConfiguration.HASH_ALGORITHM + "(s_" + serverIndex + ")  =  "
+					+ sharingState.getShare1Hash() + "\n");
+			if (sharingState.getShare1() != null) {
+				stringBuilder.append("exists        =  TRUE     (<a href=\"" + readLink + "\">Read Share</a>)  (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
+			} else {
+				// FIXME: Get this working (perhaps only show on latest epoch page...
+				// stringBuilder.append("exists = FALSE (<a href=\"" + recoverLink + "\">Recover
+				// Share</a>) \n");
+				stringBuilder.append("exists        =  FALSE    (<a href=\"" + readLink + "\">Read Share</a>) \n");
 			}
+			if (shareholder.isEnabled()) {
+				stringBuilder.append("status        =  ENABLED  (<a href=\"" + disableLink + "\">Disable Share</a>) \n");
+			} else {
+				stringBuilder.append("status        =  DISABLED (<a href=\"" + enableLink + "\">Enable Share</a>) \n");
+			}
+			stringBuilder.append("<p/>");
+
+			// TODO: Consider: only showing this if the share exists?
+			stringBuilder.append("<b>Use Share:</b>\n");
+			stringBuilder.append("<form action=\"/exponentiate\" method=\"get\">");
+			stringBuilder.append(
+					"<input type=\"hidden\" id=\"secretName\" name=\"secretName\" value=\"" + secretName + "\">");
+			stringBuilder.append(
+					"x: <input type=\"text\" name=\"x\"> y: <input type=\"text\" name=\"y\"> <input type=\"submit\" value=\"Exponentiate\"> \n");
+			stringBuilder.append("<p/>");
+
 		}
 
 		// Peers
