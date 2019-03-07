@@ -44,11 +44,11 @@ public class ClientPermissionLoader {
 				final String permissions = userPermission.getValue();
 
 				// PRint username and secret
-				System.out.print(username + "." + secretName + "\t\t = ");
+				//System.out.print(username + "." + secretName + "\t\t = ");
 				
 				// Parse permissions
 				final String[] permissionArray = permissions.split(",");
-				System.out.println(Arrays.toString(permissionArray));
+				//System.out.println(Arrays.toString(permissionArray));
 
 				// Add permissions from the comma-separated list
 				permissionMap.putIfAbsent(username, new ClientPermissions());
