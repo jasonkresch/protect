@@ -6,11 +6,7 @@
 
 package com.ibm.pross.server.messages;
 
-import java.io.Serializable;
-
-public class Payload implements Serializable {
-
-	private static final long serialVersionUID = 5006028177758309022L;
+public class Payload  {
 
 	public enum OpCode {
 		// AVSS

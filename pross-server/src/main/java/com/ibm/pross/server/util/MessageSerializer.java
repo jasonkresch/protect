@@ -13,14 +13,26 @@ import io.protostuff.runtime.RuntimeSchema;
 
 public class MessageSerializer {
 
-	// Schemas for message serialization
-	public static final Schema<SignedRelayedMessage> SIGNED_RELAYED_MESSAGE_SCHEMA = RuntimeSchema
-			.getSchema(SignedRelayedMessage.class);
-	public static final Schema<RelayedMessage> RELAYED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(RelayedMessage.class);
+	static {
+		// Configure serializer
+		System.setProperty("protostuff.runtime.morph_non_final_pojos", "true");
 
-	public static final Schema<SignedMessage> SIGNED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(SignedMessage.class);
-	public static final Schema<Message> MESSAGE_SCHEMA = RuntimeSchema.getSchema(Message.class);
-	public static final Schema<Payload> PAYLOAD_SCHEMA = RuntimeSchema.getSchema(Payload.class);
+		// Schemas for message serialization
+		SIGNED_RELAYED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(SignedRelayedMessage.class);
+		RELAYED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(RelayedMessage.class);
+
+		SIGNED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(SignedMessage.class);
+		MESSAGE_SCHEMA = RuntimeSchema.getSchema(Message.class);
+		PAYLOAD_SCHEMA = RuntimeSchema.getSchema(Payload.class);
+	}
+
+	// Schemas for message serialization
+	public static final Schema<SignedRelayedMessage> SIGNED_RELAYED_MESSAGE_SCHEMA;
+	public static final Schema<RelayedMessage> RELAYED_MESSAGE_SCHEMA;
+
+	public static final Schema<SignedMessage> SIGNED_MESSAGE_SCHEMA;
+	public static final Schema<Message> MESSAGE_SCHEMA;
+	public static final Schema<Payload> PAYLOAD_SCHEMA;
 
 	public static final int MAX_MESSAGE_SIZE = 256 * 1024; // 256 KB
 

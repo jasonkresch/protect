@@ -20,7 +20,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.server.app.avpss.messages.NoOp;
+import com.ibm.pross.server.messages.payloads.apvss.NoOp;
 import com.ibm.pross.server.util.MessageSigningUtil;
 
 public class SigningTest {

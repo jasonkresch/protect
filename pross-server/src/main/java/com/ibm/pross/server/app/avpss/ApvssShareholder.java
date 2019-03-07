@@ -38,10 +38,10 @@ import com.ibm.pross.server.app.avpss.exceptions.InvalidCiphertextException;
 import com.ibm.pross.server.app.avpss.exceptions.InvalidZeroKnowledgeProofException;
 import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
-import com.ibm.pross.server.app.avpss.messages.PublicSharingPayload;
-import com.ibm.pross.server.app.avpss.messages.ZkpPayload;
 import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
+import com.ibm.pross.server.messages.payloads.apvss.PublicSharingPayload;
+import com.ibm.pross.server.messages.payloads.apvss.ZkpPayload;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
@@ -950,7 +950,7 @@ public class ApvssShareholder {
 	}
 
 	public int getRefreshFrequency() {
-		return 30;
+		return 15;
 	}
 
 	public SharingType getSharingType() {

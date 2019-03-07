@@ -143,7 +143,7 @@ public class ServerApplication {
 	public static void main(final String[] args)
 			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, InterruptedException,
 			CertificateException, KeyManagementException, UnrecoverableKeyException, KeyStoreException {
-
+		
 		// Configure logging
 		BasicConfigurator.configure();
 		final List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
