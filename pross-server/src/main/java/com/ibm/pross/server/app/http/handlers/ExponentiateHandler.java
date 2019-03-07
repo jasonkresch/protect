@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.ShamirShare;
@@ -39,6 +42,7 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 	public static final String SECRET_NAME_FIELD = "secretName";
 	public static final String BASE_X_COORD = "x";
 	public static final String BASE_Y_COORD = "y";
+	public static final String OUTPUT_FORMAT_FIELD = "json";
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
@@ -51,6 +55,7 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		this.accessEnforcement = accessEnforcement;
 	}
 
+	@SuppressWarnings("unchecked")
 	@Override
 	public void authenticatedClientHandle(final HttpExchange exchange, final String username) throws IOException,
 			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
@@ -58,11 +63,12 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 		// Extract secret name from request
 		final String queryString = exchange.getRequestURI().getQuery();
 		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
-		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
-		if (secretNames == null || secretNames.size() != 1) {
+		final String secretName = HttpRequestProcessor.getParameterValue(params, SECRET_NAME_FIELD);
+		if (secretName == null) {
 			throw new BadRequestException();
 		}
-		final String secretName = secretNames.get(0);
+		final Boolean outputJson = Boolean
+				.parseBoolean(HttpRequestProcessor.getParameterValue(params, OUTPUT_FORMAT_FIELD));
 
 		// Perform authentication
 		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
@@ -113,9 +119,34 @@ public class ExponentiateHandler extends AuthenticatedClientRequestHandler {
 
 		// Create response
 		final int serverIndex = shareholder.getIndex();
-		final String response = basePoint + "^{s_" + serverIndex + "} = \n" + result + "\n\n" + "Result computed in "
-				+ processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName
-				+ "' from epoch " + shareholder.getEpoch() + "\n";
+		final long epoch = shareholder.getEpoch();
+		final String response;
+		if (outputJson) {
+
+			// Return the result in json
+			final JSONObject obj = new JSONObject();
+			obj.put("responder", new Integer(serverIndex));
+			obj.put("epoch", new Long(epoch));
+
+			JSONArray inputPoint = new JSONArray();
+			inputPoint.add(basePoint.getX().toString());
+			inputPoint.add(basePoint.getY().toString());
+			obj.put("base_point", inputPoint);
+
+			JSONArray outputPoint = new JSONArray();
+			outputPoint.add(result.getX().toString());
+			outputPoint.add(result.getY().toString());
+			obj.put("result_point", outputPoint);
+
+			obj.put("compute_time_us", new Long(processingTimeUs));
+
+			response = obj.toJSONString() + "\n";
+
+		} else {
+			response = basePoint + "^{s_" + serverIndex + "} = \n" + result + "\n\n" + "Result computed in "
+					+ processingTimeUs + " microseconds using share #" + serverIndex + " of secret '" + secretName
+					+ "' from epoch " + epoch + "\n";
+		}
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
