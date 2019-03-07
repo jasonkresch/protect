@@ -1,7 +1,7 @@
 package com.ibm.pross.server.util;
 
 import com.ibm.pross.server.messages.Payload;
-import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
@@ -19,7 +19,7 @@ public class MessageSerializer {
 	public static final Schema<RelayedMessage> RELAYED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(RelayedMessage.class);
 
 	public static final Schema<SignedMessage> SIGNED_MESSAGE_SCHEMA = RuntimeSchema.getSchema(SignedMessage.class);
-	public static final Schema<PublicMessage> MESSAGE_SCHEMA = RuntimeSchema.getSchema(PublicMessage.class);
+	public static final Schema<Message> MESSAGE_SCHEMA = RuntimeSchema.getSchema(Message.class);
 	public static final Schema<Payload> PAYLOAD_SCHEMA = RuntimeSchema.getSchema(Payload.class);
 
 	public static final int MAX_MESSAGE_SIZE = 256 * 1024; // 256 KB
@@ -131,7 +131,7 @@ public class MessageSerializer {
 	 * @param object
 	 * @return
 	 */
-	public static byte[] serializeMessage(final PublicMessage message) {
+	public static byte[] serializeMessage(final Message message) {
 
 		// Re-use (manage) this buffer to avoid allocating on every serialization
 		final LinkedBuffer buffer = LinkedBuffer.allocate(MAX_MESSAGE_SIZE);
@@ -152,8 +152,8 @@ public class MessageSerializer {
 	 * @param input
 	 * @return
 	 */
-	public static PublicMessage deserializeMessage(byte[] serializedMessage) {
-		final PublicMessage parsedMessage = MESSAGE_SCHEMA.newMessage();
+	public static Message deserializeMessage(byte[] serializedMessage) {
+		final Message parsedMessage = MESSAGE_SCHEMA.newMessage();
 		ProtostuffIOUtil.mergeFrom(serializedMessage, parsedMessage, MESSAGE_SCHEMA);
 		return parsedMessage;
 	}

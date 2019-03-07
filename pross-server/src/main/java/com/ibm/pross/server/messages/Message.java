@@ -8,7 +8,7 @@ package com.ibm.pross.server.messages;
 
 import java.io.Serializable;
 
-public class PublicMessage implements Serializable {
+public class Message implements Serializable {
 
 	private static final long serialVersionUID = -8470206987302692599L;
 
@@ -31,7 +31,7 @@ public class PublicMessage implements Serializable {
 	 * @param content
 	 *            The content of the message to send
 	 */
-	public PublicMessage(final String channelName, final int senderIndex, final Payload payload) {
+	public Message(final String channelName, final int senderIndex, final Payload payload) {
 		this.channelName = channelName;
 		this.senderIndex = senderIndex;
 		this.payload = payload;
@@ -89,7 +89,7 @@ public class PublicMessage implements Serializable {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		PublicMessage other = (PublicMessage) obj;
+		Message other = (Message) obj;
 		if (channelName == null) {
 			if (other.channelName != null)
 				return false;

@@ -51,7 +51,7 @@ public class SigningTest {
 
 		final KeyPair keyPair = generateKeyPair();
 
-		final PublicMessage message = new PublicMessage("none", 0, new NoOp());
+		final Message message = new Message("none", 0, new NoOp());
 		final MessageSignature signature = MessageSigningUtil.createSignature(message, keyPair.getPrivate());
 
 		Assert.assertTrue(MessageSigningUtil.verifySignature(message, signature, keyPair.getPublic()));

@@ -12,7 +12,7 @@ import java.security.PublicKey;
 
 import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.server.messages.MessageSignature;
-import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.RelayedMessage;
 
 public class MessageSigningUtil {
@@ -21,8 +21,8 @@ public class MessageSigningUtil {
 		final byte[] messageBytes;
 		if (message instanceof RelayedMessage) {
 			messageBytes = MessageSerializer.serializeRelayedMessage((RelayedMessage) message);
-		} else if (message instanceof PublicMessage) {
-			messageBytes = MessageSerializer.serializeMessage((PublicMessage) message);
+		} else if (message instanceof Message) {
+			messageBytes = MessageSerializer.serializeMessage((Message) message);
 		} else {
 			throw new IllegalArgumentException("Unknown message type");
 		}

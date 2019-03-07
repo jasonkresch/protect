@@ -40,7 +40,7 @@ import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
 import com.ibm.pross.server.app.avpss.messages.PublicSharingPayload;
 import com.ibm.pross.server.app.avpss.messages.ZkpPayload;
-import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
@@ -181,7 +181,7 @@ public class ApvssShareholder {
 	private synchronized void messageIsAvailable() {
 
 		final long messageId = this.currentMessageId.incrementAndGet();
-		final PublicMessage message = this.channel.getMessage(messageId);
+		final Message message = this.channel.getMessage(messageId);
 
 		// TODO: Remove this debugging text
 		// long messageCount = this.channel.getMessageCount();
@@ -202,11 +202,11 @@ public class ApvssShareholder {
 	 * 
 	 * @param message
 	 */
-	private synchronized void deliver(final PublicMessage message) {
+	private synchronized void deliver(final Message message) {
 
-		if (message instanceof PublicMessage) {
+		if (message instanceof Message) {
 
-			final OpCode opcode = ((PublicMessage) message).getPayload().getOpcode();
+			final OpCode opcode = ((Message) message).getPayload().getOpcode();
 
 			// Track how many messages have been received from this shareholder
 			final int senderId = message.getSenderIndex();
@@ -223,10 +223,10 @@ public class ApvssShareholder {
 
 				switch (opcode) {
 				case PS:
-					deliverPublicSharing(senderEpoch, (PublicMessage) message);
+					deliverPublicSharing(senderEpoch, (Message) message);
 					break;
 				case ZK:
-					deliverProofMessage(senderEpoch, (PublicMessage) message);
+					deliverProofMessage(senderEpoch, (Message) message);
 					break;
 				case NOOP:
 					// Do nothing
@@ -336,7 +336,7 @@ public class ApvssShareholder {
 			// Create a message
 			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
 			final String channelName = this.secretName;
-			final PublicMessage publicSharingMessage = new PublicMessage(channelName, this.index, payload);
+			final Message publicSharingMessage = new Message(channelName, this.index, payload);
 			this.channel.send(publicSharingMessage);
 
 			return true;
@@ -356,7 +356,7 @@ public class ApvssShareholder {
 	 * @throws InconsistentShareException
 	 * @throws StateViolationException
 	 */
-	protected synchronized void deliverPublicSharing(final long senderEpoch, final PublicMessage message)
+	protected synchronized void deliverPublicSharing(final long senderEpoch, final Message message)
 			throws DuplicateMessageReceivedException, InvalidCiphertextException, InconsistentShareException,
 			StateViolationException {
 
@@ -540,7 +540,7 @@ public class ApvssShareholder {
 		// Send message out
 		final ZkpPayload payload = new ZkpPayload(proof);
 		final String channelName = this.secretName;
-		this.channel.send(new PublicMessage(channelName, this.index, payload));
+		this.channel.send(new Message(channelName, this.index, payload));
 	}
 
 	/**
@@ -555,7 +555,7 @@ public class ApvssShareholder {
 	 * @throws StateViolationException
 	 * @throws InvalidZeroKnowledgeProofException
 	 */
-	protected synchronized void deliverProofMessage(final long senderEpoch, final PublicMessage message)
+	protected synchronized void deliverProofMessage(final long senderEpoch, final Message message)
 			throws DuplicateMessageReceivedException, StateViolationException, InvalidZeroKnowledgeProofException {
 
 		// Get sharing state for the current epoch

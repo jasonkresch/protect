@@ -15,7 +15,7 @@ import java.util.TimerTask;
 import com.ibm.pross.server.communication.handlers.MessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 import com.ibm.pross.server.communication.pointtopoint.MessageSender;
-import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
@@ -199,7 +199,7 @@ public class MessageDeliveryManager {
 	 * 
 	 * @param signedMessage
 	 */
-	public void broadcast(final PublicMessage message) {
+	public void broadcast(final Message message) {
 		final SignedMessage signedMessage = new SignedMessage(message, keyLoader.getSigningKey());
 		this.broadcast(signedMessage);
 	}

@@ -19,7 +19,7 @@ import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.channel.bft.BftAtomicBroadcastChannel;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
 import com.ibm.pross.server.messages.Payload;
-import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.payloads.optbft.CertificationPayload;
 import com.ibm.pross.server.util.AtomicFileOperations;
@@ -91,15 +91,15 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	 * Handles message received over point-to-point links
 	 */
 	@Override
-	public void handleMessage(final PublicMessage message) {
+	public void handleMessage(final Message message) {
 
 		// TODO: Implement stuff here
 		// System.out.println("OPT BFT --- Received unique authenticated message: " /*+
 		// message*/);
 
 		// Count votes for messages in a given position
-		if (message instanceof PublicMessage) {
-			final PublicMessage publicMessage = (PublicMessage) message;
+		if (message instanceof Message) {
+			final Message publicMessage = (Message) message;
 			final Payload payload = publicMessage.getPayload();
 			if (payload.getOpcode() == Payload.OpCode.BFT_CERTIFICATION) {
 				final SimpleEntry<Long, SignedMessage> data = (SimpleEntry<Long, SignedMessage>) payload.getData();
@@ -189,7 +189,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 			// Generate a certification message encapsulating this message along with our
 			// view of its position in the chain
 			final CertificationPayload certificationPayload = new CertificationPayload(messagePosition, bftMessage);
-			final PublicMessage publicMessage = new PublicMessage("certification", this.myIndex, certificationPayload);
+			final Message publicMessage = new Message("certification", this.myIndex, certificationPayload);
 
 			// Broadcast our signature of this message and its position over point-to-point
 			// links
@@ -207,8 +207,8 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		return (this.myIndex - 1);
 	}
 
-	public void send(final PublicMessage message) {
-		final SignedMessage signedMessage = new SignedMessage((PublicMessage) message, keyLoader.getSigningKey());
+	public void send(final Message message) {
+		final SignedMessage signedMessage = new SignedMessage((Message) message, keyLoader.getSigningKey());
 		this.sender.broadcast(signedMessage);
 	}
 
@@ -223,7 +223,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		}
 	}
 
-	public synchronized PublicMessage getMessage(final long messageId) {
+	public synchronized Message getMessage(final long messageId) {
 		synchronized (this.optChain) {
 			// We don't return the signed message we we have already validated its signature
 			final SignedMessage signedMessage = this.optChain.get(messageId);

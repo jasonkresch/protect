@@ -26,7 +26,7 @@ public class SignedMessage implements Serializable {
 	// Privately sent message to a single recipient with index j
 	// m = (m' = (i, j, ENC_j(m)), SIG_i(m'))
 
-	private final PublicMessage message;
+	private final Message message;
 	private final MessageSignature signature;
 
 	/**
@@ -36,7 +36,7 @@ public class SignedMessage implements Serializable {
 	 * @param message
 	 * @param senderSigningKey
 	 */
-	public SignedMessage(final PublicMessage message, final PrivateKey senderSigningKey) {
+	public SignedMessage(final Message message, final PrivateKey senderSigningKey) {
 		this(message, MessageSigningUtil.createSignature(message, senderSigningKey));
 	}
 
@@ -48,12 +48,12 @@ public class SignedMessage implements Serializable {
 	 * @param signature
 	 *            The accompanying signature of the message sender
 	 */
-	public SignedMessage(final PublicMessage message, final MessageSignature signature) {
+	public SignedMessage(final Message message, final MessageSignature signature) {
 		this.message = message;
 		this.signature = signature;
 	}
 
-	public PublicMessage getMessage() {
+	public Message getMessage() {
 		return message;
 	}
 
@@ -69,7 +69,7 @@ public class SignedMessage implements Serializable {
 	 * @return
 	 */
 	public boolean isSignatureValid(final PublicKey senderPublicKey) {
-		return MessageSigningUtil.verifySignature((PublicMessage) this.message, this.signature, senderPublicKey);
+		return MessageSigningUtil.verifySignature((Message) this.message, this.signature, senderPublicKey);
 	}
 
 	@Override
