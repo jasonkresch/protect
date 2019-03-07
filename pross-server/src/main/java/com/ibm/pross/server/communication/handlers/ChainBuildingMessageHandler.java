@@ -18,7 +18,6 @@ import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
 import com.ibm.pross.server.channel.bft.BftAtomicBroadcastChannel;
 import com.ibm.pross.server.communication.MessageDeliveryManager;
-import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.SignedMessage;
@@ -92,7 +91,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 	 * Handles message received over point-to-point links
 	 */
 	@Override
-	public void handleMessage(final Message message) {
+	public void handleMessage(final PublicMessage message) {
 
 		// TODO: Implement stuff here
 		// System.out.println("OPT BFT --- Received unique authenticated message: " /*+
@@ -208,7 +207,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		return (this.myIndex - 1);
 	}
 
-	public void send(final Message message) {
+	public void send(final PublicMessage message) {
 		final SignedMessage signedMessage = new SignedMessage((PublicMessage) message, keyLoader.getSigningKey());
 		this.sender.broadcast(signedMessage);
 	}
@@ -224,7 +223,7 @@ public class ChainBuildingMessageHandler implements ChannelListener, MessageHand
 		}
 	}
 
-	public synchronized Message getMessage(final long messageId) {
+	public synchronized PublicMessage getMessage(final long messageId) {
 		synchronized (this.optChain) {
 			// We don't return the signed message we we have already validated its signature
 			final SignedMessage signedMessage = this.optChain.get(messageId);

@@ -40,9 +40,8 @@ import com.ibm.pross.server.app.avpss.exceptions.StateViolationException;
 import com.ibm.pross.server.app.avpss.exceptions.UnrecognizedMessageTypeException;
 import com.ibm.pross.server.app.avpss.messages.PublicSharingPayload;
 import com.ibm.pross.server.app.avpss.messages.ZkpPayload;
-import com.ibm.pross.server.messages.Message;
-import com.ibm.pross.server.messages.Payload.OpCode;
 import com.ibm.pross.server.messages.PublicMessage;
+import com.ibm.pross.server.messages.Payload.OpCode;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
@@ -182,7 +181,7 @@ public class ApvssShareholder {
 	private synchronized void messageIsAvailable() {
 
 		final long messageId = this.currentMessageId.incrementAndGet();
-		final Message message = this.channel.getMessage(messageId);
+		final PublicMessage message = this.channel.getMessage(messageId);
 
 		// TODO: Remove this debugging text
 		// long messageCount = this.channel.getMessageCount();
@@ -203,7 +202,7 @@ public class ApvssShareholder {
 	 * 
 	 * @param message
 	 */
-	private synchronized void deliver(final Message message) {
+	private synchronized void deliver(final PublicMessage message) {
 
 		if (message instanceof PublicMessage) {
 
@@ -337,7 +336,7 @@ public class ApvssShareholder {
 			// Create a message
 			final PublicSharingPayload payload = new PublicSharingPayload(publicSharing);
 			final String channelName = this.secretName;
-			final Message publicSharingMessage = new PublicMessage(channelName, this.index, payload);
+			final PublicMessage publicSharingMessage = new PublicMessage(channelName, this.index, payload);
 			this.channel.send(publicSharingMessage);
 
 			return true;

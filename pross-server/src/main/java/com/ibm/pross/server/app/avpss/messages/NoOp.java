@@ -13,7 +13,7 @@ public class NoOp extends Payload implements Serializable {
 	private static final long serialVersionUID = 7765671719128090950L;
 
 	public NoOp() {
-		super(OpCode.NOOP, new Object());
+		super(OpCode.NOOP, new String("NO OP"));
 	}
 
 	@Override

@@ -8,7 +8,7 @@ package com.ibm.pross.server.messages;
 
 import java.io.Serializable;
 
-public class PublicMessage implements Message, Serializable {
+public class PublicMessage implements Serializable {
 
 	private static final long serialVersionUID = -8470206987302692599L;
 
@@ -42,20 +42,40 @@ public class PublicMessage implements Message, Serializable {
 		return payload;
 	}
 
-	@Override
+	/**
+	 * Returns the index of the shareholder who purportedly sent this message.
+	 * 
+	 * @return
+	 */
 	public int getSenderIndex() {
 		return this.senderIndex;
 	}
 
-	@Override
+	/**
+	 * Determines whether the provided channel name indicates the shareholder is a recipient  for this message
+	 * 
+	 * @param channelName
+	 *            The channel name of the shareholder
+	 * @return Returns true if the provided shareholder index is a recipient of
+	 *         the message
+	 */
 	public boolean isRecipient(final String channelName) {
 		return this.channelName.equals(channelName);
+	}
+
+	/**
+	 * Returns the name of the channel for this message
+	 * @return
+	 */
+	public String getChannelName() {
+		return this.channelName;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
+		result = prime * result + ((channelName == null) ? 0 : channelName.hashCode());
 		result = prime * result + ((payload == null) ? 0 : payload.hashCode());
 		result = prime * result + senderIndex;
 		return result;
@@ -70,6 +90,11 @@ public class PublicMessage implements Message, Serializable {
 		if (getClass() != obj.getClass())
 			return false;
 		PublicMessage other = (PublicMessage) obj;
+		if (channelName == null) {
+			if (other.channelName != null)
+				return false;
+		} else if (!channelName.equals(other.channelName))
+			return false;
 		if (payload == null) {
 			if (other.payload != null)
 				return false;
@@ -82,12 +107,8 @@ public class PublicMessage implements Message, Serializable {
 
 	@Override
 	public String toString() {
-		return "PublicMessage [senderIndex=" + senderIndex + ", payload=" + payload + "]";
-	}
-
-	@Override
-	public String getChannelName() {
-		return this.channelName;
+		return "PublicMessage [channelName=" + channelName + ", senderIndex=" + senderIndex + ", payload=" + payload
+				+ "]";
 	}
 
 	

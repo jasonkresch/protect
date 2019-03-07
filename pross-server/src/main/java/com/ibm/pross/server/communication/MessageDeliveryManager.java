@@ -125,6 +125,8 @@ public class MessageDeliveryManager {
 			final Map<SignedMessage, Set<Integer>> pendingConfirmations = messageStateTracker
 					.determineMessagesNotKnownByAll();
 
+			System.out.println("Resending " + pendingConfirmations.size() + " unconfirmed messages.");
+			
 			for (final Entry<SignedMessage, Set<Integer>> entry : pendingConfirmations.entrySet()) {
 				final SignedMessage signedMessage = entry.getKey();
 				final Set<Integer> recipients = entry.getValue();

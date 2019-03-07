@@ -1,9 +1,9 @@
 package com.ibm.pross.server.communication.handlers;
 
-import com.ibm.pross.server.messages.Message;
+import com.ibm.pross.server.messages.PublicMessage;
 
 public interface MessageHandler {
 
-	public void handleMessage(final Message message);
+	public void handleMessage(final PublicMessage message);
 	
 }

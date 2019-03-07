@@ -1,6 +1,6 @@
 package com.ibm.pross.server.app.avpss.channel;
 
-import com.ibm.pross.server.messages.Message;
+import com.ibm.pross.server.messages.PublicMessage;
 
 public interface FifoAtomicBroadcastChannel {
 
@@ -9,7 +9,7 @@ public interface FifoAtomicBroadcastChannel {
 	 * 
 	 * @param message
 	 */
-	public void send(final Message message);
+	public void send(final PublicMessage message);
 
 	/**
 	 * Returns the message by the index
@@ -17,7 +17,7 @@ public interface FifoAtomicBroadcastChannel {
 	 * @param messageIndex
 	 * @return
 	 */
-	public Message getMessage(final long messageIndex);
+	public PublicMessage getMessage(final long messageIndex);
 	
 	/**
 	 * Returns the total number of messages that have been delivered to this channel

@@ -1,6 +1,5 @@
 package com.ibm.pross.server.util;
 
-import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.RelayedMessage;
@@ -8,6 +7,7 @@ import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
 
 import io.protostuff.LinkedBuffer;
+import io.protostuff.Message;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
 import io.protostuff.runtime.RuntimeSchema;
@@ -23,7 +23,7 @@ public class MessageSerializer {
 	public static final Schema<PublicMessage> MESSAGE_SCHEMA = RuntimeSchema.getSchema(PublicMessage.class);
 	public static final Schema<Payload> PAYLOAD_SCHEMA = RuntimeSchema.getSchema(Payload.class);
 
-	public static final int MAX_MESSAGE_SIZE = 64 * 1024; // 64 KB
+	public static final int MAX_MESSAGE_SIZE = 256 * 1024; // 256 KB
 
 	/**
 	 * Serializes an SignedRelayedMessage into a byte string using Java
@@ -35,7 +35,7 @@ public class MessageSerializer {
 	public static byte[] serializeSignedRelayedMessage(final SignedRelayedMessage signedRelayedMessage) {
 
 		// Re-use (manage) this buffer to avoid allocating on every serialization
-		final LinkedBuffer buffer = LinkedBuffer.allocate(64 * 1024);
+		final LinkedBuffer buffer = LinkedBuffer.allocate(MAX_MESSAGE_SIZE);
 
 		try {
 			// Perform serialization
@@ -69,7 +69,7 @@ public class MessageSerializer {
 	public static byte[] serializeRelayedMessage(final RelayedMessage relayedMessage) {
 
 		// Re-use (manage) this buffer to avoid allocating on every serialization
-		final LinkedBuffer buffer = LinkedBuffer.allocate(64 * 1024);
+		final LinkedBuffer buffer = LinkedBuffer.allocate(MAX_MESSAGE_SIZE);
 
 		try {
 			// Perform serialization
@@ -102,7 +102,7 @@ public class MessageSerializer {
 	public static byte[] serializeSignedMessage(final SignedMessage signedMessage) {
 
 		// Re-use (manage) this buffer to avoid allocating on every serialization
-		final LinkedBuffer buffer = LinkedBuffer.allocate(64 * 1024);
+		final LinkedBuffer buffer = LinkedBuffer.allocate(MAX_MESSAGE_SIZE);
 
 		try {
 			// Perform serialization
@@ -153,7 +153,7 @@ public class MessageSerializer {
 	 * @param input
 	 * @return
 	 */
-	public static Message deserializeMessage(byte[] serializedMessage) {
+	public static PublicMessage deserializeMessage(byte[] serializedMessage) {
 		final PublicMessage parsedMessage = MESSAGE_SCHEMA.newMessage();
 		ProtostuffIOUtil.mergeFrom(serializedMessage, parsedMessage, MESSAGE_SCHEMA);
 		return parsedMessage;
