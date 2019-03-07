@@ -29,7 +29,6 @@ import bftsmart.consensus.Consensus;
 import bftsmart.consensus.Decision;
 import bftsmart.consensus.Epoch;
 import bftsmart.consensus.messages.ConsensusMessage;
-import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.consensus.messages.MessageFactory.PaxosMessageType;
 import bftsmart.consensus.roles.Acceptor;
 import bftsmart.consensus.roles.Proposer;

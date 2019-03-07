@@ -8,16 +8,10 @@ import java.util.Arrays;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ibm.pross.common.util.RandomNumberGenerator;
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyGenerator;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyPair;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProof;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofGenerator;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofVerifier;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.ShamirShare;
 

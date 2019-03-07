@@ -22,7 +22,6 @@ import java.security.InvalidKeyException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PublicKey;
-import java.security.SignedObject;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;

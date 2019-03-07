@@ -1,7 +1,6 @@
 package com.ibm.pross.server.communication;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.security.PrivateKey;
 import java.security.PublicKey;
@@ -20,7 +19,6 @@ import com.ibm.pross.server.messages.PublicMessage;
 import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
-import com.ibm.pross.server.util.AtomicFileOperations;
 import com.ibm.pross.server.util.MessageSerializer;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;

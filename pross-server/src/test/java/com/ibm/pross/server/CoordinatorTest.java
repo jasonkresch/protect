@@ -6,26 +6,6 @@
 
 package com.ibm.pross.server;
 
-import static org.junit.Assert.fail;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.security.NoSuchAlgorithmException;
-import java.security.Security;
-
-import javax.crypto.BadPaddingException;
-import javax.crypto.IllegalBlockSizeException;
-
-import org.bouncycastle.jce.provider.BouncyCastleProvider;
-import org.junit.Assert;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import com.ibm.pross.client.PrfClient;
-import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
-
 public class CoordinatorTest {
 /**
 	public static Administration DEFAULT_ADMINISTRATION;

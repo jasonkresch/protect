@@ -16,11 +16,6 @@ import com.ibm.pross.common.util.crypto.paillier.PaillierKeyGenerator;
 import com.ibm.pross.common.util.crypto.paillier.PaillierKeyPair;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProof;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofGenerator;
-import com.ibm.pross.common.util.crypto.zkp.pedersen.PedersenEqRangeProofVerifier;
-import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
-import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProver;
 
 public class PedersenEqRangeProofTest {
 

@@ -7,7 +7,6 @@ import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
 
 import io.protostuff.LinkedBuffer;
-import io.protostuff.Message;
 import io.protostuff.ProtostuffIOUtil;
 import io.protostuff.Schema;
 import io.protostuff.runtime.RuntimeSchema;

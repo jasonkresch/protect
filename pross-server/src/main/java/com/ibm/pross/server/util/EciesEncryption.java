@@ -30,10 +30,9 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.crypto.kdf.EntropyExtractor;
+import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.serialization.Parse;
-import com.ibm.pross.common.util.serialization.ClassSerialization;
 import com.ibm.pross.server.messages.EncryptedPayload;
 import com.ibm.pross.server.messages.Payload;
 

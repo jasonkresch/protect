@@ -15,31 +15,31 @@ limitations under the License.
 */
 package bftsmart.consensus.roles;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
+import java.security.PrivateKey;
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.LinkedList;
+
+import javax.crypto.Mac;
+import javax.crypto.SecretKey;
 
 import bftsmart.communication.ServerCommunicationSystem;
-import bftsmart.communication.server.ServerConnection;
 import bftsmart.consensus.Consensus;
-import bftsmart.tom.core.ExecutionManager;
 import bftsmart.consensus.Epoch;
-import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.consensus.messages.ConsensusMessage;
+import bftsmart.consensus.messages.MessageFactory;
 import bftsmart.reconfiguration.ServerViewController;
+import bftsmart.tom.core.ExecutionManager;
 import bftsmart.tom.core.TOMLayer;
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.core.messages.TOMMessageType;
 import bftsmart.tom.util.Logger;
 import bftsmart.tom.util.TOMUtil;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
-import java.security.PrivateKey;
-import java.util.HashMap;
-import java.util.LinkedList;
-import javax.crypto.Mac;
-import javax.crypto.SecretKey;
 
 /**
  * This class represents the acceptor role in the consensus protocol. This class

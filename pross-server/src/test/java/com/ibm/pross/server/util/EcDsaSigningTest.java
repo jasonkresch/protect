@@ -12,8 +12,6 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.util.Random;
 
-import javax.crypto.KeyGenerator;
-
 import org.junit.Assert;
 import org.junit.Test;
 

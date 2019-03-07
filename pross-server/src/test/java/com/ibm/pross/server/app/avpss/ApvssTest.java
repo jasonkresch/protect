@@ -158,7 +158,6 @@ public class ApvssTest {
 		// Define parameters
 		final int n = 5;
 		final int k = 3;
-		final int f = 1;
 		
 		// Create shareholders
 		final List<ApvssShareholder> shareholders = new ArrayList<>();
@@ -249,7 +248,6 @@ public class ApvssTest {
 		// Define parameters
 		final int n = 5;
 		final int k = 3;
-		final int f = 1;
 		
 		// Create shareholders
 		final List<ApvssShareholder> shareholders = new ArrayList<>();

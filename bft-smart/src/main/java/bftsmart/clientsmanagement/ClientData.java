@@ -16,12 +16,8 @@ limitations under the License.
 package bftsmart.clientsmanagement;
 
 import java.security.PublicKey;
-import java.security.Signature;
-import java.security.SignatureException;
 import java.util.Iterator;
 import java.util.concurrent.locks.ReentrantLock;
-
-import com.ibm.pross.common.util.SigningUtil;
 
 import bftsmart.tom.core.messages.TOMMessage;
 import bftsmart.tom.util.Logger;
