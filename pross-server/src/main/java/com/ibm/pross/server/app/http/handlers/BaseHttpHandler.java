@@ -10,6 +10,7 @@ import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
 import com.ibm.pross.server.configuration.permissions.exceptions.HttpException;
+import com.ibm.pross.server.configuration.permissions.exceptions.InternalServerException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
@@ -58,7 +59,8 @@ public abstract class BaseHttpHandler implements HttpHandler {
 	 * @throws NotFoundException
 	 * @throws BadRequestException
 	 * @throws ResourceUnavailableException 
+	 * @throws InternalServerException 
 	 */
 	public abstract void handleWithExceptions(final HttpExchange exchange)
-			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException, ResourceUnavailableException;
+			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException, ResourceUnavailableException, InternalServerException;
 }

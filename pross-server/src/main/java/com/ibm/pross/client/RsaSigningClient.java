@@ -50,8 +50,8 @@ import sun.security.x509.X509CertInfo;
 @SuppressWarnings("restriction")
 public class RsaSigningClient {
 
-	public static final String HASH_ALGORITHM = "SHA-256";
-	public static final String CERTIFICATE_SIGNING_ALGORITHM = "SHA256withRSA"; // Must match hash algorithm
+	public static final String HASH_ALGORITHM = "SHA-512";
+	public static final String CERTIFICATE_SIGNING_ALGORITHM = "SHA512withRSA"; // Must match hash algorithm
 
 	protected static X509CertInfo createCertificateInfo(final String subjectDn, final String altNameIp,
 			final String altNameHost, final PublicKey subjectPublicKey, final long validForDays, final boolean makeCa,
@@ -142,7 +142,7 @@ public class RsaSigningClient {
 		final byte[] digest = md.digest(input);
 
 		// Create a digest info consisting of the algorithm id and the hash
-		final AlgorithmIdentifier algId = new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha256, DERNull.INSTANCE);
+		final AlgorithmIdentifier algId = new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha512, DERNull.INSTANCE);
 		final DigestInfo digestInfo = new DigestInfo(algId, digest);
 		final byte[] message = digestInfo.getEncoded(ASN1Encoding.DER);
 

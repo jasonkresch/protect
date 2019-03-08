@@ -1,6 +1,7 @@
 package com.ibm.pross.server.app.avpss;
 
 import java.math.BigInteger;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -12,7 +13,6 @@ import java.util.SortedSet;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.TreeSet;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
@@ -24,6 +24,7 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPublicKey;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProver;
 import com.ibm.pross.common.util.pvss.PublicSharing;
@@ -977,6 +978,22 @@ public class ApvssShareholder {
 		getCurrentSharing().setShare1(null);
 	}
 
+	public void setRsaSecret(BigInteger shareValue, final RsaSharing rsaSharing) {
+		this.sharingType = SharingType.RSA_STORED;
+		SharingState state = this.getCurrentSharing();
+		state.setCreationTime(new Date());
+		state.setShare1(new ShamirShare(BigInteger.valueOf(index), shareValue));
+		state.setRsaSharing(rsaSharing);
+		state.getSharePublicKeys()[0] = new EcPoint(rsaSharing.getPublicKey().getPublicExponent(), rsaSharing.getPublicKey().getModulus()); // Using EcPoints is a hack
+		//for (int i = 0; i < this.n; i++ ) {
+		//	state.getSharePublicKeys()[0] = new EcPoint(BigInteger.valueOf(i+1), rsaSharing.getVerificationKeys()[i]); // Using EcPoints is a hack
+		//}
+	}
+
+	public RsaSharing getRsaSharing() {
+		return this.getCurrentSharing().getRsaSharing();
+	}
+	
 	// TODO: Catch all instances of casting (check instance of) or catch
 	// ClassCastException
 

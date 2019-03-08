@@ -5,14 +5,14 @@ import com.ibm.pross.common.util.shamir.ShamirShare;
 /**
  * Represents complete state of the server for a particular user registration
  */
-public class ServerConfiguration {
+public class RsaShareConfiguration {
 
 	private final ServerPublicConfiguration publicConfiguration;
 
 	// Private information unique to this server
 	private final ShamirShare share;
 
-	public ServerConfiguration(final ServerPublicConfiguration publicConfiguration, final ShamirShare share) {
+	public RsaShareConfiguration(final ServerPublicConfiguration publicConfiguration, final ShamirShare share) {
 		this.publicConfiguration = publicConfiguration;
 		this.share = share;
 	}
@@ -42,7 +42,7 @@ public class ServerConfiguration {
 			return false;
 		if (getClass() != obj.getClass())
 			return false;
-		ServerConfiguration other = (ServerConfiguration) obj;
+		RsaShareConfiguration other = (RsaShareConfiguration) obj;
 		if (publicConfiguration == null) {
 			if (other.publicConfiguration != null)
 				return false;

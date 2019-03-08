@@ -81,7 +81,7 @@ public class SigningUtil {
 	 */
 	public static String getSigningAlgorithm(final Key key) {
 		final String defaultAlgorithm;
-		if (key.getAlgorithm().equals("EC")) {
+		if (key.getAlgorithm().equals("ECDSA")) {
 			defaultAlgorithm = CommonConfiguration.EC_SIGNATURE_ALGORITHM;
 		} else if (key.getAlgorithm().equals("EdDSA")) {
 			defaultAlgorithm = CommonConfiguration.ED_SIGNATURE_ALGORITHM;

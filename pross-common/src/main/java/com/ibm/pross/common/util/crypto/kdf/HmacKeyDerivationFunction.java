@@ -10,7 +10,6 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.InvalidKeyException;
 import java.security.NoSuchAlgorithmException;
-import java.util.Arrays;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;

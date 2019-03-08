@@ -10,6 +10,7 @@ import javax.net.ssl.SSLSession;
 
 import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
+import com.ibm.pross.server.configuration.permissions.exceptions.InternalServerException;
 import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
 import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
@@ -29,7 +30,7 @@ public abstract class AuthenticatedClientRequestHandler extends BaseHttpHandler 
 
 	@Override
 	public void handleWithExceptions(final HttpExchange exchange) throws IOException, UnauthorizedException,
-			NotFoundException, ConflictException, BadRequestException, ResourceUnavailableException {
+			NotFoundException, ConflictException, BadRequestException, ResourceUnavailableException, InternalServerException {
 
 		if (exchange instanceof HttpsExchange) {
 
@@ -86,9 +87,10 @@ public abstract class AuthenticatedClientRequestHandler extends BaseHttpHandler 
 	 * @throws ConflictException
 	 * @throws BadRequestException
 	 * @throws ResourceUnavailableException
+	 * @throws InternalServerException 
 	 */
 	public abstract void authenticatedClientHandle(final HttpExchange exchange, final String username)
 			throws IOException, UnauthorizedException, NotFoundException, ConflictException, BadRequestException,
-			ResourceUnavailableException;
+			ResourceUnavailableException, InternalServerException;
 
 }

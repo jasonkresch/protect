@@ -25,7 +25,7 @@ public class RsaSignatureServer {
 	private final int THROTTLE_MILLISECONDS = 10;
 
 	// Map of usernames to their corresponding configurations
-	private final Map<String, ServerConfiguration> userConfigurations;
+	private final Map<String, RsaShareConfiguration> userConfigurations;
 
 	// Map of usernames to their corresponding throttle mechanisms
 	private final Map<String, Throttle> throttling = new ConcurrentHashMap<>();
@@ -49,7 +49,7 @@ public class RsaSignatureServer {
 
 		checkConfigurationConsistency(publicConfig, share);
 
-		ServerConfiguration serverConfig = new ServerConfiguration(publicConfig, share);
+		RsaShareConfiguration serverConfig = new RsaShareConfiguration(publicConfig, share);
 		return this.userConfigurations.putIfAbsent(username, serverConfig) == null;
 	}
 
@@ -61,8 +61,8 @@ public class RsaSignatureServer {
 	 * @throws UserNotFoundException If there is no registered server configuration
 	 *                               for this user
 	 */
-	private ServerConfiguration getConfigurationForUser(String username) throws UserNotFoundException {
-		ServerConfiguration serverConfig = this.userConfigurations.get(username);
+	private RsaShareConfiguration getConfigurationForUser(String username) throws UserNotFoundException {
+		RsaShareConfiguration serverConfig = this.userConfigurations.get(username);
 		if (serverConfig == null) {
 			throw new UserNotFoundException("User nor found: " + username);
 		}
@@ -78,7 +78,7 @@ public class RsaSignatureServer {
 	 * @throws UserNotFoundException
 	 */
 	public int getIndex(String username) throws UserNotFoundException {
-		ServerConfiguration serverConfig = getConfigurationForUser(username);
+		RsaShareConfiguration serverConfig = getConfigurationForUser(username);
 		return serverConfig.getShare().getX().intValue();
 	}
 
@@ -91,7 +91,7 @@ public class RsaSignatureServer {
 	 * @throws Exception
 	 */
 	public ServerPublicConfiguration getPublicConfiguration(String username) throws UserNotFoundException {
-		ServerConfiguration serverConfig = getConfigurationForUser(username);
+		RsaShareConfiguration serverConfig = getConfigurationForUser(username);
 		return serverConfig.getServerPublicConfiguration();
 	}
 
@@ -113,7 +113,7 @@ public class RsaSignatureServer {
 		throttling.get(username).performThrottledAction();
 
 		// Load user configuration
-		ServerConfiguration serverConfig = getConfigurationForUser(username);
+		RsaShareConfiguration serverConfig = getConfigurationForUser(username);
 
 		return ThresholdSignatures.produceSignatureResponse(message, serverConfig);
 	}

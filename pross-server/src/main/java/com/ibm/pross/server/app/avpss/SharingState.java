@@ -1,5 +1,6 @@
 package com.ibm.pross.server.app.avpss;
 
+import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -12,6 +13,7 @@ import org.apache.commons.codec.binary.Hex;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;
 import com.ibm.pross.common.util.pvss.PublicSharing;
 import com.ibm.pross.common.util.shamir.ShamirShare;
@@ -49,6 +51,9 @@ public class SharingState {
 
 	// Pedersen commitments to the co-efficients of the combined polynomial
 	private volatile EcPoint[] pedersenCommitments;
+
+	// Values used only for RSA
+	private volatile RsaSharing rsaSharing;
 
 	// Used to time operation
 	private volatile long startTime;
@@ -110,7 +115,7 @@ public class SharingState {
 	public ShamirShare getShare2() {
 		return share2;
 	}
-	
+
 	public String getShare1Hash() {
 		try {
 			if (getShare1() == null) {
@@ -171,4 +176,13 @@ public class SharingState {
 	public AtomicInteger getSuccessCount() {
 		return successCount;
 	}
+
+	public RsaSharing getRsaSharing() {
+		return rsaSharing;
+	}
+
+	public void setRsaSharing(RsaSharing rsaSharing) {
+		this.rsaSharing = rsaSharing;
+	}
+
 }

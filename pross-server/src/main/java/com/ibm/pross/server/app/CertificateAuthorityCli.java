@@ -26,6 +26,7 @@ import org.bouncycastle.util.io.pem.PemReader;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
+import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 import com.ibm.pross.common.util.serialization.Pem;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
@@ -278,7 +279,7 @@ public class CertificateAuthorityCli {
 	 * @param caKeyPair
 	 * @return
 	 */
-	protected static X509Certificate generateCaCertificate(final String caDistinguishedName, final KeyPair caKeyPair) {
+	public static X509Certificate generateCaCertificate(final String caDistinguishedName, final KeyPair caKeyPair) {
 
 		// Validity period of 10 years
 		final int validityDays = 20 * 365;
@@ -314,7 +315,7 @@ public class CertificateAuthorityCli {
 		try {
 
 			// Look up algorithm based on CA private key
-			final String algorithm = CommonConfiguration.EC_SIGNATURE_ALGORITHM;
+			final String algorithm = SigningUtil.getSigningAlgorithm(caPrivateKey);
 			final AlgorithmId algorithmId = AlgorithmId.get(algorithm);
 
 			// Define validity period

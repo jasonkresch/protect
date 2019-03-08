@@ -12,7 +12,7 @@ import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureShareProof;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BadArgumentException;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerConfiguration;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.RsaShareConfiguration;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.serialization.Parse;
 import com.ibm.pross.common.util.shamir.Polynomials;
@@ -43,7 +43,7 @@ public class ThresholdSignatures {
 	 * @return
 	 */
 	public static SignatureResponse produceSignatureResponse(final BigInteger inputMessage,
-			final ServerConfiguration serverConfig) {
+			final RsaShareConfiguration serverConfig) {
 
 		// Extract public configuration and share
 		final ServerPublicConfiguration publicConfig = serverConfig.getServerPublicConfiguration();

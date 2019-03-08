@@ -30,12 +30,13 @@ import com.ibm.pross.server.app.http.handlers.DisableHandler;
 import com.ibm.pross.server.app.http.handlers.EnableHandler;
 import com.ibm.pross.server.app.http.handlers.ExponentiateHandler;
 import com.ibm.pross.server.app.http.handlers.GenerateHandler;
-import com.ibm.pross.server.app.http.handlers.PartialHandler;
 import com.ibm.pross.server.app.http.handlers.IdHandler;
 import com.ibm.pross.server.app.http.handlers.InfoHandler;
+import com.ibm.pross.server.app.http.handlers.PartialHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
 import com.ibm.pross.server.app.http.handlers.RecoverHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
+import com.ibm.pross.server.app.http.handlers.SignHandler;
 import com.ibm.pross.server.app.http.handlers.StoreHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -106,7 +107,7 @@ public class HttpRequestProcessor {
 
 		// Handlers for using the shares to perform functions
 		this.server.createContext("/exponentiate", new ExponentiateHandler(clientKeys, accessEnforcement, shareholders));
-		this.server.createContext("/sign", new InfoHandler(clientKeys, accessEnforcement, serverConfig, shareholders));
+		this.server.createContext("/sign", new SignHandler(clientKeys, accessEnforcement, shareholders));
 
 		// Define server to server requests
 		this.server.createContext("/partial", new PartialHandler(serverKeys, shareholders));

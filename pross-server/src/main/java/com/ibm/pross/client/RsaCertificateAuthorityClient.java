@@ -8,19 +8,23 @@ import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.nio.file.Files;
+import java.security.InvalidKeyException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.SecureRandom;
 import java.security.Security;
+import java.security.SignatureException;
 import java.security.UnrecoverableKeyException;
 import java.security.cert.Certificate;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
+import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
@@ -48,26 +52,32 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureShareProof;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BadArgumentException;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BelowThresholdException;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;
+import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.serialization.Pem;
-import com.ibm.pross.common.util.shamir.Polynomials;
+import com.ibm.pross.server.app.CertificateAuthorityCli;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
 import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
-import com.ibm.pross.server.util.EciesEncryption;
 
 import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
+import sun.security.x509.X509CertImpl;
+import sun.security.x509.X509CertInfo;
 
 /**
  * Performs ECIES (Elliptic Curve based ElGamal Encryption and Decryption of
  * files used a distributed secret key)
  */
-public class EciesEncryptionClient {
+@SuppressWarnings("restriction")
+public class RsaCertificateAuthorityClient {
 
 	static {
 		Security.addProvider(new BouncyCastleProvider());
@@ -95,142 +105,204 @@ public class EciesEncryptionClient {
 
 	// Parameters of operation
 	private final String secretName;
-	private final File inputFile;
-	private final File outputFile;
+	private final File caFile;
 
-	public EciesEncryptionClient(final ServerConfiguration serverConfiguration,
+	// Unique parameters for generating
+	private final String issuerDn;
+
+	// Unique parameters for issuing
+	private final File publicKeyFile;
+	private final File certificateOutputFile;
+	private final String subjectDn;
+
+	/**
+	 * Constructor for generating a new CA key
+	 */
+	public RsaCertificateAuthorityClient(final ServerConfiguration serverConfiguration,
 			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
-			final X509Certificate clientCertificate, PrivateKey clientTlsKey, final String secretName,
-			final File inputFile, final File outputFile) {
+			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
+			final File caFile, final String issuerDn) {
 		this.serverConfiguration = serverConfiguration;
 		this.caCertificates = caCertificates;
 		this.serverKeys = serverKeys;
 		this.clientCertificate = clientCertificate;
 		this.clientTlsKey = clientTlsKey;
 		this.secretName = secretName;
-		this.inputFile = inputFile;
-		this.outputFile = outputFile;
+		this.caFile = caFile;
+		this.issuerDn = issuerDn;
+
+		// Not used
+		this.publicKeyFile = null;
+		this.certificateOutputFile = null;
+		this.subjectDn = null;
 	}
 
-	public void encryptFile() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
-			IOException, ResourceUnavailableException, BelowThresholdException {
+	/**
+	 * Constructor for issuing a certificate
+	 */
+	public RsaCertificateAuthorityClient(final ServerConfiguration serverConfiguration,
+			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
+			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
+			final File caFile, final File publicKeyFile, final File certificateOutputFile, final String subjectDn) {
+		this.serverConfiguration = serverConfiguration;
+		this.caCertificates = caCertificates;
+		this.serverKeys = serverKeys;
+		this.clientCertificate = clientCertificate;
+		this.clientTlsKey = clientTlsKey;
+		this.secretName = secretName;
+		this.caFile = caFile;
+		this.publicKeyFile = publicKeyFile;
+		this.certificateOutputFile = certificateOutputFile;
+		this.subjectDn = subjectDn;
+
+		// Not used
+		this.issuerDn = null;
+	}
+
+	public void generateCaCertificate() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
+			IOException, ResourceUnavailableException, BelowThresholdException, InvalidKeySpecException,
+			NoSuchAlgorithmException, CertificateEncodingException {
+
+		// Generates new key
+		// Thresholdizes it
+		// Stores it
+		// Creates a self-signed certificate file at the specified location
+		// (Invoke the CA class?)
+		// Complete. Storage of RSA to threshold servers. Note this key type does not
+		// support proactive refresh nor share recovery! Only use this key for
+		// authentication, not for decryption of long term data.
+
+		// Get n and t
+		final int numServers = serverConfiguration.getNumServers();
+		final int threshold = serverConfiguration.getReconstructionThreshold();
+
+		// Print status of key pair generation
+		System.out.println("-----------------------------------------------------------");
+		System.out.println("Beginning generation of threshold RSA key...");
+		final RsaSharing rsaSharing = RsaSharing.generateSharing(numServers, threshold);
+		System.out.println("RSA Key Generation complete.");
+		System.out.println();
+
+		// Create and persist CA certificate
+		System.out.println("Creating self-signed root CA certificate for: " + issuerDn);
+		final X509Certificate caCert = CertificateAuthorityCli.generateCaCertificate(issuerDn, rsaSharing.getKeyPair());
+		Pem.storeCertificateToFile(caCert, caFile);
+		System.out.println("Certificate written to: " + caFile.getAbsolutePath());
+		System.out.println();
+
+		// Store shares and parameters to the shareholders (creating a new sharing state
+		// for the server, bump epoch?)
+		System.out.print("Storing shares of RSA private key to secret: " + this.secretName + "... ");
+		final Boolean success = this.storeRsaSharing(rsaSharing);
+		if (success) {
+			System.out.println("Storage complete");
+		} else {
+			System.out.println("Storage failed");
+		}
+		System.out.println(" (done)");
+
+		System.out.println("CA Creation Completed. Ready to issue certificates.");
+		System.out.println("WARNING: Refresh and reconstruction are not active for RSA keys, do not use them for encrypting anything that must be recovered");
+	}
+
+	public void issuerCertificate()
+			throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException,
+			ResourceUnavailableException, BelowThresholdException, NoSuchAlgorithmException, CertificateException,
+			InvalidKeySpecException, InvalidKeyException, NoSuchProviderException, SignatureException, BadArgumentException {
+
+		// Test most common configuration
+
+		// Use openSSL to verify it
 
 		// Print status
 		System.out.println("-----------------------------------------------------------");
-		System.out.println("Beginning encryption of file: " + this.inputFile);
+		System.out.println("Issing certificate using threshold RSA secret: " + this.secretName);
+		System.out.print("  Reading end-entity public key from file: " + this.publicKeyFile + "... ");
+		final PublicKey entityPublicKey = (PublicKey) Pem.loadKeyFromFile(this.publicKeyFile);
+		System.out.println("done.");
+
+		System.out.print("  Loading CA certificate from file: " + this.publicKeyFile + "... ");
+		final X509Certificate caCertificate = Pem.loadCertificateFromFile(caFile);
+		System.out.println("done.");
+
+		System.out.print("  Creating a To-Be-Signed Certificate for: " + this.subjectDn + "... ");
+		final X509CertInfo certificateInfo = RsaSigningClient.createCertificateInfo(subjectDn, null, null,
+				entityPublicKey, 365, false, caCertificate.getSubjectDN().getName());
+		final X509CertImpl certificate = new X509CertImpl(certificateInfo);
+		final byte[] toBeSigned = certificate.getTBSCertificate();
+		final BigInteger toBeSignedRaw = RsaSigningClient.EMSA_PKCS1_V1_5_ENCODE(toBeSigned,
+				((RSAPublicKey) caCertificate.getPublicKey()).getModulus());
+		System.out.println("done.");
 
 		// Get public key and current epoch from the server
-		System.out.print("Accessing public key for secret: " + this.secretName + "... ");
-		final SimpleEntry<EcPoint, Long> publicKeyAndEpoch = this.getServerPublicKey(secretName);
-		System.out.println(" (done)");
-		final EcPoint publicKey = publicKeyAndEpoch.getKey();
-		final long currentEpoch = publicKeyAndEpoch.getValue();
-		System.out.println("Public key for secret:    " + publicKey);
-		System.out.println("Current epoch for secret: " + currentEpoch);
+		System.out.print("  Performing threshold signing of certificate using: " + this.secretName + "... ");
+		final BigInteger signatureResult = this.signMessage(toBeSignedRaw);
+		System.out.println("done.");
+		System.out.println("Signature result obtained: " + signatureResult);
 		System.out.println();
 
-		// Reading
-		System.out.print("Reading input file: " + this.inputFile + "... ");
-		final byte[] plaintextData = Files.readAllBytes(inputFile.toPath());
-		System.out.println(" (done)");
-		System.out.println("Read " + plaintextData.length + " bytes.");
-		System.out.println();
-
-		// Perform ECIES encryption
-		System.out.print("Performing ECIES encryption of file content... ");
-		final byte[] ciphertext = EciesEncryption.encrypt(plaintextData, publicKey);
-		System.out.println(" (done)");
-		System.out.println("Encrypted length " + ciphertext.length + " bytes.");
-		System.out.println();
-
-		// Write ciphertext to output file
-		System.out.print("Writing ciphertext to file: " + this.outputFile + "... ");
-		Files.write(this.outputFile.toPath(), ciphertext);
-		System.out.println(" (done)");
-		System.out.println("Wrote " + ciphertext.length + " bytes.");
-		System.out.println();
-
-		System.out.println("Done.");
-
-		final EcPoint test = this.exponentiatePoint(CommonConfiguration.g, currentEpoch);
-		System.out.println("test public key: " + test);
-	}
-
-	public void decryptFile() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
-			IOException, ResourceUnavailableException, BelowThresholdException {
-
-		// Print status
-		System.out.println("-----------------------------------------------------------");
-		System.out.println("Beginning decryption of file: " + this.inputFile);
-
-		// Reading ciphertext
-		System.out.print("Reading input file: " + this.inputFile + "... ");
-		final byte[] ciphertextData = Files.readAllBytes(inputFile.toPath());
-		System.out.println(" (done)");
-		System.out.println("Read " + ciphertextData.length + " bytes of ciphertext.");
-		System.out.println();
-
-		// Extract public value from ciphertext
-		System.out.print("Extracting public value from ciphertext: " + this.inputFile + "... ");
-		final EcPoint publicValue = EciesEncryption.getPublicValue(ciphertextData);
-		System.out.println(" (done)");
-		System.out.println("Public Value is: " + publicValue);
-		System.out.println();
-
-		// Get public key and current epoch from the server
-		System.out.print("Accessing public key for secret: " + this.secretName + "... ");
-		final SimpleEntry<EcPoint, Long> publicKeyAndEpoch = this.getServerPublicKey(secretName);
-		System.out.println(" (done)");
-		final EcPoint publicKey = publicKeyAndEpoch.getKey();
-		final long currentEpoch = publicKeyAndEpoch.getValue();
-		System.out.println("Public key for secret:    " + publicKey);
-		System.out.println("Current epoch for secret: " + currentEpoch);
-		System.out.println();
-
-		// Get public key and current epoch from the server
-		System.out.print("Performing threshold exponentiation on public value using: " + this.secretName + "... ");
-		final EcPoint exponentiationResult = this.exponentiatePoint(publicValue, currentEpoch);
-		System.out.println(" (done)");
-		System.out.println("Shared secret obtained:    " + exponentiationResult);
-		System.out.println();
-
-		// Perform ECIES decryption
-		System.out.print("Performing ECIES decryption of file content... ");
-		final byte[] plaintext = EciesEncryption.decrypt(ciphertextData, exponentiationResult);
-		System.out.println(" (done)");
-		System.out.println("Plaintext length " + plaintext.length + " bytes.");
-		System.out.println();
+		System.out.print("  Creating certificate using signature... ");
+		final byte[] signature = signatureResult.toByteArray();
+		final X509Certificate cert = RsaSigningClient.createCertificateFromTbsAndSignature(certificateInfo, signature);
+		//cert.verify(caCertificate.getPublicKey());
+		System.out.println("  done. Certificate is valid!");
 
 		// Write plaintext to output file
-		System.out.print("Writing plaintext to file: " + this.outputFile + "... ");
-		Files.write(this.outputFile.toPath(), plaintext);
-		System.out.println(" (done)");
-		System.out.println("Wrote " + plaintext.length + " bytes.");
+		System.out.print("Writing signed certificate to file: " + this.certificateOutputFile + "... ");
+		Pem.storeCertificateToFile(cert, this.certificateOutputFile);
+		System.out.println(" done.");
 		System.out.println();
 
-		System.out.println("Done.");
-
+		System.out.println("Operation complete. Certificate now ready for use.");
 	}
 
-	public static void main(final String args[]) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
-			CertificateException, BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
-			ResourceUnavailableException, BelowThresholdException {
+	public static void main(final String args[])
+			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException,
+			BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, ResourceUnavailableException,
+			BelowThresholdException, InvalidKeyException, NoSuchProviderException, SignatureException, BadArgumentException {
 
 		// Parse arguments
 		if (args.length < 6) {
-			System.err.println("USAGE: config-dir username secretname [ENCRYPT/DECRYPT] input-file output-file");
+			System.err.println(
+					"USAGE: config-dir username secretname [GENERATE] ca-certificate-output-file \"Issuer DN\"");
+			System.err.println(
+					"USAGE: config-dir username secretname [ISSUE] ca-certificate-input-file public-key-input-file issued-certificate-output-file \"Subject DN\"");
 			System.exit(-1);
 		}
 		final File baseDirectory = new File(args[0]);
 		final String username = args[1];
 		final String secretName = args[2];
-		final boolean encrypt = "ENCRYPT".equalsIgnoreCase(args[3]);
-		final File inputFile = new File(args[4]);
-		final File outputFile = new File(args[5]);
+		final boolean generate = "GENERATE".equalsIgnoreCase(args[3]);
+		final File caFile = new File(args[4]);
 
-		if (!inputFile.exists()) {
-			System.err.println("Input file does not exist: " + inputFile.getAbsolutePath());
-			System.exit(-1);
+		String issuerDn = null;
+		File publicKeyFile = null;
+		File certificateOutputFile = null;
+		String subjectDn = null;
+		if (!generate) {
+			if (!caFile.exists()) {
+				System.err.println("CA file does not exist: " + caFile.getAbsolutePath());
+				System.exit(-1);
+			}
+
+			// Issue certificate
+			if (args.length < 8) {
+				System.err.println(
+						"USAGE: config-dir username secretname [ISSUE] ca-certificate-input-file public-key-input-file issued-certificate-output-file \"Subject DN\"");
+				System.exit(-1);
+			}
+			publicKeyFile = new File(args[5]);
+
+			if (!publicKeyFile.exists()) {
+				System.err.println("PublicKey file does not exist: " + publicKeyFile.getAbsolutePath());
+				System.exit(-1);
+			}
+
+			certificateOutputFile = new File(args[6]);
+			subjectDn = args[7];
+		} else {
+			// Generate certificate and store key
+			issuerDn = args[5];
 		}
 
 		// Load server configuration (learn n and k)
@@ -267,31 +339,35 @@ public class EciesEncryptionClient {
 		final File caCertificateFile = new File(caDirectory, "ca-cert-clients.pem");
 		caCerts.add(Pem.loadCertificateFromFile(caCertificateFile));
 
-		// Create encryption client
-		final EciesEncryptionClient encryptionClient = new EciesEncryptionClient(configuration, caCerts, serverKeys,
-				clientCertificate, clientPrivateKey, secretName, inputFile, outputFile);
-
 		// Perform operation
-		if (encrypt) {
-			encryptionClient.encryptFile();
+		if (generate) {
+			// Create encryption client
+			final RsaCertificateAuthorityClient signingClient = new RsaCertificateAuthorityClient(configuration,
+					caCerts, serverKeys, clientCertificate, clientPrivateKey, secretName, caFile, issuerDn);
+			signingClient.generateCaCertificate();
 		} else {
-			encryptionClient.decryptFile();
+			// Create encryption client
+			final RsaCertificateAuthorityClient signingClient = new RsaCertificateAuthorityClient(configuration,
+					caCerts, serverKeys, clientCertificate, clientPrivateKey, secretName, caFile, publicKeyFile,
+					certificateOutputFile, subjectDn);
+			signingClient.issuerCertificate();
 		}
 	}
 
-	private static DerivationResult createDerivationResult(Object obj) {
-		return (DerivationResult) obj;
+	private static SignatureResponse createSignatureResult(Object obj) {
+		return (SignatureResponse) obj;
 	}
 
 	/**
-	 * Interacts with the servers to exponentiate a point for the given secret
+	 * Interacts with the servers to store an RSA sharing to a given secret
 	 * 
-	 * @param inputPoint
+	 * @param rsaSharing
 	 * @return
 	 * @throws ResourceUnavailableException
+	 * @throws BelowThresholdException
 	 */
-	private EcPoint exponentiatePoint(final EcPoint inputPoint, final long expectedEpoch)
-			throws ResourceUnavailableException {
+	private Boolean storeRsaSharing(final RsaSharing rsaSharing)
+			throws ResourceUnavailableException, BelowThresholdException {
 
 		// Server configuration
 		final int numShareholders = this.serverConfiguration.getNumServers();
@@ -308,7 +384,23 @@ public class EciesEncryptionClient {
 		// Each task deposits its result into this map after verifying it is correct and
 		// consistent
 		// TODO: Add verification via proofs
-		final List<Object> verifiedResults = Collections.synchronizedList(new ArrayList<>());
+		final List<Object> successfulResults = Collections.synchronizedList(new ArrayList<>());
+
+		// Collect pulic data to register with servers
+
+		// Send the public exponenet to the server
+		final BigInteger exponent = rsaSharing.getPublicKey().getPublicExponent();
+
+		// Send the modulus to the server
+		final BigInteger modulus = rsaSharing.getPublicKey().getModulus();
+
+		// Send the generator to the server
+		final BigInteger v = rsaSharing.getV();
+
+		StringBuilder allVerificationKeys = new StringBuilder();
+		for (int i = 1; i <= this.serverConfiguration.getNumServers(); i++) {
+			allVerificationKeys.append("&v_" + i + "=" + rsaSharing.getVerificationKeys()[i - 1]);
+		}
 
 		// Create a partial result task for everyone except ourselves
 		int serverId = 0;
@@ -316,16 +408,99 @@ public class EciesEncryptionClient {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/exponentiate?secretName="
-					+ this.secretName + "&x=" + inputPoint.getX() + "&y=" + inputPoint.getY() + "&json=true";
+
+			// Send share to the server
+			final BigInteger share = rsaSharing.getShares()[serverId - 1].getY();
+
+			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/store?secretName=" + this.secretName
+					+ "&e=" + exponent + "&n=" + modulus + "&v=" + v + allVerificationKeys.toString() + "&share="
+					+ share;
+
+			// Create new task to get the partial exponentiation result from the server
+			executor.submit(new PartialResultTask(serverId, linkUrl, successfulResults, latch, failureCounter,
+					maximumFailures) {
+				@Override
+				void parseJsonResult(final String json) throws Exception {
+
+					// Store result for later processing
+					successfulResults.add(Boolean.TRUE);
+
+					// Everything checked out, increment successes
+					latch.countDown();
+
+				}
+			});
+		}
+
+		try {
+			// Once we have K successful responses we can interpolate our share
+			latch.await();
+
+			// Check that we have enough results to interpolate the share
+			if (failureCounter.get() <= maximumFailures) {
+
+				// When complete, interpolate the result at zero (where the secret lies)
+				final Boolean wereSuccessful = (Boolean) getConsistentConfiguration(successfulResults,
+						reconstructionThreshold);
+				executor.shutdown();
+
+				return wereSuccessful;
+			} else {
+				executor.shutdown();
+				throw new ResourceUnavailableException();
+			}
+		} catch (InterruptedException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	/**
+	 * Interacts with the servers to sign a message using the given secret
+	 * 
+	 * @param inputPoint
+	 * @return
+	 * @throws ResourceUnavailableException
+	 * @throws BadArgumentException 
+	 * @throws BelowThresholdException 
+	 */
+	private BigInteger signMessage(final BigInteger toBeSigned) throws ResourceUnavailableException, BadArgumentException, BelowThresholdException {
+
+		// Server configuration
+		final int numShareholders = this.serverConfiguration.getNumServers();
+		final int reconstructionThreshold = this.serverConfiguration.getReconstructionThreshold();
+
+		// We create a thread pool with a thread for each task and remote server
+		final ExecutorService executor = Executors.newFixedThreadPool(numShareholders - 1);
+
+		// The countdown latch tracks progress towards reaching a threshold
+		final CountDownLatch latch = new CountDownLatch(reconstructionThreshold);
+		final AtomicInteger failureCounter = new AtomicInteger(0);
+		final int maximumFailures = (numShareholders - reconstructionThreshold);
+
+		// Each task deposits its result into this map after verifying it is correct and
+		// consistent
+		// TODO: Add verification via proofs
+		final List<Object> signatureResponses = Collections.synchronizedList(new ArrayList<>());
+		final List<Object> publicConfigurations = Collections.synchronizedList(new ArrayList<>());
+
+		// Create a partial result task for everyone except ourselves
+		int serverId = 0;
+		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
+			serverId++;
+			final String serverIp = serverAddress.getAddress().getHostAddress();
+			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/sign?secretName=" + this.secretName
+					+ "&message=" + toBeSigned.toString();
 
 			final int thisServerId = serverId;
 
 			// Create new task to get the partial exponentiation result from the server
 			executor.submit(
-					new PartialResultTask(serverId, linkUrl, verifiedResults, latch, failureCounter, maximumFailures) {
+					new PartialResultTask(serverId, linkUrl, signatureResponses, latch, failureCounter, maximumFailures) {
 						@Override
 						void parseJsonResult(final String json) throws Exception {
+
+							// FIXME: Do majority voting of correct parameters
 
 							// Parse JSON
 							final JSONParser parser = new JSONParser();
@@ -333,21 +508,33 @@ public class EciesEncryptionClient {
 							final JSONObject jsonObject = (JSONObject) obj;
 							final Long responder = (Long) jsonObject.get("responder");
 							final long epoch = (Long) jsonObject.get("epoch");
-							final JSONArray resultPoint = (JSONArray) jsonObject.get("result_point");
-							final BigInteger x = new BigInteger((String) resultPoint.get(0));
-							final BigInteger y = new BigInteger((String) resultPoint.get(1));
+							final BigInteger signatureShare = new BigInteger((String) jsonObject.get("share"));
+
+							final JSONArray proof = (JSONArray) jsonObject.get("share_proof");
+							final BigInteger c = new BigInteger((String) proof.get(0));
+							final BigInteger z = new BigInteger((String) proof.get(1));
+
+							final BigInteger e = new BigInteger((String) jsonObject.get("e"));
+							final BigInteger n = new BigInteger((String) jsonObject.get("n"));
+							final BigInteger v = new BigInteger((String) jsonObject.get("v"));
+
+							final BigInteger[] sharePublicKeys = new BigInteger[numShareholders];
+							final JSONArray vertificationKeys = (JSONArray) jsonObject.get("verification_keys");
+							for (int i = 0; i < numShareholders; i++) {
+								sharePublicKeys[i] = new BigInteger((String) vertificationKeys.get(i));
+							}
 
 							// Verify result
-							// TODO: Separate results by their epoch, wait for enough results of the same
-							// epoch
 							// TOOD: Implement retry if epoch mismatch and below threshold
-							if ((responder == thisServerId) && (epoch == expectedEpoch)) {
+							if ((responder == thisServerId)) {
 
-								// FIXME: Do verification of the results (using proofs)
-								final EcPoint partialResult = new EcPoint(x, y);
-
+								// Add both to lists, one is private, one is public and should be agreed upon
+								final SignatureResponse signatureResponse = new SignatureResponse(BigInteger.valueOf(thisServerId), signatureShare, new SignatureShareProof(c, z));
+								final ServerPublicConfiguration publicConfiguration = new ServerPublicConfiguration(numShareholders, reconstructionThreshold, n, e, v, sharePublicKeys);
+								
 								// Store result for later processing
-								verifiedResults.add(new DerivationResult(BigInteger.valueOf(responder), partialResult));
+								signatureResponses.add(signatureResponse);
+								publicConfigurations.add(publicConfiguration);
 
 								// Everything checked out, increment successes
 								latch.countDown();
@@ -364,18 +551,21 @@ public class EciesEncryptionClient {
 			// Once we have K successful responses we can interpolate our share
 			latch.await();
 
+			// Get consistent view of public sharings
+			final ServerPublicConfiguration publicConfiguration = (ServerPublicConfiguration) getConsistentConfiguration(publicConfigurations, reconstructionThreshold);
+			
 			// Check that we have enough results to interpolate the share
 			if (failureCounter.get() <= maximumFailures) {
 
-				List<DerivationResult> results = verifiedResults.stream().map(obj -> createDerivationResult(obj))
+				final List<SignatureResponse> results = signatureResponses.stream().map(obj -> createSignatureResult(obj))
 						.collect(Collectors.toList());
 
 				// When complete, interpolate the result at zero (where the secret lies)
-				final EcPoint interpolatedResult = Polynomials.interpolateExponents(results, reconstructionThreshold,
-						0);
+				final BigInteger signature = ThresholdSignatures.recoverSignature(toBeSigned, results, publicConfiguration);
+				
 				executor.shutdown();
 
-				return interpolatedResult;
+				return signature;
 			} else {
 				executor.shutdown();
 				throw new ResourceUnavailableException();
@@ -506,6 +696,10 @@ public class EciesEncryptionClient {
 
 		// Ensure there is at least a threshold agreement
 		if (maxConsistencies < threshold) {
+			System.out.println();
+			for (Object o : configurationData) {
+				System.out.println(" --- " + o);
+			}
 			throw new BelowThresholdException("Insufficient consistency to permit recovery (below threshold)");
 		}
 
@@ -563,7 +757,8 @@ public class EciesEncryptionClient {
 					final PublicKey peerPublicKey = peerCertificate.getPublicKey();
 
 					// Attempt to link the public key in the certificate to a known entity's key
-					final Integer serverId = EciesEncryptionClient.this.serverKeys.getEntityIndex(peerPublicKey);
+					final Integer serverId = RsaCertificateAuthorityClient.this.serverKeys
+							.getEntityIndex(peerPublicKey);
 					if (serverId != remoteServerId) {
 						System.err.println("Invalid server!!!: was " + serverId + ", expected: " + remoteServerId);
 						throw new CertificateException("Invalid peer certificate");
