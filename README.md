@@ -3,24 +3,60 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
-PROTECT provides a platform for implementing threshold-secure applications and services.  It implements distributed protocols for generating, managing and using shared secrets to perform cryptographic operations. Because the secrets can be used without having to reasseble the shares, this provides threshold-security and a robust system without single points of failure or compromise.  Further, PROTECT implements without having to reasseble and further, provides automatic self-healing 
+PROTECT is a open source platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, PROTECT self-heals  from destruction events and self-restores full security following security breaches.  Thus PROTECT can be used to maintain secrets over the long term, with minimal risk of loss or exposure.
+
+It can be used to implement services that need to function with no single point of failure and no single point of compromise.
+
+### Supported Secret Management Operations
+* Secret Lifecycle
+** Distributed Key Generation
+** Proactive Refresh
+** Share Recovery
+* Managmenet
+** Store Share
+** Read Share
+** Delete Share
+** Enable Share
+** Disable Share
+
+### Currently Supported Cryptographic Operations
+* Elliptic Curves
+** Pseudorandom Functions
+** Oblivious Pseudorandom Functions
+** ECIES Encryption
+** Elliptic Curve Diffie Hellman Key Agreement
+* RSA
+** Signatures
+** Blind Signatures
+** Decryption
+
+### Operations Coming Soon
+* Diffie Hellman
+** ElGamal Encryption
+** Diffie-Hellman Key Agreement
+* Bilinear Pairings
+** Boneh–Lynn–Shacham Signatures
+
+### Planned Future Enhancement
+* Schnorr Signatures
+* ECDSA Signatures
+* Share Conversion
+* Share Multiplication
+* Multiparty Computation
+** Threshold AES
+* RSA
+** Distributed Key Generation
+** Proactive Refresh
+** Share Recovery
+* Post-Quantum Cryptography
 
 
-PROTECT is an open source (MIT Licensed) platform for threshold-secure operations
-Tolerates (n/3) – (n/2) Byzantine faults
-Operates over eventually synchronous networks
-Self-heals and self-secures after faults and breaches
 
-Supported operations:
-(O)PRF, ECIES, BLS, RSA (Blind)Sign/Decrypt
-Generate, Store, Read, Delete, Enable, Disable
+It implements distributed protocols for generating, managing and using shared secrets to perform cryptographic operations. Because the secrets can be used without having to reasseble the shares, this provides threshold-security and a robust system without single points of failure or compromise.  Further, PROTECT implements without having to reasseble and further, provides automatic self-healing 
 
-Future enhancement goals:
-Share conversion, Schnorr signatures, ECDSA
-Share multiplication, MPC, Threshold AES
-RSA (DKG/Refresh/Recover)
-Post-Quantum Cryptography
 
+
+## References
 
 
 This project implements the Proactive Secret Sharing (PROSS) protocol, first described in 1995 by Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, and Moti Yung in their paper ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf).
