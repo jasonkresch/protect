@@ -146,6 +146,7 @@ public class ServerApplication {
 		
 		// Configure logging
 		BasicConfigurator.configure();
+		@SuppressWarnings("unchecked")
 		final List<Logger> loggers = Collections.<Logger>list(LogManager.getCurrentLoggers());
 		loggers.add(LogManager.getRootLogger());
 		for (Logger logger : loggers) {

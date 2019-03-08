@@ -43,7 +43,7 @@ public class KeyLoader {
 	// Keys to user names
 	private final Map<String, String> userTlsKeyMap = new ConcurrentHashMap<>();
 
-	public KeyLoader(final File keyPath, final int numServers, final int myIndex) throws FileNotFoundException,
+	public KeyLoader(final File keyPath, final int numServers, final Integer myIndex) throws FileNotFoundException,
 			IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException {
 
 		this.tlsPublicKeys = new ArrayList<>(numServers);
@@ -65,11 +65,17 @@ public class KeyLoader {
 		}
 
 		// Load private key for our index
-		final File publicKeyFile = new File(keyPath, "private-" + myIndex);
-		try (final PemReader reader = new PemReader(new FileReader(publicKeyFile.getAbsolutePath()))) {
-			this.tlsKey = (PrivateKey) Pem.readObject(reader.readPemObject());
-			this.signingKey = (PrivateKey) Pem.readObject(reader.readPemObject());
-			this.decryptionKey = (PrivateKey) Pem.readObject(reader.readPemObject());
+		if (myIndex != null) {
+			final File publicKeyFile = new File(keyPath, "private-" + myIndex);
+			try (final PemReader reader = new PemReader(new FileReader(publicKeyFile.getAbsolutePath()))) {
+				this.tlsKey = (PrivateKey) Pem.readObject(reader.readPemObject());
+				this.signingKey = (PrivateKey) Pem.readObject(reader.readPemObject());
+				this.decryptionKey = (PrivateKey) Pem.readObject(reader.readPemObject());
+			}
+		} else {
+			this.tlsKey = null;
+			this.signingKey = null;
+			this.decryptionKey = null;
 		}
 	}
 
@@ -93,7 +99,7 @@ public class KeyLoader {
 				this.encryptionKeys.add((PublicKey) Pem.readObject(reader.readPemObject()));
 			}
 		}
-		
+
 		this.tlsKey = null;
 		this.signingKey = null;
 		this.decryptionKey = null;

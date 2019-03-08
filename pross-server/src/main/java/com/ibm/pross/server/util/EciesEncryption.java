@@ -11,20 +11,20 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
+import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
 import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
-
-import org.bouncycastle.util.Arrays;
 
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
@@ -49,7 +49,7 @@ public class EciesEncryption {
 
 	// Static fields
 	final public static EcCurve curve = CommonConfiguration.CURVE;
-	final public static EcPoint G = curve.getG();
+	final public static EcPoint G = CommonConfiguration.g;
 
 	final public static String ALGORITHM = "ECIES";
 	final public static byte[] ECIES = ALGORITHM.getBytes(StandardCharsets.UTF_8);
@@ -58,40 +58,40 @@ public class EciesEncryption {
 	final public static byte[] HMAC = HMAC_ALG.getBytes(StandardCharsets.UTF_8);
 	final public static int HMAC_KEY_LEN = 32;
 
-	public static EncryptedPayload encrypt(final Payload payload, final PublicKey recipientPublicKey) {
-
-		// Serialize the content
-		final byte[] contentBytes = MessageSerializer.serializePayload(payload);
+	public static byte[] encrypt(final byte[] plaintext, final EcPoint recipientPublicKey) {
 
 		// Generate r (we save this as it is needed for rebuttals
 		final BigInteger r = generateR();
 
 		// Encrypt the content
-		byte[] encryptedBytes = encrypt(contentBytes, r, recipientPublicKey);
+		byte[] encryptedBytes = encrypt(plaintext, r, recipientPublicKey);
 
-		final EncryptedPayload encryptedPayload = new EncryptedPayload(encryptedBytes, ALGORITHM);
-		encryptedPayload.rebuttalEvidence = r.toByteArray();
-		return encryptedPayload;
+		return encryptedBytes;
+	}
+	
+	public static byte[] encrypt(final byte[] plaintext, final PublicKey recipientPublicKey) {
 
+		// Generate r (we save this as it is needed for rebuttals
+		final BigInteger r = generateR();
+
+		// Encrypt the content
+		byte[] encryptedBytes = encrypt(plaintext, r, recipientPublicKey);
+
+		return encryptedBytes;
 	}
 
-	public static Payload decryptPayload(final EncryptedPayload encryptedPayload,
-			final PrivateKey recipientPrivateKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
-
-		// Get the combined ciphertext
-		byte[] ciphertext = encryptedPayload.getEncryptedBytes();
+	public static byte[] decryptPayload(final byte[] ciphertext, final PrivateKey recipientPrivateKey)
+			throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Decrypt the content
-		final byte[] decryptedBytes = decrypt(ciphertext, recipientPrivateKey);
+		final byte[] plaintext = decrypt(ciphertext, recipientPrivateKey);
 
-		// Deserialize and return payload
-		final Payload payload = MessageSerializer.deserializePayload(decryptedBytes);
-		return payload;
-
+		return plaintext;
 	}
 
 	public static Payload decryptPayload(final EncryptedPayload encryptedPayload, final byte[] rebuttalEvidence,
-			final PublicKey recipientPublicKey) throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
+			final PublicKey recipientPublicKey)
+			throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
 		// Get the combined ciphertext
 		byte[] ciphertext = encryptedPayload.getEncryptedBytes();
@@ -99,19 +99,16 @@ public class EciesEncryption {
 		// Use the r value to get the shared secret and decrypt
 		final BigInteger r = new BigInteger(rebuttalEvidence);
 
-			// Decrypt the content
-			final byte[] decryptedBytes = decrypt(ciphertext, r, recipientPublicKey);
+		// Decrypt the content
+		final byte[] decryptedBytes = decrypt(ciphertext, r, recipientPublicKey);
 
-			// Deserialize and return payload
-			final Object o = MessageSerializer.deserializePayload(decryptedBytes);
-			if (o instanceof Payload)
-			{
-				return (Payload) o;
-			}
-			else
-			{
-				throw new IOException("Received invalid class serialization");
-			}
+		// Deserialize and return payload
+		final Object o = MessageSerializer.deserializePayload(decryptedBytes);
+		if (o instanceof Payload) {
+			return (Payload) o;
+		} else {
+			throw new IOException("Received invalid class serialization");
+		}
 	}
 
 	public static BigInteger generateR() {
@@ -161,7 +158,7 @@ public class EciesEncryption {
 
 			// Calculate shared secret
 			final EcPoint sharedSecret = curve.multiply(publicKey, r);
-
+			
 			// Setup key generator
 			final HmacKeyDerivationFunction kdf = EntropyExtractor.getKeyGenerator(ECIES, sharedSecret);
 
@@ -188,7 +185,36 @@ public class EciesEncryption {
 		}
 	}
 
-	protected static byte[] decrypt(final byte[] ciphertext, final BigInteger privateKey)
+	/**
+	 * Extract the public value from the ciphertext
+	 * 
+	 * @param ciphertext
+	 * @return
+	 * @throws BadPaddingException
+	 * @throws IllegalBlockSizeException
+	 */
+	public static EcPoint getPublicValue(final byte[] ciphertext) throws BadPaddingException {
+
+		// Deserialize components of the ciphertext
+		final byte[][] combined = Parse.splitArrays(ciphertext);
+		if (combined.length != 3) {
+			throw new BadPaddingException("Invalid ciphertext");
+		}
+		final byte[] publicValue = combined[0];
+		final byte[][] coordinates = Parse.splitArrays(publicValue);
+		if (coordinates.length != 2) {
+			throw new BadPaddingException("Invalid public value");
+		}
+		final BigInteger xCoord = new BigInteger(coordinates[0]);
+		final BigInteger yCoord = new BigInteger(coordinates[1]);
+
+		// Recover R (the sender's DH public value)
+		final EcPoint R = new EcPoint(xCoord, yCoord);
+
+		return R;
+	}
+
+	public static byte[] decrypt(final byte[] ciphertext, final BigInteger privateKey)
 			throws BadPaddingException, IllegalBlockSizeException {
 
 		// Deserialize components of the ciphertext
@@ -197,8 +223,6 @@ public class EciesEncryption {
 			throw new BadPaddingException("Invalid ciphertext");
 		}
 		final byte[] publicValue = combined[0];
-		final byte[] messageCiphertext = combined[1];
-		final byte[] macValue = combined[2];
 		final byte[][] coordinates = Parse.splitArrays(publicValue);
 		if (coordinates.length != 2) {
 			throw new BadPaddingException("Invalid public value");
@@ -212,6 +236,20 @@ public class EciesEncryption {
 		// Calculate shared secret
 		final EcPoint sharedSecret = curve.multiply(R, privateKey);
 
+		return decrypt(ciphertext, sharedSecret);
+	}
+
+	public static byte[] decrypt(final byte[] ciphertext, final EcPoint sharedSecret)
+			throws BadPaddingException, IllegalBlockSizeException {
+
+		// Deserialize components of the ciphertext
+		final byte[][] combined = Parse.splitArrays(ciphertext);
+		if (combined.length != 3) {
+			throw new BadPaddingException("Invalid ciphertext");
+		}
+		final byte[] messageCiphertext = combined[1];
+		final byte[] macValue = combined[2];
+
 		// Setup key generator
 		final HmacKeyDerivationFunction kdf = EntropyExtractor.getKeyGenerator(ECIES, sharedSecret);
 
@@ -220,13 +258,14 @@ public class EciesEncryption {
 
 		// Get hmac
 		final byte[] hmacKey = kdf.createKey(HMAC, HMAC_KEY_LEN);
+		System.out.println(Arrays.toString(hmacKey));
 		try {
 			final Mac hmac = Mac.getInstance(HMAC_ALG);
 			hmac.init(new SecretKeySpec(hmacKey, HMAC_ALG));
 
 			// Verify the hmac value before proceeding
 			final byte[] mac = hmac.doFinal(messageCiphertext);
-			if (!Arrays.areEqual(macValue, mac)) {
+			if (!MessageDigest.isEqual(macValue, mac)) {
 				throw new BadPaddingException("Invalid HMAC!");
 			}
 		} catch (NoSuchAlgorithmException | InvalidKeyException e) {
@@ -283,7 +322,7 @@ public class EciesEncryption {
 
 			// Verify the hmac value before proceeding
 			final byte[] mac = hmac.doFinal(messageCiphertext);
-			if (!Arrays.areEqual(macValue, mac)) {
+			if (!MessageDigest.isEqual(macValue, mac)) {
 				throw new BadPaddingException("Invalid HMAC!");
 			}
 		} catch (NoSuchAlgorithmException | InvalidKeyException e) {

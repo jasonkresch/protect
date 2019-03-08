@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.avpss.SharingState;
@@ -52,6 +55,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
 	public static final String EPOCH_NUMBER_FIELD = "epochNumber";
+	public static final String OUTPUT_FORMAT_FIELD = "json";
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
@@ -78,6 +82,8 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		if (secretName == null) {
 			throw new BadRequestException();
 		}
+		final Boolean outputJson = Boolean
+				.parseBoolean(HttpRequestProcessor.getParameterValue(params, OUTPUT_FORMAT_FIELD));
 
 		// Perform authentication
 		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
@@ -98,7 +104,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		}
 
 		// Create response
-		final String response = getSecretInfo(shareholder, secretName, epochNumber, serverConfig);
+		final String response = getSecretInfo(shareholder, secretName, epochNumber, serverConfig, outputJson);
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -112,16 +118,34 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static String getSecretInfo(final ApvssShareholder shareholder, final String secretName,
-			final Long epochNumber, final ServerConfiguration serverConfig) throws BadRequestException {
+			final Long epochNumber, final ServerConfiguration serverConfig, final boolean outputJson) throws BadRequestException {
 
 		// Prevent invalid epochs from being accessed
 		if ((epochNumber < 0) || (epochNumber > shareholder.getEpoch())) {
 			throw new BadRequestException();
 		}
+		
+		final int serverIndex = shareholder.getIndex();
+		
+		if (outputJson) {
+			// Just return the epoch, and public key
+			
+			// Return the result in json
+			final JSONObject obj = new JSONObject();
+			obj.put("responder", new Integer(serverIndex));
+			obj.put("epoch", new Long(shareholder.getEpoch()));
+
+			JSONArray inputPoint = new JSONArray();
+			inputPoint.add(shareholder.getSecretPublicKey().getX().toString());
+			inputPoint.add(shareholder.getSecretPublicKey().getY().toString());
+			obj.put("public_key", inputPoint);
+
+			return obj.toJSONString() + "\n";
+		}
 
 		// This server
-		final int serverIndex = shareholder.getIndex();
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
 		final String ourIp = thisServerAddress.getAddress().getHostAddress();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
