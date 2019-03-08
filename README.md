@@ -3,7 +3,7 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
-PROTECT is a open source platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, PROTECT self-heals  from destruction events and self-restores full security following security breaches.  Thus PROTECT can be used to maintain secrets over the long term, with minimal risk of loss or exposure.
+*PROTECT* is a open source platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, PROTECT self-heals  from destruction events and self-restores full security following security breaches.  Thus PROTECT can be used to maintain secrets over the long term, with minimal risk of loss or exposure.
 
 It can be used to implement services that need to function with no single point of failure and no single point of compromise.
 
