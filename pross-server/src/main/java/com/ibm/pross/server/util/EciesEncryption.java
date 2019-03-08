@@ -54,7 +54,7 @@ public class EciesEncryption {
 	final public static String ALGORITHM = "ECIES";
 	final public static byte[] ECIES = ALGORITHM.getBytes(StandardCharsets.UTF_8);
 
-	final public static String HMAC_ALG = "HMAC-SHA256";
+	final public static String HMAC_ALG = "HMACSHA256";
 	final public static byte[] HMAC = HMAC_ALG.getBytes(StandardCharsets.UTF_8);
 	final public static int HMAC_KEY_LEN = 32;
 

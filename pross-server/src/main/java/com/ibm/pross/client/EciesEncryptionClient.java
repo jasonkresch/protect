@@ -151,9 +151,6 @@ public class EciesEncryptionClient {
 		System.out.println();
 
 		System.out.println("Done.");
-
-		final EcPoint test = this.exponentiatePoint(CommonConfiguration.g, currentEpoch);
-		System.out.println("test public key: " + test);
 	}
 
 	public void decryptFile() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
