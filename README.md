@@ -25,27 +25,27 @@ The following actions are performed by servers, although the distributed key gen
 
 The following are supported user actions related to the management of shares.  Note that ***PROTECT*** implements fine-grained access controls, permitting different users to be authorized to perform different functions or operations for different secrets.
 
-* Store Share - Stores a specified share to enable reliably maintenance of a specific secret
-* Read Share - Reads a share to enable determination of a secret's value
-* Delete Share - Deletes a share to allow destruction of a secret
-* Recover Share - Initiates an immediate share recovery of a deleted share
-* Disable Share - Temporarily disables a share for usage
-* Enable Share - Re-enables a previously disabled share for usage
+* **Store Share** - Stores a specified share to enable reliably maintenance of a specific secret
+* **Read Share** - Reads a share to enable determination of a secret's value
+* **Delete Share** - Deletes a share to allow destruction of a secret
+* **Recover Share** - Initiates an immediate share recovery of a deleted share
+* **Disable Share** - Temporarily disables a share for usage
+* **Enable Share** - Enables a previously disabled share for usage
 
 ### Cryptographic Operations
 
 ***PROTECT*** supports the following cryptographic functions out-of-the box today:
 
 #### Elliptic Curves
-* Pseudorandom Functions
-* Oblivious Pseudorandom Functions
-* ECIES Encryption
-* Elliptic Curve Diffie Hellman Key Agreement
+* **Pseudorandom Functions** (PRF) - May be used to derive random looking output deterministically (for PRNGs, or KDFs)
+* **Oblivious Pseudorandom Functions** - The same as a PRF but [blinded](https://en.wikipedia.org/wiki/Pseudorandom_function_family#Oblivious_pseudorandom_functions) so as to hide the input (for password hardening, OPAQUE, oblivious KDF)
+* **ECIES Encryption** - The EC version of [Integrated Encryption Scheme](https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme) which is based on [ElGamal](https://en.wikipedia.org/wiki/ElGamal_encryption) encryption
+* **Elliptic Curve Diffie Hellman Key Agreement** (ECDH) - [ECDH](https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman) is a Key Agreement Scheme commonly used in [TLS handshakes](https://en.wikipedia.org/wiki/Transport_Layer_Security)
 
 #### RSA
-* Signatures Generation
-* Blinded Signature Generation
-* Decryption
+* **Signature Generation** - Threshold signature scheme for [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem)) based on Victor Shoup's [Practical Threshold Signatures](https://www.shoup.net/papers/thsig.pdf)
+* **Blinded Signature Generation** - The same as above but [blinded](https://en.wikipedia.org/wiki/Blind_signature#Blind_RSA_signatures) from the signer.
+* **Decryption** - Decryption of a ciphertext encrypted under an RSA public key.
 
 ### Roadmap Items
 
@@ -223,6 +223,7 @@ More references:
 - Ellipc Curve Pairing
 - Blind Signatures (Chaum)
 - Other references from NIST submission
+- Ford-Kaliski on password hardening
 - NIST Draft on Threshold Security
 https://www.nongnu.org/libtmcg/dg81_slides.pdf
 
