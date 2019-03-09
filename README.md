@@ -3,22 +3,26 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
-***PROTECT*** provides a platform for [*threshold-secure* cryptography](https://en.wikipedia.org/wiki/Threshold_cryptosystem).  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of privacy, availability, or correctness.  Moreoever, the system self-heals from faults and self-recovers from breaches. These restorative features allow **PROTECT** to maintain the confidential elements (e.g., secret keys, private keys, bitcoin wallets, numbered bank accounts) durably over long periods, despite the many inevitable data loss and data exposure events that will occur over the course of that time.
+***PROTECT*** provides a platform for [*threshold-secure* cryptography](https://en.wikipedia.org/wiki/Threshold_cryptosystem).  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of privacy, availability, or correctness.  Moreoever, the system self-heals from faults and self-recovers from breaches. These restorative features enable **PROTECT** to maintain confidential elements (e.g., secret keys, private keys, bitcoin wallets, numbered bank accounts) durably over long periods, despite the many inevitable data loss and data exposure events that will occur over the course of that time.
 
-***PROTECT*** is based on [Secret Sharing](https://en.wikipedia.org/wiki/Secret_sharing), and leverages the algebraic relationships that exist between the shares to compute evaluate functions on these shares, which can include [distributed key generation](https://en.wikipedia.org/wiki/Distributed_key_generation), [proactive security](https://en.wikipedia.org/wiki/Proactive_secret_sharing), [Share Recovery](https://en.wikipedia.org/wiki/Proactive_secret_sharing#Motivation), [key derivation](https://en.wikipedia.org/wiki/Key_derivation_function), [public key decryption](https://en.wikipedia.org/wiki/Public-key_cryptography), and [signature generation](https://en.wikipedia.org/wiki/Digital_signature).  Several example client applications are included to show how to use ***PROTECT*** to build a threshold-secure certificate authority whose RSA private key exists in no location, and another showing threshold-secure decryption of ciphertexts  where the decryption key never exists in any location.  By using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
+***PROTECT*** and leverages the mathematical relationships that exist between shares of a [secret sharing scheme](https://en.wikipedia.org/wiki/Secret_sharing) for distributed and secure function evaluations. These functions include [distributed key generation](https://en.wikipedia.org/wiki/Distributed_key_generation), [proactive security](https://en.wikipedia.org/wiki/Proactive_secret_sharing), [share recovery](https://en.wikipedia.org/wiki/Proactive_secret_sharing#Motivation), [key derivation](https://en.wikipedia.org/wiki/Key_derivation_function), [public key decryption](https://en.wikipedia.org/wiki/Public-key_cryptography), and [signature generation](https://en.wikipedia.org/wiki/Digital_signature).
 
-## Functionality
+Several example client applications are included to show how to use ***PROTECT*** to build a threshold-secure certificate authority whose RSA private key exists in no location, and another showing threshold-secure decryption of ciphertexts  where the decryption key never exists in any location.  By using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
 
- * Secret Lifecycle Operations
-  * Distributed Key Generation
-  * Proactive Refresh
-  * Share Recovery
- * Share Management
-  * Store Share
-  * Read Share
-  * Delete Share
-  * Enable Share
-  * Disable Share
+### Functionality
+
+### Secret Lifecycle
+* Distributed Key Generation - Generation of shares of a random values which no one knows
+* Proactive Refresh - Regeneration of new shares of a previous secret, eliminating utility of old shares (which might have been exposed)
+* Share Recovery - Rebuilding a lost or destroyed share without having to restore the secret or expose any share
+  
+### Share Management
+* Store Share - Stores a specified share to enable reliably maintenance of a specifi secret
+* Read Share - Reads a share to enable determination of a secret's value (should be disabled for most purposes)
+* Delete Share - Deletes a share to allow destruction of a secret
+* Recover Share - Initiates an immediate share recovery of a deleted share (rather than waiting for the next periodic self-healing)
+* Disable Share - Temporarily disables a share for usage (e.g. being read or used in function evaluation)
+* Enable Share - Re-enables a previously disabled share for usage
 
 * Cryptographic Operations (Currently Supported)
  * Elliptic Curves
