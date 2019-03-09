@@ -50,21 +50,22 @@ The following are supported user actions related to the management of shares.  N
 #### RSA
 * **Signature Generation** - Threshold signature scheme for [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem)) based on Victor Shoup's [Practical Threshold Signatures](https://www.shoup.net/papers/thsig.pdf)
 * **Blinded Signature Generation** - The same as above but [blinded](https://en.wikipedia.org/wiki/Blind_signature#Blind_RSA_signatures) from the signer.
-* **Decryption** - Decryption of a ciphertext encrypted under an RSA public key.
+* **Decryption** - Decryption of a ciphertext encrypted under an RSA public key. (supported but ***not recommended***, see note below)
 
 ### Roadmap Items
 
 Very shortly support will be added to ***PROTECT*** for the following operations:
 
-#### Diffie Hellman
+#### Diffie Hellman over Prime Groups
 * Pseudorandom Functions
 * Oblivious Pseudorandom Functions
 * ElGamal Encryption
 * Diffie-Hellman Key Agreement
 
-#### Bilinear Pairing
-* Boneh–Lynn–Shacham Signatures
-* Partially Oblivious Pseudorandom Functions
+#### Bilinear Pairing of Elliptic Curves
+* [Generic Elliptic Curve Pairing Operation](https://en.wikipedia.org/wiki/Pairing-based_cryptography)
+* [Boneh–Lynn–Shacham Signatures](https://en.wikipedia.org/wiki/Boneh%E2%80%93Lynn%E2%80%93Shacham)
+* Partially Oblivious Pseudorandom Functions - As in the [Pythia PRF Service](https://eprint.iacr.org/2015/644)
 
 ### Project Vision
 
