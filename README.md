@@ -11,59 +11,86 @@ Several example client applications are included to show how to use ***PROTECT**
 
 ### Functionality
 
+The following section describes all of the funtionality ***PROTECT***.
+
 ### Secret Lifecycle
-* Distributed Key Generation - Generation of shares of a random values which no one knows
-* Proactive Refresh - Regeneration of new shares of a previous secret, eliminating utility of old shares (which might have been exposed)
-* Share Recovery - Rebuilding a lost or destroyed share without having to restore the secret or expose any share
+
+The following actions are performed by servers, although the distributed key generation is initiated by a user.  Proactive Refresh and Share Recovery both occur on a scheduled periodic basis for all existing established secrets.
+
+* **Distributed Key Generation** - Generation of shares of a random values which no one knows
+* **Proactive Refresh** - Regenerates new shares for an existing secret, eliminating utility of old shares (which might have been exposed)
+* **Share Recovery** - Rebuilding a lost or destroyed share without having to restore the secret or expose any share
   
 ### Share Management
-* Store Share - Stores a specified share to enable reliably maintenance of a specifi secret
-* Read Share - Reads a share to enable determination of a secret's value (should be disabled for most purposes)
+
+The following are supported user actions related to the management of shares.  Note that ***PROTECT*** implements fine-grained access controls, permitting different users to be authorized to perform different functions or operations for different secrets.
+
+* Store Share - Stores a specified share to enable reliably maintenance of a specific secret
+* Read Share - Reads a share to enable determination of a secret's value
 * Delete Share - Deletes a share to allow destruction of a secret
-* Recover Share - Initiates an immediate share recovery of a deleted share (rather than waiting for the next periodic self-healing)
-* Disable Share - Temporarily disables a share for usage (e.g. being read or used in function evaluation)
+* Recover Share - Initiates an immediate share recovery of a deleted share
+* Disable Share - Temporarily disables a share for usage
 * Enable Share - Re-enables a previously disabled share for usage
 
-* Cryptographic Operations (Currently Supported)
- * Elliptic Curves
-  * Pseudorandom Functions
-  * Oblivious Pseudorandom Functions
-  * ECIES Encryption
-  * Elliptic Curve Diffie Hellman Key Agreement
- * RSA
-  * Signatures Generation
-  * Blinded Signature Generation
-  * Decryption
-  
-* Cryptographic Operations (Coming Soon)
- * Diffie Hellman
-  * ElGamal Encryption
-  * Diffie-Hellman Key Agreement
- * Bilinear Pairings
-  * Boneh–Lynn–Shacham Signatures
-  
-* Cryptographic Operations (Future Enhancement / Research)https://en.wikipedia.org/wiki/Vanish_(computer_science)
- * Schnorr Signatures
- * ECDSA Signatures
- * Share Conversion
-  * Partially Oblivious Pseudorandom Functions
- * Share Multiplication
-  * Multiparty Computation
-   * Threshold AES
- * RSA
-  * Distributed Key Generation
-  * Proactive Refresh
-  * Share Recovery
- * Post-Quantum Cryptography
+### Cryptographic Operations
 
+***PROTECT*** supports the following cryptographic functions out-of-the box today:
 
+#### Elliptic Curves
+* Pseudorandom Functions
+* Oblivious Pseudorandom Functions
+* ECIES Encryption
+* Elliptic Curve Diffie Hellman Key Agreement
 
-It implements distributed protocols for generating, managing and using shared secrets to perform cryptographic operations. Because the secrets can be used without having to reasseble the shares, this provides threshold-security and a robust system without single points of failure or compromise.  Further, PROTECT implements without having to reasseble and further, provides automatic self-healing 
+#### RSA
+* Signatures Generation
+* Blinded Signature Generation
+* Decryption
 
+### Roadmap Items
 
+Very shortly support will be added to ***PROTECT*** for the following operations:
 
+#### Diffie Hellman
+* Pseudorandom Functions
+* Oblivious Pseudorandom Functions
+* ElGamal Encryption
+* Diffie-Hellman Key Agreement
 
-## Deployment
+#### Bilinear Pairing
+* Boneh–Lynn–Shacham Signatures
+* Partially Oblivious Pseudorandom Functions
+
+### Project Vision
+
+Over a longer time horizion the ***PROTECT*** project aims to support:
+
+#### More Signature Schemes
+* Schnorr Signatures (possibly leveraging Share Conversion)
+* ECDSA Signatures
+
+#### Multiparty Computation
+* Share Addition
+* Share Multiplication
+* Threshold AES
+
+#### RSA Extensions
+* RSA Distributed Key Generation
+* RSA Proactive Refresh
+* RSA Share Recovery
+
+#### Post-Quantum Cryptography
+
+## Deploying Protect
+
+Protect is easy to deploy, and can get up and running in as few as three commands:
+
+```bash
+$ git clone https://github.com/jasonkresch/protect.git
+$ ./protect/build.sh
+$ ./protect/bin/launch-all-servers.sh 5
+```
+However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
 
 ### Download
 
