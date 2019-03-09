@@ -63,11 +63,11 @@ It implements distributed protocols for generating, managing and using shared se
 
 ### Download
 
-
-1. Downloading:
 [![Alt text](https://img.youtube.com/vi/9sDgPOUpADw/0.jpg)](https://www.youtube.com/watch?v=9sDgPOUpADw)
 
 ### Build
+
+[![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
 #### Prerequisites
 
@@ -80,7 +80,7 @@ $ sudo apt install maven
 $ sudo apt install python
 ```
 
-### Compiling
+#### Compiling
 
 Once the above prerequisites are installed PROTECT may be built by invoking the `build.sh` script.
 
@@ -91,11 +91,55 @@ $ ./build.sh
 ```
 The end result of the build script is a self-contained jar file: `pross-server/target/pross-server-1.0-SNAPSHOT-shaded.jar`
 
-### Configuring Servers
+### Configuration
 
-### Configuring Client Access Controls
+#### Keys and Certificates
+
+Pre-instaled, can skip this step if just testing, but any real deployment ***MUST*** complete this step, to create new certificates for each client and server.  Note: security of client CA certificate not important, servers use direct public key matching.  However, most browsers require the server to present the client CA certificate to prompt the user to provide one. This is not an issue for command line interaction via cURL.
+
+#### Servers
+
+[![Alt text](https://img.youtube.com/vi/BHM17XE6ZhQ/0.jpg)](https://www.youtube.com/watch?v=BHM17XE6ZhQ)
+
+Show sample configuration file.
+Describe optional and required fields.
+Servers beyond the num servers are ignored.
+Only need to change n, and set the sever IP addresses.
+
+#### Client Access Controls
+
+[![Alt text](https://img.youtube.com/vi/DXvrh1b8GH4/0.jpg)](https://www.youtube.com/watch?v=DXvrh1b8GH4)
+
+Supports fine-grained user access conrols.
+Uses client-side certificate authentication over TLS
+Debug authentication by going to (show URL of id check page).
+Describe each permission, meaning.
+
+### Launching Servers
+
+[![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
+
+Unqique server ID, all need to start for service to begin.
 
 ## Operations
+
+### Interacting with System
+
+Servers listen over HTTPS, on ports 8081 - 808n where n is number of servers.  Each server id.
+
+#### Browser Interaction
+
+Exploring system, servers, secrets, shares. (With read permission)
+Configuring CA certificates (avoid SSL error).
+Note: each server uses its own CA to issue its certificates.  These may be generated individually at each sever, then collected and distributed to all.  CA itself not checked, only used for client browsers. Servers' use direct Public key matching.
+
+#### Command Line Interction
+
+Initiating a DKG
+Getting share info
+Deleting a share
+Performing Exponentiation (Getting json)
+Performing signature generation (getting json)
 
 ### Secret Management
 
@@ -115,20 +159,10 @@ The end result of the build script is a self-contained jar file: `pross-server/t
 
 
 
-
-## System Confiuration
-
-2. Buidling and Installing
-[![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
-
 3. Server Configuration
-[![Alt text](https://img.youtube.com/vi/BHM17XE6ZhQ/0.jpg)](https://www.youtube.com/watch?v=BHM17XE6ZhQ)
 
-4. Running Servers
-[![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
 
-5. Client Configuration
-[![Alt text](https://img.youtube.com/vi/DXvrh1b8GH4/0.jpg)](https://www.youtube.com/watch?v=DXvrh1b8GH4)
+
 
 6. Managing Secrets
 [![Alt text](https://img.youtube.com/vi/ZMjMlC52MJc/0.jpg)](https://www.youtube.com/watch?v=ZMjMlC52MJc)
