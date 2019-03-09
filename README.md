@@ -18,7 +18,7 @@ Using these techniques one can engineer secure cryptographic services *having ne
 
 The following section describes all of the funtionality ***PROTECT***.
 
-### Secret Lifecycle
+### Secret Maintenance
 
 The following actions are performed by servers, although the distributed key generation is initiated by a user.  Proactive Refresh and Share Recovery both occur on a scheduled periodic basis for all existing established secrets.
 
@@ -98,15 +98,19 @@ $ ./protect/bin/launch-all-servers.sh 5
 ```
 However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
 
-### Download
+### Downloading
 
 [![Alt text](https://img.youtube.com/vi/9sDgPOUpADw/0.jpg)](https://www.youtube.com/watch?v=9sDgPOUpADw)
 
-### Build
+Can be checked out via git, using:
+
+Or may be downloaded as a self-contained ZIP file from this page: 
+
+### Building
 
 [![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
-#### Prerequisites
+#### Dependencies
 
 **PROTECT** is written in Java but also includes some examples that use python.  On a fresh Ubuntu 18.04 system the following packages are required in order to build and launch the product.
 
