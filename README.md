@@ -3,9 +3,9 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
-**PROTECT** provides a platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, the system self-heals from faults and self-restores full security following breaches.  Due to these recovery properties, **PROTECT** can be used to maintain confidential information (secret keys, bitcoin wallets, numbered bank accounts, etc.) over the long periods of time, despite inevitable data loss and data exposure events.
+***PROTECT*** provides a platform for [*threshold-secure* cryptography](https://en.wikipedia.org/wiki/Threshold_cryptosystem).  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of privacy, availability, or correctness.  Moreoever, the system self-heals from faults and self-recovers from breaches. These restorative features allow **PROTECT** to maintain the confidential elements (e.g., secret keys, private keys, bitcoin wallets, numbered bank accounts) durably over long periods, despite the many inevitable data loss and data exposure events that will occur over the course of that time.
 
-**PROTECT** is based on [Secret Sharing](https://en.wikipedia.org/wiki/Secret_sharing), and leverages the algebraic relationships that exist between the shares to compute evaluate functions on these shares, which can include key generation, key derivation, public key decryption, and signature generation.  Several client utilities are included in the protect project to show how to create a distributed certificate authority whose RSA private key exists in no location, and another, showing how an Elliptic Curve private key can decrypt ciphertexts again without the key existing in any location.  Thus one can engineer secure cryptographic services *having no single points of failure nor any single point of compromise*.
+***PROTECT*** is based on [Secret Sharing](https://en.wikipedia.org/wiki/Secret_sharing), and leverages the algebraic relationships that exist between the shares to compute evaluate functions on these shares, which can include [distributed key generation](https://en.wikipedia.org/wiki/Distributed_key_generation), [proactive security](https://en.wikipedia.org/wiki/Proactive_secret_sharing), [Share Recovery](https://en.wikipedia.org/wiki/Proactive_secret_sharing#Motivation), [key derivation](https://en.wikipedia.org/wiki/Key_derivation_function), [public key decryption](https://en.wikipedia.org/wiki/Public-key_cryptography), and [signature generation](https://en.wikipedia.org/wiki/Digital_signature).  Several example client applications are included to show how to use ***PROTECT*** to build a threshold-secure certificate authority whose RSA private key exists in no location, and another showing threshold-secure decryption of ciphertexts  where the decryption key never exists in any location.  By using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
 
 ## Functionality
 
@@ -38,7 +38,7 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
  * Bilinear Pairings
   * Boneh–Lynn–Shacham Signatures
   
-* Cryptographic Operations (Future Enhancement / Research)
+* Cryptographic Operations (Future Enhancement / Research)https://en.wikipedia.org/wiki/Vanish_(computer_science)
  * Schnorr Signatures
  * ECDSA Signatures
  * Share Conversion
@@ -191,8 +191,21 @@ More references:
 - BLS Signatures
 - Ellipc Curve Pairing
 - Blind Signatures (Chaum)
-- Other references from NIST paper
+- Other references from NIST submission
+- NIST Draft on Threshold Security
+https://www.nongnu.org/libtmcg/dg81_slides.pdf
+
+## Team
+
+The team behind PROTECT includes ...
+Involved in the design fo protocols, architecture, algorithms, PVSS, APVSS.
 
 
 ## Contributing
 Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
+
+## Related Projects
+
+- DKG implementation
+- Thunderella
+- https://en.wikipedia.org/wiki/Vanish_(computer_science)
