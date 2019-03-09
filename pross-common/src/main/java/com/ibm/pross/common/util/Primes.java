@@ -49,11 +49,31 @@ public class Primes {
 		while (true) {
 			BigInteger p = generatePrime(bitLength);
 
-			try {
-				getSafePrime(p); // Throws an exception if p is not a sophie-germain prime
+			// Returns null if p is not a sophie-germain prime
+			BigInteger q = getSafePrime(p);
+			if (q != null) {
 				return p;
-			} catch (IllegalArgumentException e) {
-				// Ignored, try another
+			}
+		}
+	}
+
+	/**
+	 * Generates a Safe Prime number of the requested number of bits using a
+	 * cryptographically secure random number generator.
+	 * 
+	 * A Same-Prime prime is a prime p such that (p-1)/2 is also prime.
+	 * 
+	 * @param bitLength
+	 * @return A BigInteger representing a randomly prime number.
+	 */
+	public static BigInteger generateSafePrime(final int bitLength) {
+		while (true) {
+			BigInteger p = generatePrime(bitLength);
+
+			// Returns null if p is not a sophie-germain prime
+			final BigInteger q = getSophieGermainPrime(p);
+			if (q != null) {
+				return p;
 			}
 		}
 	}
@@ -70,7 +90,7 @@ public class Primes {
 		if (safePrime.isProbablePrime(PRIMALITY_TEST_STRENGTH)) {
 			return safePrime;
 		} else {
-			throw new IllegalArgumentException("Provided value was not a sophie germain prime");
+			return null;
 		}
 
 	}
@@ -83,7 +103,12 @@ public class Primes {
 	 * @return
 	 */
 	public static BigInteger getSophieGermainPrime(final BigInteger safePrime) {
-		return (safePrime.subtract(BigInteger.ONE).divide(TWO));
+		BigInteger sophieGermainPrime = safePrime.subtract(BigInteger.ONE).divide(TWO);
+		if (sophieGermainPrime.isProbablePrime(PRIMALITY_TEST_STRENGTH)) {
+			return sophieGermainPrime;
+		} else {
+			return null;
+		}
 	}
 
 }

@@ -258,7 +258,6 @@ public class EciesEncryption {
 
 		// Get hmac
 		final byte[] hmacKey = kdf.createKey(HMAC, HMAC_KEY_LEN);
-		System.out.println(Arrays.toString(hmacKey));
 		try {
 			final Mac hmac = Mac.getInstance(HMAC_ALG);
 			hmac.init(new SecretKeySpec(hmacKey, HMAC_ALG));
