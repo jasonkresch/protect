@@ -7,49 +7,50 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 **PROTECT** is based on [Secret Sharing](https://en.wikipedia.org/wiki/Secret_sharing), and leverages the algebraic relationships that exist between the shares to compute evaluate functions on these shares, which can include key generation, key derivation, public key decryption, and signature generation.  Several client utilities are included in the protect project to show how to create a distributed certificate authority whose RSA private key exists in no location, and another, showing how an Elliptic Curve private key can decrypt ciphertexts again without the key existing in any location.  Thus one can engineer secure cryptographic services *having no single points of failure nor any single point of compromise*.
 
+## Functionality
 
-### Supported Secret Management Operations
-. Secret Lifecycle
-.. Distributed Key Generation
-.. Proactive Refresh
-.. Share Recovery
-. Managmenet
-.. Store Share
-.. Read Share
-.. Delete Share
-.. Enable Share
-.. Disable Share
+ * Secret Lifecycle Operations
+  * Distributed Key Generation
+  * Proactive Refresh
+  * Share Recovery
+ * Share Management
+  * Store Share
+  * Read Share
+  * Delete Share
+  * Enable Share
+  * Disable Share
 
-### Currently Supported Cryptographic Operations
-* Elliptic Curves
-** Pseudorandom Functions
-** Oblivious Pseudorandom Functions
-** ECIES Encryption
-** Elliptic Curve Diffie Hellman Key Agreement
-* RSA
-** Signatures
-** Blind Signatures
-** Decryption
-
-### Operations Coming Soon
-* Diffie Hellman
-** ElGamal Encryption
-** Diffie-Hellman Key Agreement
-* Bilinear Pairings
-** Boneh–Lynn–Shacham Signatures
-
-### Planned Future Enhancement
-* Schnorr Signatures
-* ECDSA Signatures
-* Share Conversion
-* Share Multiplication
-* Multiparty Computation
-** Threshold AES
-* RSA
-** Distributed Key Generation
-** Proactive Refresh
-** Share Recovery
-* Post-Quantum Cryptography
+* Cryptographic Operations (Currently Supported)
+ * Elliptic Curves
+  * Pseudorandom Functions
+  * Oblivious Pseudorandom Functions
+  * ECIES Encryption
+  * Elliptic Curve Diffie Hellman Key Agreement
+ * RSA
+  * Signatures Generation
+  * Blinded Signature Generation
+  * Decryption
+  
+* Cryptographic Operations (Coming Soon)
+ * Diffie Hellman
+  * ElGamal Encryption
+  * Diffie-Hellman Key Agreement
+ * Bilinear Pairings
+  * Boneh–Lynn–Shacham Signatures
+  
+* Cryptographic Operations (Future Enhancement / Research)
+ * Schnorr Signatures
+ * ECDSA Signatures
+ * Share Conversion
+  * Partially Oblivious Pseudorandom Functions
+ * Share Multiplication
+  * Multiparty Computation
+   * Threshold AES
+ * RSA
+  * Distributed Key Generation
+  * Proactive Refresh
+  * Share Recovery
+ * Post-Quantum Cryptography
 
 
 
