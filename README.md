@@ -7,7 +7,12 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ***PROTECT*** and leverages the mathematical relationships that exist between shares of a [secret sharing scheme](https://en.wikipedia.org/wiki/Secret_sharing) for distributed and secure function evaluations. These functions include [distributed key generation](https://en.wikipedia.org/wiki/Distributed_key_generation), [proactive security](https://en.wikipedia.org/wiki/Proactive_secret_sharing), [share recovery](https://en.wikipedia.org/wiki/Proactive_secret_sharing#Motivation), [key derivation](https://en.wikipedia.org/wiki/Key_derivation_function), [public key decryption](https://en.wikipedia.org/wiki/Public-key_cryptography), and [signature generation](https://en.wikipedia.org/wiki/Digital_signature).
 
-Several example client applications are included to show how to use ***PROTECT*** to build a threshold-secure certificate authority whose RSA private key exists in no location, and another showing threshold-secure decryption of ciphertexts  where the decryption key never exists in any location.  By using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
+***PROTECT*** includes several example client utilities  to show how to build a threshold-secure applications. These example utilities include:
+* A distributed Certificate Authority whose private signing key is not stored in any location
+* A threshold-secure decryption service whose private decryption key never exists in any location
+* A secret storage and retrieval client that allows the secure maintenance of arbitrary values
+
+Using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
 
 ### Functionality
 
