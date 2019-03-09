@@ -106,12 +106,33 @@ More references:
 
 ## Deploying
 
-TODO: Write deployment instructions
+### Downloading / Checking out
+
+### Prerequisites
+
+### Compiling
+
+### Configuring Servers
+
+### Configuring Client Access Controls
 
 ## Operations
 
-TODO: Provide examples of performing various supported operations
+### Secret Management
 
+#### Generating a random secret
+
+#### Storing a specific secret
+
+#### Storing an RSA Private Key
+
+#### Reading a stored secret
+
+### Cryptograpic Operations
+
+#### ECIES Decryption
+
+#### Certificate Issuance
 
 
 
