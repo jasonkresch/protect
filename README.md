@@ -9,16 +9,16 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 
 ### Supported Secret Management Operations
-* Secret Lifecycle
-** Distributed Key Generation
-** Proactive Refresh
-** Share Recovery
-* Managmenet
-** Store Share
-** Read Share
-** Delete Share
-** Enable Share
-** Disable Share
+. Secret Lifecycle
+.. Distributed Key Generation
+.. Proactive Refresh
+.. Share Recovery
+. Managmenet
+.. Store Share
+.. Read Share
+.. Delete Share
+.. Enable Share
+.. Disable Share
 
 ### Currently Supported Cryptographic Operations
 * Elliptic Curves
@@ -79,6 +79,12 @@ It implements distributed protocols for generating, managing and using shared se
 7. Cryptographic Operations
 [![Alt text](https://img.youtube.com/vi/hVjxZmUPwlU/0.jpg)](https://www.youtube.com/watch?v=hVjxZmUPwlU)
 
+## Architecture
+
+Describe system architecture
+How Shareholders are connected, how they communicate
+Link to Tunable Secrity eprint paper.
+
 
 ## References
 
@@ -89,6 +95,14 @@ Additionally, this project implements the Distributed Key Generation (DKG) proto
 
 Both of these protocols depend on an atomic broadcast channel. In the real world of asynchronrouns networks and distributed systems the idealization of an atomic broadcast channel must be built on top of a distributed, byzantine-fault-tolerant, consensus system.  Therefore network communication among the component servers of the PROSS and DKG systems uses [Byzantine Fault Tolerant (BFT) State Machine Replication (SMR)](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf) based on the [BFT-SMaRt library](https://github.com/bft-smart/library).
 
+More references:
+- Victor Shoup's Practical Threshold RSA Signatures
+- BLS Signatures
+- Ellipc Curve Pairing
+- Blind Signatures (Chaum)
+- Other references from NIST paper
+
+
 ## Deploying
 
 TODO: Write deployment instructions
@@ -96,6 +110,8 @@ TODO: Write deployment instructions
 ## Operations
 
 TODO: Provide examples of performing various supported operations
+
+
 
 
 ## Contributing
