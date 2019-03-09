@@ -3,9 +3,10 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ## Overview
 
-*PROTECT* is a open source platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, PROTECT self-heals  from destruction events and self-restores full security following security breaches.  Thus PROTECT can be used to maintain secrets over the long term, with minimal risk of loss or exposure.
+**PROTECT** provides a platform for *threshold-secure* cryptography.  It can be used to implement systems and services that tolerate multiple simultaneous faults and security breaches without loss of security, availability, or correctness.  Moreoever, the system self-heals from faults and self-restores full security following breaches.  Due to these recovery properties, **PROTECT** can be used to maintain confidential information (secret keys, bitcoin wallets, numbered bank accounts, etc.) over the long periods of time, despite inevitable data loss and data exposure events.
 
-It can be used to implement services that need to function with no single point of failure and no single point of compromise.
+**PROTECT** is based on [Secret Sharing](https://en.wikipedia.org/wiki/Secret_sharing), and leverages the algebraic relationships that exist between the shares to compute evaluate functions on these shares, which can include key generation, key derivation, public key decryption, and signature generation.  Several client utilities are included in the protect project to show how to create a distributed certificate authority whose RSA private key exists in no location, and another, showing how an Elliptic Curve private key can decrypt ciphertexts again without the key existing in any location.  Thus one can engineer secure cryptographic services *having no single points of failure nor any single point of compromise*.
+
 
 ### Supported Secret Management Operations
 * Secret Lifecycle
