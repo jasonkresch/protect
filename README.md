@@ -87,7 +87,7 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 
 #### Post-Quantum Cryptography
 
-## Deploying Protect
+## Deploying PROTECT
 
 Protect is easy to deploy, and can get up and running in as few as three commands:
 
@@ -98,10 +98,42 @@ $ ./protect/bin/launch-all-servers.sh 5
 ```
 However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
 
-### Downloading
+### Downloading PROTECT
 
+
+
+
+
+#### Checking out via git
+
+***PROTECT*** may be checked out using the `git` command.  This is recommended if one wants to make changes to the code base.
+
+Github provides two URLs for checking out the project, one via HTTPS and the other via SSH. If you intend to authenticate to Github using ssh keys, you should use the SSH method.  Otherwise the HTTPS method can be used.
+
+**Video demonstration of dowloading PROTECT:**
 [![Alt text](https://img.youtube.com/vi/9sDgPOUpADw/0.jpg)](https://www.youtube.com/watch?v=9sDgPOUpADw)
 
+##### Checking out via HTTPS
+
+Checking out PROTECT via HTTPS can be accomplished with the following command:
+
+`$ git clone https://github.com/jasonkresch/protect.git`
+
+##### Checking out via SSH
+
+Checking out PROTECT via HTTPS can be accomplished with the following command:
+
+`$ git clone git@github.com:jasonkresch/protect.git`
+
+### Down
+
+Green Download button at the top-right of this page or using the following link:
+
+https://github.com/jasonkresch/protect/archive/master.zip
+
+Requires extracting using an unzip utility or archive manager.
+
+*** 
 Can be checked out via git, using:
 
 Or may be downloaded as a self-contained ZIP file from this page: 
