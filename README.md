@@ -72,6 +72,8 @@ Very shortly support will be added to ***PROTECT*** for the following operations
 
 Protect is easy to deploy, and can get up and running in as few as three commands:
 
+TODO: Test these commands, implement launch-all-servers.sh and stop-all-servers.sh
+
 ```bash
 $ git clone https://github.com/jasonkresch/protect.git
 $ ./protect/build.sh
