@@ -8,6 +8,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentMap;
 
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+
 import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
@@ -35,14 +38,15 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 
 	// Query name
 	public static final String SECRET_NAME_FIELD = "secretName";
+	public static final String OUTPUT_FORMAT_FIELD = "json";
 
 	// Fields
 	private final AccessEnforcement accessEnforcement;
 	private final ServerConfiguration serverConfig;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public ReadHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement, final ServerConfiguration serverConfig,
-			final ConcurrentMap<String, ApvssShareholder> shareholders) {
+	public ReadHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement,
+			final ServerConfiguration serverConfig, final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(clientKeys);
 		this.shareholders = shareholders;
 		this.serverConfig = serverConfig;
@@ -50,17 +54,15 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 	}
 
 	@Override
-	public void authenticatedClientHandle(final HttpExchange exchange, final String username)
-			throws IOException, UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
+	public void authenticatedClientHandle(final HttpExchange exchange, final String username) throws IOException,
+			UnauthorizedException, NotFoundException, BadRequestException, ResourceUnavailableException {
 
 		// Extract secret name from request
 		final String queryString = exchange.getRequestURI().getQuery();
 		final Map<String, List<String>> params = HttpRequestProcessor.parseQueryString(queryString);
-		final List<String> secretNames = params.get(SECRET_NAME_FIELD);
-		if (secretNames == null || secretNames.size() != 1) {
-			throw new BadRequestException();
-		}
-		final String secretName = secretNames.get(0);
+		final String secretName = HttpRequestProcessor.getParameterValue(params, SECRET_NAME_FIELD);
+		final Boolean outputJson = Boolean
+				.parseBoolean(HttpRequestProcessor.getParameterValue(params, OUTPUT_FORMAT_FIELD));
 
 		// Perform authentication
 		accessEnforcement.enforceAccess(username, secretName, REQUEST_PERMISSION);
@@ -76,7 +78,7 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		}
 
 		// Create response
-		final String response = readShare(shareholder, secretName, serverConfig);
+		final String response = readShare(shareholder, secretName, serverConfig, outputJson);
 		final byte[] binaryResponse = response.getBytes(StandardCharsets.UTF_8);
 
 		// Write headers
@@ -88,11 +90,26 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private static String readShare(final ApvssShareholder shareholder, final String secretName,
-			final ServerConfiguration serverConfig) throws NotFoundException {
+			final ServerConfiguration serverConfig, Boolean outputJson) throws NotFoundException {
 
 		// This server
 		final int serverIndex = shareholder.getIndex();
+
+		if (outputJson) {
+
+			// Return the result in json
+			final JSONObject obj = new JSONObject();
+			obj.put("responder", Integer.valueOf(serverIndex));
+			obj.put("epoch", Long.valueOf(shareholder.getEpoch()));
+			if (shareholder.getShare1() != null) {
+				obj.put("share", shareholder.getShare1().getY().toString());
+			}
+
+			return obj.toJSONString() + "\n";
+		}
+
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
 		final String ourIp = thisServerAddress.getAddress().getHostAddress();
 		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
@@ -114,7 +131,8 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 		stringBuilder.append("<p/>\n");
 
 		// Secret Info
-		stringBuilder.append("<b>Share #" + serverIndex + " of \"<a href=\"" + infoUrl + "\">" + secretName + "</a>\":</b>\n");
+		stringBuilder.append(
+				"<b>Share #" + serverIndex + " of \"<a href=\"" + infoUrl + "\">" + secretName + "</a>\":</b>\n");
 		if (shareholder.getSecretPublicKey() == null) {
 			throw new NotFoundException();
 		} else {
@@ -146,8 +164,8 @@ public class ReadHandler extends AuthenticatedClientRequestHandler {
 			final String serverIp = serverAddress.getAddress().getHostAddress();
 			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/read?secretName=" + secretName;
-			stringBuilder.append(
-					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
+			stringBuilder
+					.append("server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
 		}
 		stringBuilder.append("<p/>");
 

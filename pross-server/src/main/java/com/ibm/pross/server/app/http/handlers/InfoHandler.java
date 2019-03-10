@@ -134,13 +134,20 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			
 			// Return the result in json
 			final JSONObject obj = new JSONObject();
-			obj.put("responder", new Integer(serverIndex));
-			obj.put("epoch", new Long(shareholder.getEpoch()));
+			obj.put("responder", Integer.valueOf(serverIndex));
+			obj.put("epoch", Long.valueOf(shareholder.getEpoch()));
 
-			JSONArray inputPoint = new JSONArray();
-			inputPoint.add(shareholder.getSecretPublicKey().getX().toString());
-			inputPoint.add(shareholder.getSecretPublicKey().getY().toString());
-			obj.put("public_key", inputPoint);
+			final JSONArray publicKeyPoint = new JSONArray();
+			publicKeyPoint.add(shareholder.getSecretPublicKey().getX().toString());
+			publicKeyPoint.add(shareholder.getSecretPublicKey().getY().toString());
+			obj.put("public_key", publicKeyPoint);
+			
+			for (int i = 1; i <= shareholder.getN(); i++) {
+				final JSONArray verificationPoint = new JSONArray();
+				verificationPoint.add(shareholder.getSharePublicKey(i).getX().toString());
+				verificationPoint.add(shareholder.getSharePublicKey(i).getY().toString());
+				obj.put("share_verification_key_" + i, verificationPoint);
+			}
 
 			return obj.toJSONString() + "\n";
 		}
