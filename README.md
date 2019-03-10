@@ -7,13 +7,18 @@ A **P**latform for **Ro**bust **T**hr**e**shold **C**ryp**t**ography
 
 ***PROTECT*** and leverages the mathematical relationships that exist between shares of a [secret sharing scheme](https://en.wikipedia.org/wiki/Secret_sharing) for distributed and secure function evaluations. These functions include [distributed key generation](https://en.wikipedia.org/wiki/Distributed_key_generation), [proactive security](https://en.wikipedia.org/wiki/Proactive_secret_sharing), [share recovery](https://en.wikipedia.org/wiki/Proactive_secret_sharing#Motivation), [key derivation](https://en.wikipedia.org/wiki/Key_derivation_function), [public key decryption](https://en.wikipedia.org/wiki/Public-key_cryptography), and [signature generation](https://en.wikipedia.org/wiki/Digital_signature).
 
-Several example client applications are included to show how to use ***PROTECT*** to build a threshold-secure certificate authority whose RSA private key exists in no location, and another showing threshold-secure decryption of ciphertexts  where the decryption key never exists in any location.  By using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
+***PROTECT*** includes several example client utilities  to show how to build a threshold-secure applications. These example utilities include:
+* A distributed Certificate Authority whose private signing key is not stored in any location
+* A threshold-secure decryption service whose private decryption key never exists in any location
+* A secret storage and retrieval client that allows the secure maintenance of arbitrary values
+
+Using these techniques one can engineer secure cryptographic services *having neither any single point of failure nor any single point of compromise*.
 
 ### Functionality
 
 The following section describes all of the funtionality ***PROTECT***.
 
-### Secret Lifecycle
+### Secret Maintenance
 
 The following actions are performed by servers, although the distributed key generation is initiated by a user.  Proactive Refresh and Share Recovery both occur on a scheduled periodic basis for all existing established secrets.
 
@@ -25,63 +30,45 @@ The following actions are performed by servers, although the distributed key gen
 
 The following are supported user actions related to the management of shares.  Note that ***PROTECT*** implements fine-grained access controls, permitting different users to be authorized to perform different functions or operations for different secrets.
 
-* Store Share - Stores a specified share to enable reliably maintenance of a specific secret
-* Read Share - Reads a share to enable determination of a secret's value
-* Delete Share - Deletes a share to allow destruction of a secret
-* Recover Share - Initiates an immediate share recovery of a deleted share
-* Disable Share - Temporarily disables a share for usage
-* Enable Share - Re-enables a previously disabled share for usage
+* **Store Share** - Stores a specified share to enable reliably maintenance of a specific secret
+* **Read Share** - Reads a share to enable determination of a secret's value
+* **Delete Share** - Deletes a share to allow destruction of a secret
+* **Recover Share** - Initiates an immediate share recovery of a deleted share
+* **Disable Share** - Temporarily disables a share for usage
+* **Enable Share** - Enables a previously disabled share for usage
 
 ### Cryptographic Operations
 
 ***PROTECT*** supports the following cryptographic functions out-of-the box today:
 
 #### Elliptic Curves
-* Pseudorandom Functions
-* Oblivious Pseudorandom Functions
-* ECIES Encryption
-* Elliptic Curve Diffie Hellman Key Agreement
+* **Pseudorandom Functions** (PRF) - May be used to derive random looking output deterministically (for PRNGs, or KDFs)
+* **Oblivious Pseudorandom Functions** - The same as a PRF but [blinded](https://en.wikipedia.org/wiki/Pseudorandom_function_family#Oblivious_pseudorandom_functions) so as to hide the input (for password hardening, OPAQUE, oblivious KDF)
+* **ECIES Encryption** - The EC version of [Integrated Encryption Scheme](https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme) which is based on [ElGamal](https://en.wikipedia.org/wiki/ElGamal_encryption) encryption
+* **Elliptic Curve Diffie Hellman Key Agreement** (ECDH) - [ECDH](https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman) is a Key Agreement Scheme commonly used in [TLS handshakes](https://en.wikipedia.org/wiki/Transport_Layer_Security)
 
 #### RSA
-* Signatures Generation
-* Blinded Signature Generation
-* Decryption
+* **Signature Generation** - Threshold signature scheme for [RSA](https://en.wikipedia.org/wiki/RSA_(cryptosystem)) based on Victor Shoup's [Practical Threshold Signatures](https://www.shoup.net/papers/thsig.pdf)
+* **Blinded Signature Generation** - The same as above but [blinded](https://en.wikipedia.org/wiki/Blind_signature#Blind_RSA_signatures) from the signer.
+* **Decryption** - Decryption of a ciphertext encrypted under an RSA public key. (supported but ***not recommended***, see note below)
 
 ### Roadmap Items
 
 Very shortly support will be added to ***PROTECT*** for the following operations:
 
-#### Diffie Hellman
+#### Diffie Hellman over Prime Groups
 * Pseudorandom Functions
 * Oblivious Pseudorandom Functions
 * ElGamal Encryption
 * Diffie-Hellman Key Agreement
 
-#### Bilinear Pairing
-* Boneh–Lynn–Shacham Signatures
-* Partially Oblivious Pseudorandom Functions
+#### Bilinear Pairing of Elliptic Curves
+* [Generic Elliptic Curve Pairing Operation](https://en.wikipedia.org/wiki/Pairing-based_cryptography)
+* [Boneh–Lynn–Shacham Signatures](https://en.wikipedia.org/wiki/Boneh%E2%80%93Lynn%E2%80%93Shacham)
+* Partially Oblivious Pseudorandom Functions - As in the [Pythia PRF Service](https://eprint.iacr.org/2015/644)
 
-### Project Vision
 
-Over a longer time horizion the ***PROTECT*** project aims to support:
-
-#### More Signature Schemes
-* Schnorr Signatures (possibly leveraging Share Conversion)
-* ECDSA Signatures
-
-#### Multiparty Computation
-* Share Addition
-* Share Multiplication
-* Threshold AES
-
-#### RSA Extensions
-* RSA Distributed Key Generation
-* RSA Proactive Refresh
-* RSA Share Recovery
-
-#### Post-Quantum Cryptography
-
-## Deploying Protect
+## Deploying PROTECT
 
 Protect is easy to deploy, and can get up and running in as few as three commands:
 
@@ -92,15 +79,51 @@ $ ./protect/bin/launch-all-servers.sh 5
 ```
 However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
 
-### Download
+### Downloading PROTECT
 
+
+
+
+
+#### Checking out via git
+
+***PROTECT*** may be checked out using the `git` command.  This is recommended if one wants to make changes to the code base.
+
+Github provides two URLs for checking out the project, one via HTTPS and the other via SSH. If you intend to authenticate to Github using ssh keys, you should use the SSH method.  Otherwise the HTTPS method can be used.
+
+**Video demonstration of dowloading PROTECT:**
 [![Alt text](https://img.youtube.com/vi/9sDgPOUpADw/0.jpg)](https://www.youtube.com/watch?v=9sDgPOUpADw)
 
-### Build
+##### Checking out via HTTPS
+
+Checking out PROTECT via HTTPS can be accomplished with the following command:
+
+`$ git clone https://github.com/jasonkresch/protect.git`
+
+##### Checking out via SSH
+
+Checking out PROTECT via HTTPS can be accomplished with the following command:
+
+`$ git clone git@github.com:jasonkresch/protect.git`
+
+### Down
+
+Green Download button at the top-right of this page or using the following link:
+
+https://github.com/jasonkresch/protect/archive/master.zip
+
+Requires extracting using an unzip utility or archive manager.
+
+*** 
+Can be checked out via git, using:
+
+Or may be downloaded as a self-contained ZIP file from this page: 
+
+### Building
 
 [![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
-#### Prerequisites
+#### Dependencies
 
 **PROTECT** is written in Java but also includes some examples that use python.  On a fresh Ubuntu 18.04 system the following packages are required in order to build and launch the product.
 
@@ -201,11 +224,59 @@ Performing signature generation (getting json)
 7. Cryptographic Operations
 [![Alt text](https://img.youtube.com/vi/hVjxZmUPwlU/0.jpg)](https://www.youtube.com/watch?v=hVjxZmUPwlU)
 
-## System Architecture
+## Design
+
+P
+
+### System Architecture
+
+System Architecture Diagram, componenets and their interrelations
+
+Define asynchronous, as eventually synchronous
 
 Describe system architecture
 How Shareholders are connected, how they communicate
+
+### Protocols
+
+At the core of ***PROTECT's*** Distributed Key Genearation, Share Refresh, and Share Recovery Protocols is a single operation we call a *Multiple Asynchronous Publicly Verifiable Secret Sharing* (Multi-APVSS).  One round of a Multi-APVSS consists of each shareholder performing a single APVSS to all the shareholders.
+
+An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network.
+
+[Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing) that is verifiable by anyone. Such schemes are known as .
+
+### Fault Tolerances
+
+Definition of faults, fault types
+Byzantine faults, deviations from porotocols, malicious coordination and collusioon, working to defeat protocols. Can do anything, except forge messages from shareholders that adversary has not compromised.
+
+
+
+
+
 Link to Tunable Secrity eprint paper.
+
+
+
+### Future Improvements
+
+Over a longer time horizion the ***PROTECT*** project aims to support:
+
+#### More Signature Schemes
+* Schnorr Signatures (possibly leveraging Share Conversion)
+* ECDSA Signatures
+
+#### Multiparty Computation
+* Share Addition
+* Share Multiplication
+* Threshold AES
+
+#### RSA Extensions
+* RSA Distributed Key Generation
+* RSA Proactive Refresh
+* RSA Share Recovery
+
+#### Post-Quantum Cryptography
 
 
 ## References
@@ -223,14 +294,19 @@ More references:
 - Ellipc Curve Pairing
 - Blind Signatures (Chaum)
 - Other references from NIST submission
+- Ford-Kaliski on password hardening
 - NIST Draft on Threshold Security
 https://www.nongnu.org/libtmcg/dg81_slides.pdf
 
 ## Team
 
-The team behind PROTECT includes ...
-Involved in the design fo protocols, architecture, algorithms, PVSS, APVSS.
+***PROTECT*** was designed and implementated by a team that includes experts from the fields of threshold cryptography and Byzantin fault tolerant systems. The team members include:
 
+* Christian Cachin - Professor of Computer Science, University of Bern 
+* Hugo Krawczyk - IBM Fellow, Distinguished Research Staff Member, IBM Research
+* Tal Rabin - Distinguished RSM, Manager cryptographic research, IBM Research
+* Jason Resch - Senior Technical Staff Member, IBM 
+* Chrysa Stathakopoulou - PhD Researcher, IBM Research
 
 ## Contributing
 Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
