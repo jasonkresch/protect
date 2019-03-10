@@ -1,0 +1,155 @@
+Example python client?
+OPRF? Password hardening.
+
+Make them mainly curl scripts with python to do interpolation, etc.
+Show how it can be done via the website, but it is difficult
+            
+Later: Blind RSA signing. Maybe not? Verify message to be signed.
+
+TODO: Backup private keys
+
+==============================================================================
+                       
+            
+    Documentation - update Github page with the following
+        Install instructions
+            Define pre-requisites
+                Java 8
+                maven
+                git
+                curl
+                python (use threshold client)?  Java client?
+            Building
+        Deployment
+            Key Generation
+                KeyGeneratorCli config/client/keys/ security_officer
+            CA setup
+                Instructions to delete CAs, start fresh (DON'T USE DEFAULT)
+                CertificateAuthorityCli config/ca config/server/keys config/server/certs true
+                CertificateAuthorityCli config/ca config/client/keys config/client/certs false
+                Add documented step for generating a new CA key
+                    Auto-generate client certificates from public keys
+                    Auto-generate server certificates from their public keys
+                    Do cert and ca generation during key creation.
+                    Use curl, use browser.
+                    Make new scripts in the bin folder to simplify process
+                Have blank keys setup for bin directory, require running "gen keys" script to generate client and server keys and certificates
+            Server setup
+            Client setup
+                Command line
+                    Using curl
+                        $ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-1 --key pross-server/config/client/keys/private-1 https://localhost:8085/id
+                    Client CLI
+                Browser (Firefox)
+                    Import server CAs
+                    Import user p12 file
+                        Importing with firefox, default password "password".
+        Configuration
+            Server configuration
+                Add example server config file modification
+            Client configuration
+                Add example client config file modification
+                Make all client ids distinct from server ids. Use numbers greater than 10, start with 1000.
+        Starting the Service
+            Running servers
+        Secret Management
+            Creating a Secret
+                Generating a random key
+                Storing a specific key (requires trusted dealer)
+                    Python utility to generate shares (n. t. integer), must store all.
+                    Compute expected public key as well.
+                    ./shamir-share.py 5 3 12345 secp256r1
+            Deleting a secret
+                Use a script in curl, or CLI
+            Enabling / Disabling a secret
+        References
+  
+  
+
+Respond to the commenter about how to run it.
+
+
+Add the youtube videos to the readme. (Embed with preview)
+
+
+Demo commands:
+
+=============
+
+
+Encrypt file:
+
+
+./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
+
+
+
+Recover encrypted file:
+
+
+./ecies-encrypt.sh config/ administrator prf-secret DECRYPT  out.enc restored.txt
+
+
+
+Generate Threshold RSA key
+==========================
+./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
+
+
+View CA key
+============
+openssl x509 -text -noout -in threshold-ca.pem 
+
+
+ (Note, no private key anywhere, it was thresholdized and stored to the servers as shares)  We leave the public key here to get the issuer name and also to double-check the resulting certificate's validity.
+
+
+Generate user key pair
+======================
+openssl ecparam -name prime256v1 -genkey -noout -out priv-key.pem && openssl ec -in priv-key.pem -pubout -out pub-key.pem
+
+
+# Issue a certificate
+=======================
+./threshold-ca.sh config signing_user rsa-secret ISSUE threshold-ca.pem pub-key.pem new-cert.pem "CN=example-entity" 
+
+
+# Verify key generation
+========================
+openssl verify -verbose -CAfile threshold-ca.pem new-cert.pem
+
+
+
+# Perform exponentiation
+curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
+
+
+# Get share of the signature
+curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-signing_user "https://localhost:8085/exponentiate?secretName=rsa-secret&message=896826402883" | jq .
+
+
+
+
+Work on documentation over the weekend/on plane. :-)
+
+
+
+
+Server get encrypted partial:
+====================================
+
+curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret
+
+
+curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret | jq .
+
+
+==========================================
+
+
+
+
+
+Fresh Setup, new system (e.g. on IBM Softlayer, Amazon EC2 Ubuntu 18.04)
+=======================
+
