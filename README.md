@@ -22,7 +22,7 @@ The following section describes all of the funtionality ***PROTECT***.
 
 The following actions are performed by servers, although the distributed key generation is initiated by a user.  Proactive Refresh and Share Recovery both occur on a scheduled periodic basis for all existing established secrets.
 
-* **Distributed Key Generation** - Generation of shares of a random values which no one knows
+* **Distributed Key Generation** - Generates of shares of a random value, which is never known to anyone
 * **Proactive Refresh** - Regenerates new shares for an existing secret, eliminating utility of old shares (which might have been exposed)
 * **Share Recovery** - Rebuilding a lost or destroyed share without having to restore the secret or expose any share
   
@@ -227,6 +227,7 @@ Performing signature generation (getting json)
 ## Design
 
 P
+Link to Tunable Secrity eprint paper.
 
 ### System Architecture
 
@@ -247,14 +248,16 @@ An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki
 
 ### Fault Tolerances
 
+
+
 Definition of faults, fault types
 Byzantine faults, deviations from porotocols, malicious coordination and collusioon, working to defeat protocols. Can do anything, except forge messages from shareholders that adversary has not compromised.
+Types of faults:
+- crash faults, lose state, corrupt state, unresponsive, disruptive, deviate from protocol, arbitrarily ,even in coordinated ways.
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/fault-tolerances.png "Fault Tolerances within PROTECT")
 
 
-
-
-
-Link to Tunable Secrity eprint paper.
 
 
 
