@@ -67,25 +67,6 @@ Very shortly support will be added to ***PROTECT*** for the following operations
 * [Boneh–Lynn–Shacham Signatures](https://en.wikipedia.org/wiki/Boneh%E2%80%93Lynn%E2%80%93Shacham)
 * Partially Oblivious Pseudorandom Functions - As in the [Pythia PRF Service](https://eprint.iacr.org/2015/644)
 
-### Project Vision
-
-Over a longer time horizion the ***PROTECT*** project aims to support:
-
-#### More Signature Schemes
-* Schnorr Signatures (possibly leveraging Share Conversion)
-* ECDSA Signatures
-
-#### Multiparty Computation
-* Share Addition
-* Share Multiplication
-* Threshold AES
-
-#### RSA Extensions
-* RSA Distributed Key Generation
-* RSA Proactive Refresh
-* RSA Share Recovery
-
-#### Post-Quantum Cryptography
 
 ## Deploying PROTECT
 
@@ -243,11 +224,59 @@ Performing signature generation (getting json)
 7. Cryptographic Operations
 [![Alt text](https://img.youtube.com/vi/hVjxZmUPwlU/0.jpg)](https://www.youtube.com/watch?v=hVjxZmUPwlU)
 
-## System Architecture
+## Design
+
+P
+
+### System Architecture
+
+System Architecture Diagram, componenets and their interrelations
+
+Define asynchronous, as eventually synchronous
 
 Describe system architecture
 How Shareholders are connected, how they communicate
+
+### Protocols
+
+At the core of ***PROTECT's*** Distributed Key Genearation, Share Refresh, and Share Recovery Protocols is a single operation we call a *Multiple Asynchronous Publicly Verifiable Secret Sharing* (Multi-APVSS).  One round of a Multi-APVSS consists of each shareholder performing a single APVSS to all the shareholders.
+
+An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network.
+
+[Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing) that is verifiable by anyone. Such schemes are known as .
+
+### Fault Tolerances
+
+Definition of faults, fault types
+Byzantine faults, deviations from porotocols, malicious coordination and collusioon, working to defeat protocols. Can do anything, except forge messages from shareholders that adversary has not compromised.
+
+
+
+
+
 Link to Tunable Secrity eprint paper.
+
+
+
+### Future Improvements
+
+Over a longer time horizion the ***PROTECT*** project aims to support:
+
+#### More Signature Schemes
+* Schnorr Signatures (possibly leveraging Share Conversion)
+* ECDSA Signatures
+
+#### Multiparty Computation
+* Share Addition
+* Share Multiplication
+* Threshold AES
+
+#### RSA Extensions
+* RSA Distributed Key Generation
+* RSA Proactive Refresh
+* RSA Share Recovery
+
+#### Post-Quantum Cryptography
 
 
 ## References
@@ -271,9 +300,13 @@ https://www.nongnu.org/libtmcg/dg81_slides.pdf
 
 ## Team
 
-The team behind PROTECT includes ...
-Involved in the design fo protocols, architecture, algorithms, PVSS, APVSS.
+***PROTECT*** was designed and implementated by a team that includes experts from the fields of threshold cryptography and Byzantin fault tolerant systems. The team members include:
 
+* Christian Cachin - Professor of Computer Science, University of Bern 
+* Hugo Krawczyk - IBM Fellow, Distinguished Research Staff Member, IBM Research
+* Tal Rabin - Distinguished RSM, Manager cryptographic research, IBM Research
+* Jason Resch - Senior Technical Staff Member, IBM 
+* Chrysa Stathakopoulou - PhD Researcher, IBM Research
 
 ## Contributing
 Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
