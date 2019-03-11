@@ -404,7 +404,7 @@ $ ./stop-all-servers.sh NUM-SERVERS
 When running multiple servers from different nodes, one should use the command:
 
 ```bash
-$ ./stop-all-servers.sh INDEX-OF-SERVER
+$ ./run-server.sh INDEX-OF-SERVER
 ```
 
 Where `INDEX-OF-SERVER` is a unique integer between 1 and the total number of servers in the system.  Note that the index that is used must have the corresponding private key of the server located in `config/server/keys-private-INDEX-OF-SERVER`.
@@ -491,18 +491,15 @@ Performing signature generation (getting json)
 Mention using &json, for info, read, exponentiate, sign. MAkes parsing easier if doing so programattically.
 
 ```
-curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
+$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
 
+$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-signing_user "https://localhost:8085/exponentiate?secretName=rsa-secret&message=896826402883" | jq .
 
-curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-signing_user "https://localhost:8085/exponentiate?secretName=rsa-secret&message=896826402883" | jq .
+$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret
 
+$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret | jq .
 
-curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret
-
-
-curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret | jq .
-
-curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-1 --key pross-server/config/client/keys/private-1 https://localhost:8085/id
+$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-1 --key pross-server/config/client/keys/private-1 https://localhost:8085/id
 ```
 
 ### Secret Management
@@ -548,20 +545,22 @@ Must have read permission.
 
 *Required Permissions:* `INFO`, `EXPONENTIATE`
 
-./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
-./ecies-encrypt.sh config/ administrator prf-secret DECRYPT  out.enc restored.txt
-
+```
+$ ./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
+$ ./ecies-encrypt.sh config/ administrator prf-secret DECRYPT  out.enc restored.txt
+```
 
 #### Certificate Issuance
 
 *Required Permissions:* `INFO`, `SIGN`
 
+```
 $ openssl ecparam -name prime256v1 -genkey -noout -out priv-key.pem && openssl ec -in priv-key.pem -pubout -out pub-key.pem
 
 $ ./threshold-ca.sh config signing_user rsa-secret ISSUE threshold-ca.pem pub-key.pem new-cert.pem "CN=example-entity" 
 $ openssl verify -verbose -CAfile threshold-ca.pem new-cert.pem
 $ openssl x509 -text -noout -in new-cert.pem
-
+```
 
 6. Managing Secrets
 [![Alt text](https://img.youtube.com/vi/ZMjMlC52MJc/0.jpg)](https://www.youtube.com/watch?v=ZMjMlC52MJc)
@@ -571,8 +570,7 @@ $ openssl x509 -text -noout -in new-cert.pem
 
 ## Design
 
-P
-Link to Tunable Secrity eprint paper.
+TODO: Include link to tunable Secrity eprint.
 
 ### System Architecture
 
@@ -595,18 +593,12 @@ An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki
 
 ### Fault Tolerances
 
-
-
 Definition of faults, fault types
 Byzantine faults, deviations from porotocols, malicious coordination and collusioon, working to defeat protocols. Can do anything, except forge messages from shareholders that adversary has not compromised.
 Types of faults:
 - crash faults, lose state, corrupt state, unresponsive, disruptive, deviate from protocol, arbitrarily ,even in coordinated ways.
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/fault-tolerances.png "Fault Tolerances within PROTECT")
-
-
-
-
 
 ### Future Improvements
 
@@ -628,9 +620,7 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 
 #### Post-Quantum Cryptography
 
-
 ## References
-
 
 This project implements the Proactive Secret Sharing (PROSS) protocol, first described in 1995 by Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, and Moti Yung in their paper ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf).
 
@@ -643,14 +633,15 @@ More references:
 - BLS Signatures
 - Ellipc Curve Pairing
 - Blind Signatures (Chaum)
+- TOPPSS
+- UOKMS
 - Other references from NIST submission
 - Ford-Kaliski on password hardening
 - NIST Draft on Threshold Security
+- [Threshold Schemes for Cryptographic Primitives: Challenges and Opportunities in Standardization and Validation of Threshold Cryptography](https://csrc.nist.gov/publications/detail/nistir/8214/final)
 https://www.nongnu.org/libtmcg/dg81_slides.pdf
 
-    Link to papers in the source (and on the GitHub page, victor shoup, etc., BLS signatures, pairing, blind RSA signatures, chaum, Hugo's TOPPS, paper, etc.)  Use references from NIST paper
-    Include NIST draft paper, presentation slides?
-        Respond to the commenter about running it
+TODO: Add References from NIST presentation proposal
 
 ## Team
 
@@ -670,3 +661,4 @@ Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
 - DKG implementation
 - Thunderella
 - https://en.wikipedia.org/wiki/Vanish_(computer_science)
+- https://gitlab.com/neucrypt/mpecdsa
