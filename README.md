@@ -144,24 +144,186 @@ $ ./build.sh
 ```
 The end result of the build script is a self-contained jar file: `pross-server/target/pross-server-1.0-SNAPSHOT-shaded.jar`
 
+This jar file contains all client and server functionality.
+
 ### Configuration
 
 The following subsections detail how to configure ***PROTECT*** to run in a secure way.
 
 #### Keys and Certificates
 
-Pre-instaled, can skip this step if just testing, but any real deployment ***MUST*** complete this step, to create new certificates for each client and server.  Note: security of client CA certificate not important, servers use direct public key matching.  However, most browsers require the server to present the client CA certificate to prompt the user to provide one. This is not an issue for command line interaction via cURL.
+For ease of getting started, ***PROTECT*** comes with a set of certificates and keys pre-generated. However for any real-world deployment to be secure, one ***MUST*** complete the steps listed here.
 
-#### Servers
+##### Generate a set of keys for each server
+
+1. Log on to each server device, and enter the bin directory.
+2. For a server with index **N** issue the command: `./generate-server-key.sh N`
+  1. Delete that server's CA key (first time only): `rm config/ca/ca-key-server-N`
+  2. Issue certificate for that server `./issue-server-certificates.sh`
+3. Collect the following files from each server and place it in a common location:
+  1. Collect the server public key from server N: `config/server/keys/public-N`
+  2. Collect the server certificate from server N: `config/server/certs/cert-N`
+  3. Collect the server CA certificate from server N: `config/ca/ca-cert-server-N.pem`
+4. Take all the files from the common location and deploy them to each server and each client:
+  1. Place each server's public key into `config/server/keys/`
+  2. Place each server's certificate into `config/server/certs/` 
+  3. Place each server's CA certificat into `config/ca/`
 
 
+##### Generate a set of keys for each client
+
+1. For each client device, and enter the bin directory.
+2. For a client with username **USER** issue the command: `./generate-client-key.sh USER`
+  1. Delete the default client CA key (first time only-optional): `rm config/ca/ca-key-clients`
+  2. Issue certificate for that user `./issue-client-certificates.sh`
+3. Collect the following files from each client device and place it in a common location:
+  1. Collect the user public key from user: `config/client/keys/public-USER`
+  2. Collect the user certificate from server N: `config/client/certs/cert-USER`
+  3. Collect the CA certificate used to issue the certificate: `config/ca/ca-cert-clients.pem`
+4. Take all the files from the common location and deploy them to each server:
+  1. Place each users's public key into `config/client/keys/`
+  2. Place each user's certificate into `config/client/certs/` 
+  3. Place the common client CA certificat into `config/ca/`
+
+Note that there is no security requirement around the client CA private key, and the same client CA may be used for all users. This is because ***PROTECT*** servers always use the exact public key of the client to auhenticate, and ignore the certificate or the CA used to issue it.
+
+Note, however, that most browsers require the server to present the client CA certificate in order to prompt the user to provide one.  This is why the client CA certificate must be known to servers. This is not an issue for command line interaction via cURL where client certificate authentication can be forced.
+
+#### Common Configuration
+
+The common configuration file: `config/server/common.config` specifies all information about the system necessary for both servers and clients to operate. It indicates the number of servers, their locations on the network, and various thresholds.
+
+To start, the only configuration options that need to be specified are `num_servers` and the IP addresses of each of the servers.  Note that any network addresses with servers greater than `num_Servers` are ignored and can be left in the file.
+
+The other parameters are automatically derived from `num_servers` but can be overridden if desired so long as they do not violate the following defined constraints.  Each of the parameters of the common config file are desribed below.
+
+**Video demonstration of editing common.config:**
 
 [![Alt text](https://img.youtube.com/vi/BHM17XE6ZhQ/0.jpg)](https://www.youtube.com/watch?v=BHM17XE6ZhQ)
 
-Show sample configuration file.
-Describe optional and required fields.
-Servers beyond the num servers are ignored.
-Only need to change n, and set the sever IP addresses.
+
+##### Number of Servers
+
+```bash
+# Total number of servers (n)
+# ===========================
+# This should be equal to the total number of unique servers
+# and also represents the number of shareholders, the number 
+# of shares created, and the number of BFT replicas
+#
+# Constraints:
+#   n  >  0
+num_servers = 5
+```
+##### Server Network Addresses
+
+```bash
+# Each server's address and port
+================================
+# Port numbers should be be greater than 1024, and must be 
+# separated by at least 2 and less than 65335.
+#
+# Note that not only will the specified port "x" be opened but 
+# the BFT will also use ports (x+200) and (x+201).
+#
+# Client services will be supported on ports 8080 + serverIndex
+server.1 = 127.0.0.1:65010
+server.2 = 127.0.0.1:65020
+server.3 = 127.0.0.1:65030
+server.4 = 127.0.0.1:65040
+server.5 = 127.0.0.1:65050
+server.6 = 127.0.0.1:65060
+server.7 = 127.0.0.1:65070
+server.8 = 127.0.0.1:65080
+server.9 = 127.0.0.1:65090
+```
+
+##### Secret Reconstruction Threshold
+
+```bash
+# Reconstruction threshold (k)
+# ============================
+# This is the number of shares and correspondingly shareholders 
+# required to participate in restoring or performing an operation 
+# with the shared secret. If fewer than k shares survive, recovery 
+# is made impossible, therefore maximum faults for durability of 
+# the secret is (n - k) while maximum faults for confidentiality is 
+# given by (k - 1). These are both maximized when k is set to 
+# roughly 1/2 of n.
+#
+# Constraints:
+#   k  <=  n
+#   k  >   f_S
+# Optimum/default value:
+#   k  =  floor((n - 1) / 2) + 1
+#reconstruction_threshold = 3
+```
+
+##### Safey Fault Tolerance
+
+```bash
+# Maximum tolerable faults for safety (f_S)
+# =========================================
+# This number defines the maximum faults for safety of the tunable 
+# layer. This can ensure integrity and confidentiality of the secret in the 
+# event that more than one third but less than one half of the servers
+# are corrupted. While technically f_S could be greater than one half 
+# then at least one of confidentiality and secrecy of the secret would be lost.
+#
+# Note that for each increase in f_L by 1, maximum f_S decreases by 2.
+#
+# Constraints:
+#   f_S  >=  0
+#   f_S  <   k
+#   f_S  <=  n - (2 * f_L) - 1
+# Optimum value for greatest safety (default):
+#   f_S  =  k - 1
+# Optimum value for greatest liveness:
+#   f_S   =  f_L   =    floor((n - 1) / 3)
+#max_safety_faults = 2
+```
+
+##### Liveness Fault Tolerance
+
+```bash
+# Maximum tolerable faults for liveness (f_L)
+# ===========================================
+# This number defines the maximum faults for liveness of the tunable layer.
+# This value can be adjusted downwards for increases in f_S, or upwards 
+# until it converges with f_S and the one third bound of the BFT layer's 
+# maximum fault tolerance.  When f_S is maximized, f_L is approximately 
+# one fourth of n.
+#
+# Note that for each decrease in f_L by 1, maximum f_S increases by 2.
+#
+# Constraints:
+#   f_L  >=  0
+#   f_L  <=  f_S
+#   f_L  <=  floor((n - f_S - 1) / 2)
+# Optimum value for greatest safety (default):
+#   f_L  =   n - floor((n-1) / 2) - 1
+# Optimum value for greatest liveness:
+#   f_L   =   f_S   =   floor((n - 1) / 3)
+#max_liveness_faults = 1
+```
+
+##### Broadcast Channel Fault Tolerance
+
+```bash
+# BFT fault tolerance (f)
+# =======================
+# This represents the total number of faults tolerated by the 
+# BFT service. Beyond this level all guarantees of the BFT are 
+# lost (e.g., messages may be delivered in different orders to 
+# different shareholders). Limited to roughly 1/3rd of n.
+#
+# Constraints:
+#   f  >=   0 
+#   f  <=  floor((n - 1) / 3)
+# Optimum/Default value:
+#   f  =   floor((n - 1) / 3)
+#max_bft_faults = 1
+```
 
 #### Client Access Controls
 
