@@ -466,7 +466,31 @@ To verify the keys are successfully imported, there is an identity check page wh
 
 *Required Permissions:* `INFO` to view (`GENERATE` or `STORE`) to generate or store a secret
 
-Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG.  Or, one can initiate the DKG immediately without pre-storing shares to create shares of a random secret.  To initiate the DKG click the "Initiate DKG" button.
+Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG. 
+
+To obtain a sharing of a particular value, one can use the "shamir-share.py" script. The following command shows an example with number of shareholders = 5, reconstruction threshold = 3, and sharing the value "1000":
+
+```
+$ ./shamir-share.py 5 3 1000
+```
+
+Output:
+```
+Shares:
+(1, 16780829942398145718766131207515104628060049441812475815286826296451235316215L)
+(2, 69445721854271011972215100496134157649123142667565881836159569062930391762336L)
+(3, 42202586525262349997649460916449585533192324453124457720195969238368957294994L)
+(4, 50843513165728408557766659417868961810264550022623963809818285883835443958558L)
+(5, 95368501775669187652566696000392286480339819376064400105026518999329851753028L)
+Secret Public Key:
+(11496013529637860221919730206355387223102005066697739921363561317831349586700, 76204896272524372731756530748799401765655575344541547788929707715182487989417)
+```
+
+One would then take each of those shares and store them directly to each server.
+
+Alternatively, one can initiate the DKG immediately without pre-storing shares to create shares of a random secret.
+
+In either case, to initiate the DKG and establish the secret click the "Initiate DKG" button.
 
 **Video demonstration of generating a secret and self healing:**
 
