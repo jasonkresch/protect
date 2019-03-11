@@ -327,27 +327,92 @@ server.9 = 127.0.0.1:65090
 
 #### Client Access Controls
 
+***PROTECT*** supports fine-grained user access controls. Each user can be granted any one of 10 defined permissions to each secret.  Access controls are defined in the config file `config/client/clients.config`.
+
+**Video demonstration of editing clients.config and configuring Firefox with a client certificate:**
+
 [![Alt text](https://img.youtube.com/vi/DXvrh1b8GH4/0.jpg)](https://www.youtube.com/watch?v=DXvrh1b8GH4)
 
-Supports fine-grained user access conrols.
-Uses client-side certificate authentication over TLS
-Debug authentication by going to (show URL of id check page).
-Describe each permission, meaning.
+
+##### Format of Client Configuration File
+
+```bash
+# This file contains a list of clients and their permissions for what operations they can perform on which secrets
+#
+# Each entry in this file is of the following form:
+# [secret-name]
+# username_1 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,sign>
+# username_2 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,sign>
+
+# Note that the [username] must match a public key stored in the client "keys" directory with the name "public-[username]"
+```
+
+##### List of Permissions
+
+```bash
+# Permissions: A comma-separated list of permissions, supported permissions include:
+#   - generate:     The ability to execute a DKG using this name to establish a secret (if one does not already exist with this name)
+#   - store:        The ability for a client to directly store shares of a secret to this key name (if one does not already exist with this name)
+#   - read:         The ability to recover a secret from its shares (should only be used for secrets that can be stored)
+#   - info:         The ability to request information about this key, including the name, creation time, epoch, last-refresh time, prime field and group information (RSA/DH/EC)
+#   - delete:       The ability to destroy the shares associated with this key, resetting its state and allowing a new key of this name to be created or stored.
+#   - recover       The ability to initiate a share recovery for shares of this key after one the shares becomes lost or deleted.
+#   - disable:      The ability to temporarily disable client actions from being performed against the shares of this key (note: does not prevent delete/enable/info)
+#   - enable:       The ability to re-enable client actions from being performed against shares of this key
+#   - exponentiate: The ability to compute an exponentiation (scalar multiply for EC curves) on a client-supplied base point: base^secret
+#   - sign:         The ability to perform an signature operation on a client-supplied message: message^(secret=d) mod N.  Secrets of this form must be stored and be under RSA or BLS groups.
+```
+
+##### Example Secret Definition
+
+```bash
+
+[prf-secret]
+administrator       = generate,delete,disable,enable,info,exponentiate,read,store,recover
+security_officer    = disable,info
+prf_user            = exponentiate,info
+
+[my-secret]
+administrator       = generate,delete,disable,enable,info
+security_officer    = disable,info
+storage_user        = store,read,delete,info
+
+[rsa-secret]
+administrator       = delete,disable,enable,info
+security_officer    = disable,info
+signing_user        = store,sign,info
+```
+
+Above we see three secrets defined, with the names `prf-secret`, `my-secret`, and `rsa-secret`.  For each secret, different users are defined, each having different permissions.  For servers to authenticate users, the server must have a public key file of the user having a username stored with the name `config/client/keys/public-USERNAME`.
+
+For the client to authenticate, it must use client-side certificate authentication when connecting to the server over HTTPS.  Clients should also add all of the server CA certificates, including the Client CA certificate to a set of trusted certifcates.  These certificates can be found in `config/ca/` from each of the servers.  For convience of key and certificate import for browsers, a PKCS#12 file is generated automatically when the user's public key is signed by the CA if the user's private key is present.  This file is placed in `config/client/keys/bundle-private-USERNAME.p12` and it is created with the password `password` which must be entered when importing the key.
 
 ### Launching Servers
 
-[![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
-
-Unqique server ID, all need to start for service to begin.
+All servers can be launched immediately by entering the `bin` directory and executing the command:
 
 ```bash
-$ git clone https://github.com/jasonkresch/protect.git
-$ cd protect && ./build.sh
-$ cd bin && ./start-all-servers.sh 5
-$ cd bin && ./stop-all-servers.sh 5
+$ ./start-all-servers.sh NUM-SERVERS
 ```
 
-If running each on a different node, then directly invoke the `./run-server` script.
+Where `NUM-SERVERS` is the number of servers in the system. However, this command only works when all servers are run from the same machine.  If one starts all servers with this command, they can also be stopped with:
+
+```bash
+$ ./stop-all-servers.sh NUM-SERVERS
+```
+
+When running multiple servers from different nodes, one should use the command:
+
+```bash
+$ ./stop-all-servers.sh INDEX-OF-SERVER
+```
+
+Where `INDEX-OF-SERVER` is a unique integer between 1 and the total number of servers in the system.  Note that the index that is used must have the corresponding private key of the server located in `config/server/keys-private-INDEX-OF-SERVER`.
+
+**Video demonstration of launching servers:**
+
+[![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
+
 
 ## Operations
 
