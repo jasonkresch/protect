@@ -123,10 +123,12 @@ Once downloaded the entire project can be compiled into a self-contained jar by 
 
 ```bash
 $ sudo apt-get-update
-$ sudo apt-get install openjdk-8-jdk-headless
-$ sudo apt install curl
-$ sudo apt install maven
-$ sudo apt install python
+
+# Required for building and running
+$ sudo apt-get install openjdk-8-jdk-headless maven
+
+# Required for examples below
+$ sudo apt install git python curl jq
 ```
 
 #### Compiling
@@ -157,13 +159,13 @@ For ease of getting started, ***PROTECT*** comes with a set of certificates and 
 ##### Generate a set of keys for each server
 
 1. Log on to each server device, and enter the bin directory.
-2. For a server with index **N** issue the command: `./generate-server-key.sh N`
-    1. Delete that server's CA key (first time only): `rm config/ca/ca-key-server-N`
+2. For a server with index **I** issue the command: `./generate-server-key.sh I`
+    1. Delete that server's CA key (first time only): `rm config/ca/ca-key-server-I`
     2. Issue certificate for that server `./issue-server-certificates.sh`
 3. Collect the following files from each server and place it in a common location:
-    1. Collect the server public key from server N: `config/server/keys/public-N`
-    2. Collect the server certificate from server N: `config/server/certs/cert-N`
-    3. Collect the server CA certificate from server N: `config/ca/ca-cert-server-N.pem`
+    1. Collect the server public key from server I: `config/server/keys/public-I`
+    2. Collect the server certificate from server I: `config/server/certs/cert-I`
+    3. Collect the server CA certificate from server I: `config/ca/ca-cert-server-I.pem`
 4. Take all the files from the common location and deploy them to each server and each client:
     1. Place each server's public key into `config/server/keys/`
     2. Place each server's certificate into `config/server/certs/` 
@@ -428,13 +430,12 @@ https://SHAREHOLDER-4/8084/
 https://SHAREHOLDER-5/8085/
 ```
 
-Where SHAREHOLDER-i is the IP address of the shareholder with index = i.
+Where SHAREHOLDER-I is the IP address of the shareholder with index = i.
 
 #### Browser Interaction
 
-Exploring system, servers, secrets, shares. (With read permission)
-Configuring CA certificates (avoid SSL error).
-Note: each server uses its own CA to issue its certificates.  These may be generated individually at each sever, then collected and distributed to all.  CA itself not checked, only used for client browsers. Servers' use direct Public key matching.
+The following subsections detail how to interact with ***PROTECT*** via a web browser.
+
 
 ##### Main Page
 
@@ -486,7 +487,7 @@ Secret Public Key:
 (11496013529637860221919730206355387223102005066697739921363561317831349586700, 76204896272524372731756530748799401765655575344541547788929707715182487989417)
 ```
 
-One would then take each of those shares and store them directly to each server.
+One would then take each of those shares and store one of each directly to the corresponding server.
 
 Alternatively, one can initiate the DKG immediately without pre-storing shares to create shares of a random secret.
 
@@ -526,7 +527,8 @@ With the `READ` permission, one can read the raw value of a share, providing the
 
 All of the interactions that are possible through a web browser can be invoked via command line utilities such as "cURL".  This can be used to write automated scripts and applications. In addition, many of the APIs support a flag to return the output in *JSON*--a machine parsable format that simplifies processing of responses by applications.
 
-##### Get Identity information via cURL
+
+##### Get Client Identity information via cURL
 
 The following command is an examaple of obtaining the identity information from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *administrator*:
 
@@ -536,9 +538,9 @@ $ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-a
 
 ##### Store Share via cURL
 
-There 
+There are two ways of storing a share of a secret to ***PROTECT*** one is for secrets over an Elliptic Curve group, and can be used for ECIES, ECDH, OPRF, and other operations via the "generate" call. The 
 
-###### Store Elliptic Curve Share
+###### Store Elliptic Curve Share`
 
 ###### Store RSA Share
 
