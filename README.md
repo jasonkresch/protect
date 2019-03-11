@@ -460,17 +460,25 @@ To verify the keys are successfully imported, there is an identity check page wh
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/id-check.png "Identity Check")
 
-##### Generate Secret Page
+##### Generate / Store Secret Page
 
-*Required Permissions:* `GENERATE`
+*Required Permissions:* `INFO` to view (`GENERATE` or `STORE`) to generate or store a secret
 
+Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG.  Or, one can initiate the DKG immediately without pre-storing shares to create shares of a random secret.  To initiate the DKG click the "Initiate DKG" button.
 
+**Generate or Store page of PROTECT:**
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
 
-##### Secret Information Page
+##### Share Information Page
 
 *Required Permissions:* `INFO`
+
+Once a secret is established this info page will change from the Generate or Store page to a page displaying information about the secret.
+
+It lists the public key of the secret, the group and field information, and the shareholder public keys.
+
+**Share Information page of PROTECT:**
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/secret-information.png "Secret Information")
 
@@ -478,14 +486,80 @@ To verify the keys are successfully imported, there is an identity check page wh
 
 *Required Permissions:* `READ`
 
+With the `READ` permission, one can read the raw value of a share, providing the capacity to recover the raw secret.  This permission is typically only given for secrets that are stored.
+
+**Read Share page of PROTECT:**
+
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/read-share.png "Read Share")
 
 #### Command Line Interction
 
-Show curl commands.
-Initiating a DKG
-Getting share info
-Deleting a share
+All of the interactions that are possible through a web browser can be invoked via command line utilities such as "cURL".  This can be used to write automated scripts and applications. In addition, many of the APIs support a flag to return the output in *JSON*--a machine parsable format that simplifies processing of responses by applications.
+
+##### Get Identity information via cURL
+
+The following command is an examaple of obtaining the identity information from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *administrator*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-cert-administrator https://localhost:8081/id
+```
+
+Note: This command does not support the json output flag.
+
+##### Store Share via cURL
+
+There 
+
+###### Store Elliptic Curve Share
+
+###### Store RSA Share
+
+##### Initiate DKG via cURL
+
+##### Get Share information via cURL
+
+##### Read Share via cURL
+
+##### Delete Share via cURL
+
+##### Perform Exponentiation via cURL
+
+*Required Permissions:* `SIGN`
+
+The following command is an examaple of obtaining a share of a signature for message *896826402883* from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *signing_user*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-signing_user --key config/client/keys/private-signing_user "https://localhost:8085/sign?secretName=rsa-secret&message=896826402883&json=true" | jq .
+```
+
+Output:
+```json
+{
+  "share_proof": [
+    "3915452739578001858942546666196052929410007440085891066762307417431530661042",
+    "20964253121137168757054695370851318724278361189297787721452176888381860654341018763771579904658908644586905464579631038665144628410438333078449478057400360255772779493977754763560993888480299677654104394117575673086007371914651508268671705050103161261637017122053108665057274898007548233105981668219010087391804092402409505734758873751230149970499236181397080628186536065495498362947118619352171281091444936226477721131886591732284307974122396541650519952297548"
+  ],
+  "e": "65537",
+  "v": "97667882916481129410985948086978181466870029133460868393672413700250085965239088892639364190258750946882209853020038374719189973167303815159003907235872041083950526069327190866375257364337233176456207853278278220036538074809655478895273438356455808813663052856690027569210092504427400981359651564618352610913",
+  "verification_keys": [
+    "92527974764854322558056028036618734049092140046287806571484563485844975123883935116846254078525219756309599587353804113068401847427417295124603413078730074680506712173963038311941133801360119308920756165024775989205520863697439485292170664359232457750076317155390109911570648356146181339113520584853863113996",
+    "26628390956049558909765449115153405859473515974079432909826575060219411640299591044128638109269155505246795187574942014539499529478701803491553109327331354962622645924100557338460271759789590417002388765290066954882298380164277735375809612788254019209437452364374199311585860798446280384820933409698839070312",
+    "25884028479267464279813975344450333535498341897294482438123990128747086626536082464529718043160830674933036651191020276199392937497850513350228880856464170681214341645622314433889320678946439188357119795238878346941705557272925749521095180147059416590580171564616032217191588401389241728146720866836136731697",
+    "10951079262237060198735117097526209001738002413408487030354005665264687578843599129644461818289818622367843548419295966164938958765720004351465972803393379896767005715587983148561448996926711467153226555539906867880483688830933570989310955525583122376320513655775954862591548049602633385722131986134299114803",
+    "11458512971360055709776301799447289870783316078774550062528720833067260425198740600379419669700669970554985569018475280146869841717144244008344189442674764151374799148597011638098551579922344543628496526020162222698947158494191359089520517472462936695192891442805952237247445941507567210349660814764633664024"
+  ],
+  "responder": 1,
+  "epoch": 0,
+  "share": "104089335183339073298944949497737540916579012158418210606751223528587785608052573296790876200612808800484308696637642182475782012135170819868407737528710134231944072736612956448438988789849478774665339898114642434511602879101191200695064054918514262681391731499065584278925847132588968569887873172333820329507",
+  "compute_time_us": 1596,
+  "n": "124177666122443695422631704923632259112074454777939228513534798824013949965600400022841037928624034703021632895189346228095215347041503409017302928792689704702196734683455596239280440525569622847255966426180465184920746438085691791941567916885533614179535146478855720578404954663150192227022545981178180789901"
+}
+```
+
+##### Perform RSA Sign via cURL
+
+*Required Permissions:* `SIGN`
+
 Performing Exponentiation (Getting json)
 Performing signature generation (getting json)
 
@@ -494,7 +568,7 @@ Mention using &json, for info, read, exponentiate, sign. MAkes parsing easier if
 ```
 $ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
 
-$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-signing_user "https://localhost:8085/exponentiate?secretName=rsa-secret&message=896826402883" | jq .
+
 
 $ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret
 
