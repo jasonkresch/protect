@@ -12,3 +12,13 @@ while [ "$i" -le "$1" ]; do
   echo "$pid" > "/tmp/protect-server-$i.pid"
   i=$(($i + 1))
 done
+
+export CHECK_HOST=localhost
+export CHECK_PORT=8081
+echo -n "Waiting for servers to come online"
+until $(curl -k --output /dev/null --silent --fail "https://$CHECK_HOST:$CHECK_PORT/"); do
+    printf '.'
+    sleep 2
+done
+echo
+echo "System ready"
