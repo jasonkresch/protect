@@ -420,11 +420,13 @@ The following sections detail interaction with a ***PROTECT*** deployment.
 
 Each server listens for client connections on port (8080 + INDEX-OF-SERVER). For example, in a system of 5 shareholders, each shareholder can be accessed at at:
 
-`https://SHAREHOLDER-1/8081/`
-`https://SHAREHOLDER-2/8082/`
-`https://SHAREHOLDER-3/8083/`
-`https://SHAREHOLDER-4/8084/`
-`https://SHAREHOLDER-5/8085/`
+```
+https://SHAREHOLDER-1/8081/
+https://SHAREHOLDER-2/8082/
+https://SHAREHOLDER-3/8083/
+https://SHAREHOLDER-4/8084/
+https://SHAREHOLDER-5/8085/
+```
 
 Where SHAREHOLDER-i is the IP address of the shareholder with index = i.
 
@@ -466,6 +468,10 @@ To verify the keys are successfully imported, there is an identity check page wh
 
 Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG.  Or, one can initiate the DKG immediately without pre-storing shares to create shares of a random secret.  To initiate the DKG click the "Initiate DKG" button.
 
+**Video demonstration of generating a secret and self healing:**
+
+[![Alt text](https://img.youtube.com/vi/ZMjMlC52MJc/0.jpg)](https://www.youtube.com/watch?v=ZMjMlC52MJc)
+
 **Generate or Store page of PROTECT:**
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
@@ -503,8 +509,6 @@ The following command is an examaple of obtaining the identity information from 
 ```bash
 $ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-cert-administrator https://localhost:8081/id
 ```
-
-Note: This command does not support the json output flag.
 
 ##### Store Share via cURL
 
@@ -596,34 +600,15 @@ Output:
 }
 ```
 
+### Example Applications
 
+**Video demonstration of using Encryption and Signing Clients:**
 
+[![Alt text](https://img.youtube.com/vi/hVjxZmUPwlU/0.jpg)](https://www.youtube.com/watch?v=hVjxZmUPwlU)
 
+#### Read / Write Client Utility
 
-
-
-
-
-
-```
-$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
-
-
-
-$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret
-
-$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/server/certs/cert-2 --key pross-server/config/server/keys/private-2 https://localhost:8085/partial?secretName=prf-secret | jq .
-
-$ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-1 --key pross-server/config/client/keys/private-1 https://localhost:8085/id
-```
-
-### Secret Management
-
-#### Generating a random secret
-
-*Required Permissions:* `GENERATE`
-
-#### Storing a specific secret
+##### Storing a specific secret
 
 *Required Permissions:* `STORE`
 
@@ -633,18 +618,7 @@ Must be done before DKG is performed. Must have store permission.
 $ ./store-secret.sh config administrator prf-secret WRITE 312
 ```
 
-
-#### Generating an RSA Private Key
-
-*Required Permissions:* `STORE`, `GENERATE`
-
-./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
-openssl x509 -text -noout -in threshold-ca.pem 
-
- (Note, no private key anywhere, it was thresholdized and stored to the servers as shares)  We leave the public key here to get the issuer name and also to double-check the resulting certificate's validity. Exists in RAM only, and only temporarily.
-
-
-#### Reading a stored secret
+##### Reading a stored secret
 
 *Required Permissions:* `READ`
 
@@ -652,20 +626,18 @@ openssl x509 -text -noout -in threshold-ca.pem
 $ ./store-secret.sh config administrator prf-secret READ
 ```
 
-Must have read permission.
+#### RSA Signing Client
 
-### Cryptograpic Operations
+*Required Permissions:* `INFO` and `STORE` and `GENERATE`
 
-#### ECIES Decryption
+##### Generating a new RSA Private Key
 
-*Required Permissions:* `INFO`, `EXPONENTIATE`
+./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
+openssl x509 -text -noout -in threshold-ca.pem 
 
-```
-$ ./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
-$ ./ecies-encrypt.sh config/ administrator prf-secret DECRYPT  out.enc restored.txt
-```
+ (Note, no private key anywhere, it was thresholdized and stored to the servers as shares)  We leave the public key here to get the issuer name and also to double-check the resulting certificate's validity. Exists in RAM only, and only temporarily.
 
-#### Certificate Issuance
+##### Issuing a Certificate with the RSA Private Key
 
 *Required Permissions:* `INFO`, `SIGN`
 
@@ -677,11 +649,36 @@ $ openssl verify -verbose -CAfile threshold-ca.pem new-cert.pem
 $ openssl x509 -text -noout -in new-cert.pem
 ```
 
-6. Managing Secrets
-[![Alt text](https://img.youtube.com/vi/ZMjMlC52MJc/0.jpg)](https://www.youtube.com/watch?v=ZMjMlC52MJc)
+Must have read permission.
 
-7. Cryptographic Operations
-[![Alt text](https://img.youtube.com/vi/hVjxZmUPwlU/0.jpg)](https://www.youtube.com/watch?v=hVjxZmUPwlU)
+#### ECIES Decryption Client
+
+##### Encrypting a File
+
+*Required Permissions:* `INFO`, `EXPONENTIATE`
+
+```
+$ ./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
+```
+
+Output:
+
+```
+```
+
+##### Decrypting a File
+
+*Required Permissions:* `INFO`, `EXPONENTIATE`
+
+```
+$ ./ecies-encrypt.sh config/ administrator prf-secret DECRYPT out.enc restored.txt
+```
+
+Output:
+
+```
+```
+
 
 ## Design
 
