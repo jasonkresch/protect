@@ -341,8 +341,8 @@ server.9 = 127.0.0.1:65090
 #
 # Each entry in this file is of the following form:
 # [secret-name]
-# username_1 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,sign>
-# username_2 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,sign>
+# username_1 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,/sign>
+# username_2 = <generate,/store,/read,/info,/delete,/recover,/disable,/enable,/exponentiate,/sign>
 
 # Note that the [username] must match a public key stored in the client "keys" directory with the name "public-[username]"
 ```
@@ -366,7 +366,6 @@ server.9 = 127.0.0.1:65090
 ##### Example Secret Definition
 
 ```bash
-
 [prf-secret]
 administrator       = generate,delete,disable,enable,info,exponentiate,read,store,recover
 security_officer    = disable,info
@@ -464,6 +463,8 @@ To verify the keys are successfully imported, there is an identity check page wh
 ##### Generate Secret Page
 
 *Required Permissions:* `GENERATE`
+
+
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
 
