@@ -435,27 +435,53 @@ Exploring system, servers, secrets, shares. (With read permission)
 Configuring CA certificates (avoid SSL error).
 Note: each server uses its own CA to issue its certificates.  These may be generated individually at each sever, then collected and distributed to all.  CA itself not checked, only used for client browsers. Servers' use direct Public key matching.
 
+##### Main Page
 
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/protect-main-page.png "Index page")
+*Required Permissions:* `NONE`
 
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/id-check.png "Identity Check")
+Because ***PROTECT*** operates over HTTPS one may use a web browser to create, manage, and use secrets.  When ***PROTECT*** starts, navigating to `https://SHAREHOLDER-1/8081/` will display the main page, which will display configuration information, the set of shareholders which support the system, and a list of secrets managed by the system.
 
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/pre-dkg.png "Generate Secret")
+Unless the certificates used by ***PROTECT*** servers are issued by known Certificate Authorities, browsers will generally complain that the servers are not trusted. To remedy this problem requires importing each server's CA certificate as a trusted certificate.
 
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/secret-information.png "Secret Information")
+See: [digicert's guide to importing CA certificates](https://knowledge.digicert.com/solution/SO13734.html)
 
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/read-share.png "Read Share")
+**Main page of PROTECT:**
 
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/protect-main-page.png "Index page")
 
-(Include Screen Shots here)
+##### Identity Check Page
 
-          Browser (Firefox)
-                    Import server CAs
-                    Import user p12 file
-                        Importing with firefox, default password "password".
+*Required Permissions:* `NONE`
+
+While the main page may be accessed anonymously by anyone, any attempt to access, use, or obtain information about the secrets (beyond their name) will be prevented without authenticating to ***PROTECT***.  To authenticate one must import their public key and private key into the browser for use.  This can be done by importing the file `config/client/keys/bundle-private-USERNAME.p12` which is protected with the password "password".
+
+To verify the keys are successfully imported, there is an identity check page which displays who the server believes the client to be, and also displays what permissions that user has.  This page exists at: `https://SHAREHOLDER-i/808i/id` for shareholder i.
+
+**Identity page of PROTECT:**
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/id-check.png "Identity Check")
+
+##### Generate Secret Page
+
+*Required Permissions:* `GENERATE`
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
+
+##### Secret Information Page
+
+*Required Permissions:* `INFO`
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/secret-information.png "Secret Information")
+
+##### Read Share Page
+
+*Required Permissions:* `READ`
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/read-share.png "Read Share")
 
 #### Command Line Interction
 
+Show curl commands.
 Initiating a DKG
 Getting share info
 Deleting a share
@@ -483,7 +509,11 @@ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/co
 
 #### Generating a random secret
 
+*Required Permissions:* `GENERATE`
+
 #### Storing a specific secret
+
+*Required Permissions:* `STORE`
 
 Must be done before DKG is performed. Must have store permission.
 
@@ -494,6 +524,8 @@ $ ./store-secret.sh config administrator prf-secret WRITE 312
 
 #### Generating an RSA Private Key
 
+*Required Permissions:* `STORE`, `GENERATE`
+
 ./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
 openssl x509 -text -noout -in threshold-ca.pem 
 
@@ -501,6 +533,8 @@ openssl x509 -text -noout -in threshold-ca.pem
 
 
 #### Reading a stored secret
+
+*Required Permissions:* `READ`
 
 ```
 $ ./store-secret.sh config administrator prf-secret READ
@@ -512,11 +546,15 @@ Must have read permission.
 
 #### ECIES Decryption
 
+*Required Permissions:* `INFO`, `EXPONENTIATE`
+
 ./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
 ./ecies-encrypt.sh config/ administrator prf-secret DECRYPT  out.enc restored.txt
 
 
 #### Certificate Issuance
+
+*Required Permissions:* `INFO`, `SIGN`
 
 $ openssl ecparam -name prime256v1 -genkey -noout -out priv-key.pem && openssl ec -in priv-key.pem -pubout -out pub-key.pem
 
