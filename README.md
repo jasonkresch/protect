@@ -72,8 +72,6 @@ Very shortly support will be added to ***PROTECT*** for the following operations
 
 Protect is easy to deploy, and can get up and running in as few as three commands:
 
-TODO: Test these commands, implement launch-all-servers.sh and stop-all-servers.sh
-
 ```bash
 $ git clone https://github.com/jasonkresch/protect.git
 $ cd protect && ./build.sh
@@ -83,8 +81,7 @@ However this will launch protect using default configuration parameters, with de
 
 ### Downloading PROTECT
 
-There are two options for downloading protect...
-
+There are two options for downloading protect as a ZIP file and using `git`.
 
 #### Checking out via git
 
@@ -92,7 +89,8 @@ There are two options for downloading protect...
 
 Github provides two URLs for checking out the project, one via HTTPS and the other via SSH. If you intend to authenticate to Github using ssh keys, you should use the SSH method.  Otherwise the HTTPS method can be used.
 
-**Video demonstration of dowloading PROTECT:**
+**Video demonstration of dowloading PROTECT using git:**
+
 [![Alt text](https://img.youtube.com/vi/9sDgPOUpADw/0.jpg)](https://www.youtube.com/watch?v=9sDgPOUpADw)
 
 ##### Checking out via HTTPS
@@ -107,30 +105,26 @@ Checking out PROTECT via HTTPS can be accomplished with the following command:
 
 `$ git clone git@github.com:jasonkresch/protect.git`
 
-### Down
+### Downloading ZIP file
 
-Green Download button at the top-right of this page or using the following link:
+One can download ***PROTECT*** clicking the green "Clone or download" button at the top-right of this page, and then clicking the link labeled "Download ZIP" or by clicking this following link:
 
 https://github.com/jasonkresch/protect/archive/master.zip
 
-Requires extracting using an unzip utility or archive manager.
-
-*** 
-Can be checked out via git, using:
-
-Or may be downloaded as a self-contained ZIP file from this page: 
+Note that this option requires extracting the ZIP file using an unzip utility or archive manager.
 
 ### Building
 
-[![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
+Once downloaded the entire project can be compiled into a self-contained jar by running the "build.sh" script contained in the base directory of the protect project. Details are included in the following subsections.
 
 #### Dependencies
 
-**PROTECT** is written in Java but also includes some examples that use python.  On a fresh Ubuntu 18.04 system the following packages are required in order to build and launch the product.
+**PROTECT** is written in Java 1.8 but also includes some examples in python.  It uses `maven` to for dependency management and for building.  On a fresh Ubuntu install the following packages may need to be installed in order to compile and launch ***PROTECT***.
 
 ```bash
 $ sudo apt-get-update
 $ sudo apt-get install openjdk-8-jdk-headless
+$ sudo apt install curl
 $ sudo apt install maven
 $ sudo apt install python
 ```
@@ -138,6 +132,10 @@ $ sudo apt install python
 #### Compiling
 
 Once the above prerequisites are installed PROTECT may be built by invoking the `build.sh` script.
+
+**Video demonstration of compiling PROTECT into a jar:**
+
+[![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
 ```bash
 $ git clone https://github.com/jasonkresch/protect.git
@@ -148,11 +146,15 @@ The end result of the build script is a self-contained jar file: `pross-server/t
 
 ### Configuration
 
+The following subsections detail how to configure ***PROTECT*** to run in a secure way.
+
 #### Keys and Certificates
 
 Pre-instaled, can skip this step if just testing, but any real deployment ***MUST*** complete this step, to create new certificates for each client and server.  Note: security of client CA certificate not important, servers use direct public key matching.  However, most browsers require the server to present the client CA certificate to prompt the user to provide one. This is not an issue for command line interaction via cURL.
 
 #### Servers
+
+
 
 [![Alt text](https://img.youtube.com/vi/BHM17XE6ZhQ/0.jpg)](https://www.youtube.com/watch?v=BHM17XE6ZhQ)
 
@@ -175,6 +177,15 @@ Describe each permission, meaning.
 [![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
 
 Unqique server ID, all need to start for service to begin.
+
+```bash
+$ git clone https://github.com/jasonkresch/protect.git
+$ cd protect && ./build.sh
+$ cd bin && ./start-all-servers.sh 5
+$ cd bin && ./stop-all-servers.sh 5
+```
+
+If running each on a different node, then directly invoke the `./run-server` script.
 
 ## Operations
 
