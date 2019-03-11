@@ -76,15 +76,14 @@ TODO: Test these commands, implement launch-all-servers.sh and stop-all-servers.
 
 ```bash
 $ git clone https://github.com/jasonkresch/protect.git
-$ ./protect/build.sh
-$ ./protect/bin/launch-all-servers.sh 5
+$ cd protect && ./build.sh
+$ cd bin && ./start-all-servers.sh 5
 ```
 However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
 
 ### Downloading PROTECT
 
-
-
+There are two options for downloading protect...
 
 
 #### Checking out via git
