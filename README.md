@@ -158,32 +158,32 @@ For ease of getting started, ***PROTECT*** comes with a set of certificates and 
 
 1. Log on to each server device, and enter the bin directory.
 2. For a server with index **N** issue the command: `./generate-server-key.sh N`
-  1. Delete that server's CA key (first time only): `rm config/ca/ca-key-server-N`
-  2. Issue certificate for that server `./issue-server-certificates.sh`
+    1. Delete that server's CA key (first time only): `rm config/ca/ca-key-server-N`
+    2. Issue certificate for that server `./issue-server-certificates.sh`
 3. Collect the following files from each server and place it in a common location:
-  1. Collect the server public key from server N: `config/server/keys/public-N`
-  2. Collect the server certificate from server N: `config/server/certs/cert-N`
-  3. Collect the server CA certificate from server N: `config/ca/ca-cert-server-N.pem`
+    1. Collect the server public key from server N: `config/server/keys/public-N`
+    2. Collect the server certificate from server N: `config/server/certs/cert-N`
+    3. Collect the server CA certificate from server N: `config/ca/ca-cert-server-N.pem`
 4. Take all the files from the common location and deploy them to each server and each client:
-  1. Place each server's public key into `config/server/keys/`
-  2. Place each server's certificate into `config/server/certs/` 
-  3. Place each server's CA certificat into `config/ca/`
+    1. Place each server's public key into `config/server/keys/`
+    2. Place each server's certificate into `config/server/certs/` 
+    3. Place each server's CA certificat into `config/ca/`
 
 
 ##### Generate a set of keys for each client
 
 1. For each client device, and enter the bin directory.
 2. For a client with username **USER** issue the command: `./generate-client-key.sh USER`
-  1. Delete the default client CA key (first time only-optional): `rm config/ca/ca-key-clients`
-  2. Issue certificate for that user `./issue-client-certificates.sh`
+    1. Delete the default client CA key (first time only-optional): `rm config/ca/ca-key-clients`
+    2. Issue certificate for that user `./issue-client-certificates.sh`
 3. Collect the following files from each client device and place it in a common location:
-  1. Collect the user public key from user: `config/client/keys/public-USER`
-  2. Collect the user certificate from server N: `config/client/certs/cert-USER`
-  3. Collect the CA certificate used to issue the certificate: `config/ca/ca-cert-clients.pem`
+    1. Collect the user public key from user: `config/client/keys/public-USER`
+    2. Collect the user certificate from server N: `config/client/certs/cert-USER`
+    3. Collect the CA certificate used to issue the certificate: `config/ca/ca-cert-clients.pem`
 4. Take all the files from the common location and deploy them to each server:
-  1. Place each users's public key into `config/client/keys/`
-  2. Place each user's certificate into `config/client/certs/` 
-  3. Place the common client CA certificat into `config/ca/`
+    1. Place each users's public key into `config/client/keys/`
+    2. Place each user's certificate into `config/client/certs/` 
+    3. Place the common client CA certificat into `config/ca/`
 
 Note that there is no security requirement around the client CA private key, and the same client CA may be used for all users. This is because ***PROTECT*** servers always use the exact public key of the client to auhenticate, and ignore the certificate or the CA used to issue it.
 
