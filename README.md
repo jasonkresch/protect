@@ -413,18 +413,39 @@ Where `INDEX-OF-SERVER` is a unique integer between 1 and the total number of se
 
 [![Alt text](https://img.youtube.com/vi/H4rX8gtqjrI/0.jpg)](https://www.youtube.com/watch?v=H4rX8gtqjrI)
 
-
 ## Operations
+
+The following sections detail interaction with a ***PROTECT*** deployment.
 
 ### Interacting with System
 
-Servers listen over HTTPS, on ports 8081 - 808n where n is number of servers.  Each server id.
+Each server listens for client connections on port (8080 + INDEX-OF-SERVER). For example, in a system of 5 shareholders, each shareholder can be accessed at at:
+
+`https://SHAREHOLDER-1/8081/`
+`https://SHAREHOLDER-2/8082/`
+`https://SHAREHOLDER-3/8083/`
+`https://SHAREHOLDER-4/8084/`
+`https://SHAREHOLDER-5/8085/`
+
+Where SHAREHOLDER-i is the IP address of the shareholder with index = i.
 
 #### Browser Interaction
 
 Exploring system, servers, secrets, shares. (With read permission)
 Configuring CA certificates (avoid SSL error).
 Note: each server uses its own CA to issue its certificates.  These may be generated individually at each sever, then collected and distributed to all.  CA itself not checked, only used for client browsers. Servers' use direct Public key matching.
+
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/protect-main-page.png "Index page")
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/id-check.png "Identity Check")
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/pre-dkg.png "Generate Secret")
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/secret-information.png "Secret Information")
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/read-share.png "Read Share")
+
 
 (Include Screen Shots here)
 
