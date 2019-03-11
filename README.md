@@ -522,14 +522,54 @@ There
 
 ##### Delete Share via cURL
 
+*Required Permissions:* `DELETE`
+
+The following command is an examaple of deleting a share of from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *administrator* to delete a share of the secret named *prf-secre*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-administrator "https://localhost:8081/delete?secretName=prf-secret"
+```
+
+Output:
+```
+prf-secret has been DELETED.
+```
+
 ##### Perform Exponentiation via cURL
+
+*Required Permissions:* `EXPONENTIATE`
+
+The following command is an examaple of obtaining a share of an exponentiation with an elliptic curve base point (x = *39522464597546680434308646015259477026906557798165815565761410653690318807746*, y = *300250275475100976592897958924554703173715402382388912994734131264810025115*) from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *administrator* using a share of the secret named *prf-secre* and getting the output in JSON format:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-administrator "https://localhost:8081/exponentiate?secretName=prf-secret&x=39522464597546680434308646015259477026906557798165815565761410653690318807746&y=300250275475100976592897958924554703173715402382388912994734131264810025115&json=true" | jq .
+```
+
+Output:
+```json
+{
+  "base_point": [
+    "39522464597546680434308646015259477026906557798165815565761410653690318807746",
+    "300250275475100976592897958924554703173715402382388912994734131264810025115"
+  ],
+  "responder": 1,
+  "result_point": [
+    "112877074676220790712663792135696517254351430132098997431865646117621239767928",
+    "114368565126077038137024926861461505752538737384458050918690817623772672914888"
+  ],
+  "epoch": 7,
+  "compute_time_us": 239
+}
+```
+
+##### Perform RSA Sign via cURL
 
 *Required Permissions:* `SIGN`
 
 The following command is an examaple of obtaining a share of a signature for message *896826402883* from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *signing_user*:
 
 ```bash
-$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-signing_user --key config/client/keys/private-signing_user "https://localhost:8085/sign?secretName=rsa-secret&message=896826402883&json=true" | jq .
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-signing_user --key config/client/keys/private-signing_user "https://localhost:8081/sign?secretName=rsa-secret&message=896826402883" | jq .
 ```
 
 Output:
@@ -556,14 +596,14 @@ Output:
 }
 ```
 
-##### Perform RSA Sign via cURL
 
-*Required Permissions:* `SIGN`
 
-Performing Exponentiation (Getting json)
-Performing signature generation (getting json)
 
-Mention using &json, for info, read, exponentiate, sign. MAkes parsing easier if doing so programattically.
+
+
+
+
+
 
 ```
 $ curl --cacert pross-server/config/ca/ca-cert-server-5.pem --cert pross-server/config/client/certs/cert-administrator --key pross-server/config/client/keys/private-administrator "https://localhost:8085/exponentiate?secretName=prf-secret&x=8968264028836463479781803114377394639649772089185025260875842702424765933290&json=true" | jq .
