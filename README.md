@@ -523,7 +523,7 @@ With the `READ` permission, one can read the raw value of a share, providing the
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/read-share.png "Read Share")
 
-#### Command Line Interction
+#### Command Line Interaction
 
 All of the interactions that are possible through a web browser can be invoked via command line utilities such as "cURL".  This can be used to write automated scripts and applications. In addition, many of the APIs support a flag to return the output in *JSON*--a machine parsable format that simplifies processing of responses by applications.
 
@@ -570,14 +570,14 @@ prf-secret
 
 ##### Store Share via cURL
 
-There are two ways of storing a share of a secret to ***PROTECT*** one is for secrets over an Elliptic Curve group, and can be used for ECIES, ECDH, OPRF, and other operations via the "generate" call. The 
+There are two ways of storing a share of a secret to ***PROTECT*** one is for secrets over an Elliptic Curve group, and can be used for ECIES, ECDH, OPRF, and other operations via the `GENERATE` call. The other is to store a share of an RSA key. Storing shares of an RSA key can allow calls to `SIGN`.
 
 ###### Store Elliptic Curve Share
 
-The following command is an examaple of storing a share to a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *storage_user*:
+The following command is an examaple of storing a share of the secret "1000" having a value of *16780829942398145718766131207515104628060049441812475815286826296451235316215* to a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *storage_user*:
 
 ```bash
-$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-storage_user --key config/client/keys/private-storage_user "https://localhost:8081/store?secretName=my-secret&share=700"
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-storage_user --key config/client/keys/private-storage_user "https://localhost:8081/store?secretName=my-secret&share=16780829942398145718766131207515104628060049441812475815286826296451235316215"
 ```
 Output:
 
@@ -594,7 +594,6 @@ $ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-s
 ```
 
 Note: ***e*** and ***n*** from above are the public exponent and RSA modulus. ***v*** and ***v_i*** are the verification generator and verification values for the shareholders computed according to Victor Shoup's ["Practical Threshold Signatures"](http://threshsig.sourceforge.net/pdfs/shoup.pdf).
-
 
 Output:
 
@@ -753,7 +752,9 @@ Output:
 }
 ```
 
-### Example Applications
+### Example Clients
+
+The following sections show interacting with ***PROTECT*** via some example client utilities. Tehse utilities allow one to store and retrieve a secret, to encrypt and decrypt a file, and to generate a CA and issue certificates.
 
 **Video demonstration of using Encryption and Signing Clients:**
 
@@ -761,48 +762,146 @@ Output:
 
 #### Read / Write Client Utility
 
+The "store-secret.sh" script allows one to store a secret which is shared across an instance of ***PROTECT*** servers.  It can only be retrieved by obtaining shares from a reconstruction threshold number of shareholders.
+
 ##### Storing a specific secret
 
 *Required Permissions:* `STORE`
 
-Must be done before DKG is performed. Must have store permission.
+Note: This command must be done before DKG or RSA storage is performed. Once a value is stored for a given secret, it cannot be changed.
+
+The following command uses the *administrator* user to store the value "312" to the secret *prf-secret*:
 
 ```
 $ ./store-secret.sh config administrator prf-secret WRITE 312
+```
+
+Output:
+
+```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Generating shares of the provided secret...
+Public key of secret = EcPoint [x=65608896125016205438866197687472864343298993954507265304330251799823014917901, y=75156640000588750534718968597079516099023719578833800727861780634148843964693]
+Generation of shares complete.
+
+Storing shares to secret: prf-secret...  (done)
+Initiating DKG for secret: prf-secret...  (done)
+Server returned HTTP response code: 409 for URL: https://127.0.0.1:8085/generate?secretName=prf-secret
+ (done)
+Accessing public key for secret: prf-secret...  (done)
+Stored Public key for secret:    EcPoint [x=65608896125016205438866197687472864343298993954507265304330251799823014917901, y=75156640000588750534718968597079516099023719578833800727861780634148843964693]
+
+DKG complete. Secret is now stored and available for reading.
 ```
 
 ##### Reading a stored secret
 
 *Required Permissions:* `READ`
 
-```
+The following command uses the *administrator* user to read the value of the secret stored to *prf-secret*:
+
+```bash
 $ ./store-secret.sh config administrator prf-secret READ
 ```
 
-#### RSA Signing Client
+Output:
 
-*Required Permissions:* `INFO` and `STORE` and `GENERATE`
+```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Accessing public key for secret: prf-secret...  (done)
+Stored Public key for secret:    EcPoint [x=65608896125016205438866197687472864343298993954507265304330251799823014917901, y=75156640000588750534718968597079516099023719578833800727861780634148843964693]
+
+Reading shares to decode secret: prf-secret
+Public key of recvered secret = EcPoint [x=65608896125016205438866197687472864343298993954507265304330251799823014917901, y=75156640000588750534718968597079516099023719578833800727861780634148843964693]
+done.
+
+Value of secret: 312
+```
+
+Note: we obtain the same value "312" that we previously stored for this secret.
+
+#### Certificate Authority Client
+
+The "threshold-ca.sh" script allows one to generate a CA certifiate whose private key is stored across an instance of ***PROTECT*** servers.  It can then be used to issue certificates only through interaction with a threshold number of shareholders to obtain shares of a signature.  The private key itself is never reconstructed during the signing operation.
 
 ##### Generating a new RSA Private Key
 
-./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
-openssl x509 -text -noout -in threshold-ca.pem 
+*Required Permissions:* `STORE` and `GENERATE`
 
- (Note, no private key anywhere, it was thresholdized and stored to the servers as shares)  We leave the public key here to get the issuer name and also to double-check the resulting certificate's validity. Exists in RAM only, and only temporarily.
+The following command uses the *signing_user* user to create and store a new RSA private key to secret *rsa-secret* and output a CA certificate to a file *threshold-ca.pem*. It then shows how to use openssl to view the newly created CA certificate:
+
+```bash
+# Create a new CA certifiate whose private key is stored to a secret
+$ ./threshold-ca.sh config signing_user rsa-secret GENERATE threshold-ca.pem "CN=threshold"
+
+# View the created digital certificate of the CA
+$ openssl x509 -text -noout -in threshold-ca.pem 
+```
+
+Output:
+
+```
+erverConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Beginning generation of threshold RSA key...
+  Generating p... done.
+  Generating q... done.
+  Computing moduli... done.
+  Creating RSA keypair... done.
+  Generating secret shares... done.
+  Creating public and private verification keys... done.
+RSA Key Generation complete.
+
+Creating self-signed root CA certificate for: CN=threshold
+Certificate written to: /home/jresch/eclipse-workspace/protect-project/protect/bin/threshold-ca.pem
+
+Storing shares of RSA private key to secret: rsa-secret... Storage complete
+ (done)
+CA Creation Completed. Ready to issue certificates.
+WARNING: Refresh and reconstruction are not active for RSA keys, do not use them for encrypting anything that must be recovered
+```
+
+Note: the RSA private key is not persisted anywhere, it is turned into shares and distributed across the servers as shares. It exists on the machine that it was generated from in RAM only and only temporarily.  Aftewards, it can be used to create RSA signatures ***without*** ever having to restore the private key at any location.
 
 ##### Issuing a Certificate with the RSA Private Key
 
 *Required Permissions:* `INFO`, `SIGN`
 
-```
+The following command uses the *signing_user* user to issue a new end-entity certificate signed by the RSA private key held by the secret *rsa-secret* using the issuer name from the CA certificate file *threshold-ca.pem*, and outputting the newly created certificate to the file *new-cert.pem* with the public key in file *pub-key.pem*. It then shows how to use openssl to verify and view the newly created CA certificate:
+
+```bash
+# Generate new EC key pair (the following command needs only the public key of the end-entity)
 $ openssl ecparam -name prime256v1 -genkey -noout -out priv-key.pem && openssl ec -in priv-key.pem -pubout -out pub-key.pem
 
+# Uses the private key represented by the shared secret to issue a new digital certificate
 $ ./threshold-ca.sh config signing_user rsa-secret ISSUE threshold-ca.pem pub-key.pem new-cert.pem "CN=example-entity" 
+
+# Verifies that the newly issued certificate is valid
 $ openssl verify -verbose -CAfile threshold-ca.pem new-cert.pem
+
+# Vies the newly created certificate
 $ openssl x509 -text -noout -in new-cert.pem
 ```
 
-Must have read permission.
+Output:
+
+```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Issing certificate using threshold RSA secret: rsa-secret
+  Reading end-entity public key from file: pub-key.pem... done.
+  Loading CA certificate from file: pub-key.pem... done.
+  Creating a To-Be-Signed Certificate for: CN=example-entity... done.
+  Performing threshold signing of certificate using: rsa-secret...  [4, 2, 3]done.
+Signature result obtained: 3322894367540426482083991150398644257388563945327251094369538738259726873249702020155173776859711059398638402445640888124735092191784650998497252963189638128407648280965871109887268693900255667960958932376726994781849570690812236851351668497880282165003222360160944122263984769169199188499651752780465810940
+
+  Creating certificate using signature...   done. Certificate is valid!
+Writing signed certificate to file: new-cert.pem...  done.
+
+Operation complete. Certificate now ready for use.
+```
 
 #### ECIES Decryption Client
 
@@ -894,7 +993,7 @@ Additionally, this project implements the Distributed Key Generation (DKG) proto
 Both of these protocols depend on an atomic broadcast channel. In the real world of asynchronrouns networks and distributed systems the idealization of an atomic broadcast channel must be built on top of a distributed, byzantine-fault-tolerant, consensus system.  Therefore network communication among the component servers of the PROSS and DKG systems uses [Byzantine Fault Tolerant (BFT) State Machine Replication (SMR)](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf) based on the [BFT-SMaRt library](https://github.com/bft-smart/library).
 
 More references:
-- Victor Shoup's Practical Threshold RSA Signatures
+- ["Practical Threshold Signatures"](http://threshsig.sourceforge.net/pdfs/shoup.pdf), Victor Shoup
 - BLS Signatures
 - Ellipc Curve Pairing
 - Blind Signatures (Chaum)
