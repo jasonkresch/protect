@@ -128,7 +128,7 @@ $ sudo apt-get-update
 $ sudo apt-get install openjdk-8-jdk-headless maven
 
 # Required for examples below
-$ sudo apt install git python curl jq
+$ sudo apt install git python curl jq html2text
 ```
 
 #### Compiling
