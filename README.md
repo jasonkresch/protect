@@ -595,7 +595,7 @@ $ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-s
 
 Note: ***e*** and ***n*** from above are the public exponent and RSA modulus. ***v*** and ***v_i*** are the verification generator and verification values for the shareholders computed according to Victor Shoup's ["Practical Threshold Signatures"](http://threshsig.sourceforge.net/pdfs/shoup.pdf).
 
-```
+
 Output:
 
 ```
@@ -620,7 +620,62 @@ The secret 'prf-secret' has been generated in 3335 ms.
 
 ##### Get Share information via cURL
 
+The following command is an examaple of obtaining information from a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *administrator* to get information on secret "prf-secrt":
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-administrator "https://localhost:8081/info?secretName=prf-secret&json=true" | jq .
+```
+
+Output:
+
+```json
+{
+  "public_key": [
+    "85471108262864050763368858857892650522356777301172713990576035449935649444128",
+    "33699575770748921809348360756692080923310245856746472560322702516895259621980"
+  ],
+  "share_verification_key_3": [
+    "108780629008393730100706832907018626340752433314027718993435856344880929647162",
+    "107945656105720484014682703741606262799424786035611034081522494147921644302877"
+  ],
+  "share_verification_key_2": [
+    "72941157035340659419232429051730915688320405373296368274125491626754723586398",
+    "103021563682848582443386637939998993330666870989027196637178470632331247135317"
+  ],
+  "share_verification_key_1": [
+    "63799763095960153009459350185166023553244758527046022598476606734083573007857",
+    "27668319345522126623940731861172972439424105149281576838317001076086984575922"
+  ],
+  "responder": 1,
+  "epoch": 26,
+  "share_verification_key_5": [
+    "47427766573600383471926812380524135942220129818759619261016730896645984395322",
+    "109368983451782748983263222857169783109623394285516235757600245721694691484046"
+  ],
+  "share_verification_key_4": [
+    "84877538144686376995149588236484785497708571913711243339163609781335359407812",
+    "84600981347466039197527884324745354241242431292503724855304798263102442354377"
+  ]
+}
+```
+
 ##### Read Share via cURL
+
+The following command is an examaple of reading a share of secret "prf-secret" from a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *administrator*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-administrator "https://localhost:8081/read?secretName=prf-secret&json=true" | jq .
+```
+
+Output:
+
+```json
+{
+  "responder": 1,
+  "epoch": 36,
+  "share": "79553843040925066706303531008870751210469359208744558125699487110354052898445"
+}
+```
 
 ##### Delete Share via cURL
 
