@@ -128,7 +128,7 @@ $ sudo apt-get-update
 $ sudo apt-get install openjdk-8-jdk-headless maven
 
 # Required for examples below
-$ sudo apt install git python curl jq html2text
+$ sudo apt-get install git python curl jq html2text openssl
 ```
 
 #### Compiling
@@ -903,7 +903,7 @@ Writing signed certificate to file: new-cert.pem...  done.
 Operation complete. Certificate now ready for use.
 ```
 
-#### ECIES Decryption Client
+#### ECIES Encryption Client
 
 The "ecies-encrypt.sh" script allows one to encrypt a file with the public key of a shared secret and then later decrypt it using a private key is stored across an instance of ***PROTECT*** servers.  The private key itself is never reconstructed during the decryption operation.
 
@@ -988,41 +988,48 @@ Done.
 
 ## Design
 
-TODO: Include link to tunable Secrity eprint.
+***PROTECT*** is based on a tunable security model and protocol described in (TODO: Include link to tunable Secrity eprint.)
 
 ### System Architecture
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/system-architecture.png "System Architecture")
 
-System Architecture Diagram, componenets and their interrelations
+Above is a high-level architecture of ***PROTECT***.  Each shareholder instance, along with all of the users are connected over an eventually synchronous network (e.g. a LAN, WAN, or Internet), which guarantees only that messages are evenutally delivered between honest parties, but the time this might take cannot be known in advance.  The network is otherwise assumed to be under the control of an adversary who can delay, re-order, drop, or corrupt messages, but cannot forge messages by clients or shareholders from whom the adversary does not know the private key.
 
-Define asynchronous, as eventually synchronous
+All server-to-server communication takes place over a Byzantine Fault Tolerant atomic broadcast primitive.  ***PROTECT*** uses the BFT-SMaRt library to perform this operation (shown in orange). This layer, is subject to the 1/3 failures.  Beyond this, it cannot guarantee consistent total message order nor liveness between shareholders. To prevent such forks from causing corruption of secrets managed by ***PROTECT***, there is the Tunable Certification Layer (shown in purple). This layer collects signatures (essentially votes) from all the other shareholders as to what message they believe exists in each position in the BFT message log.
 
-Describe system architecture
-How Shareholders are connected, how they communicate
+If agreement can be reached by 3/4 of the shareholders, then a message in the BFT log at a certain position is considered certified for that position in the log, and it is added to the Certified message log.  The Shareholder then reads the latest messages from this certified log in order to update its state.  Such state updates include making progress in performing a DKG or Proactive Refresh and Recovery.
+
+All three of these operations, DKG, Refresh, and Recovery are based on a single primitive, called a Multi-APVSS, which consists of each shareholder performing an Publicly Verifiable Secret Sharing.  The result of this Multi-APVSS yields shares of the secret, as well as public verification keys for each shareholder’s share, as well as Feldman commitments to the shared polynomial.
+
+Clients interact with the shareholder through an HTTPS API, and authenticate directly to each shareholder via client certificates over TLS.
 
 ### Protocols
 
 At the core of ***PROTECT's*** Distributed Key Genearation, Share Refresh, and Share Recovery Protocols is a single operation we call a *Multiple Asynchronous Publicly Verifiable Secret Sharing* (Multi-APVSS).  One round of a Multi-APVSS consists of each shareholder performing a single APVSS to all the shareholders.
 
-An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network.
-
-[Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing) that is verifiable by anyone. Such schemes are known as .
+An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network, unlike [Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing), a publically verifiable secret sharing may be verifiable by anyone who knows the public keys of the shareholders. This prevents dishonest behavior during the Multi-APVSS to result in some honest shareholders not receiving their share of the secret.
 
 ### Fault Tolerances
 
-Definition of faults, fault types
-Byzantine faults, deviations from porotocols, malicious coordination and collusioon, working to defeat protocols. Can do anything, except forge messages from shareholders that adversary has not compromised.
-Types of faults:
-- crash faults, lose state, corrupt state, unresponsive, disruptive, deviate from protocol, arbitrarily ,even in coordinated ways.
+Faults include not only unintentional events such as software crashes, hardware failure, power outage, memory corruption, network corruption, dropped packets, but malicious and intentional deviations from the protocol in arbitrary ways, such as sending incorrect messages, duplicating messages, lying about which messages have been received in which orders to different sets of honest shareholders, failing to respond to messages, failing to relay messages, sending malformed messages, coordinating misbehavior among multiple corrupted shareholders, and so forth.  Such arbitrary failures are known as *Byzantine* faults, and it is crucial for any system aiming to be resilient to breaches of the system to tolerate them while maintaining liveness (responsiveness and availability) and safety (correctness, and privacy and durability of data).
+
+The following chart details different fault tolerance levels for different numbers of shareholders in a ***PROTECT*** system:
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/fault-tolerances.png "Fault Tolerances within PROTECT")
+
+Where *f_S* is the maximum number of Byzantine faults that can occur while the system preserves ***safety***.
+Where *f_L* is the maximum number of Byzantine faults that can occur while the system preserves ***liveness***.
+Where *f* is the maximum number of Byzantine faults that can occur while the atomic broadcast maintains safety and livness.
+
+In ***PROTECT***, liveness refers to the ability to make continual progress in share refresh and share recovery operations. Loss of liveness here does not prevent clients from reading or writing secrets, nor using them to perform cryptographic operations, which in general requires only the availability of (*f_S* + 1) shareholders who are at the same epoch (version of a secret).
 
 ### Future Improvements
 
 Over a longer time horizion the ***PROTECT*** project aims to support:
 
 #### More Signature Schemes
+* EdDSA signatures
 * Schnorr Signatures (possibly leveraging Share Conversion)
 * ECDSA Signatures
 
@@ -1040,25 +1047,20 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 
 ## References
 
-This project implements the Proactive Secret Sharing (PROSS) protocol, first described in 1995 by Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, and Moti Yung in their paper ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf).
-
-Additionally, this project implements the Distributed Key Generation (DKG) protocol, first described in 1999 by Rosario Gennaro, Stanislaw Jarecki, Hugo Krawczyk, and Tal Rabin in their 1999 paper ["Secure Distributed Key Generation for Discrete-Log Based Cryptosystems"](https://groups.csail.mit.edu/cis/pubs/stasio/vss.ps.gz).
-
-Both of these protocols depend on an atomic broadcast channel. In the real world of asynchronrouns networks and distributed systems the idealization of an atomic broadcast channel must be built on top of a distributed, byzantine-fault-tolerant, consensus system.  Therefore network communication among the component servers of the PROSS and DKG systems uses [Byzantine Fault Tolerant (BFT) State Machine Replication (SMR)](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf) based on the [BFT-SMaRt library](https://github.com/bft-smart/library).
-
-More references:
+- ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf), Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, and Moti Yung, (1995)
 - ["Practical Threshold Signatures"](http://threshsig.sourceforge.net/pdfs/shoup.pdf), Victor Shoup
-- BLS Signatures
-- Ellipc Curve Pairing
+- ["Secure Distributed Key Generation for Discrete-Log Based Cryptosystems"](https://groups.csail.mit.edu/cis/pubs/stasio/vss.ps.gz), Rosario Gennaro, Stanislaw Jarecki, Hugo Krawczyk, and Tal Rabin, (1999)
+- ["Byzantine Fault Tolerant (BFT) State Machine Replication (SMR)"](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf) 
+- ["Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing"](https://www.cs.cornell.edu/courses/cs754/2001fa/129.PDF), Torben Pryds Pedersen
+- ["Aggregate and Verifiably Encrypted Signatures from Bilinear Maps"](https://crypto.stanford.edu/~dabo/pubs/papers/aggreg.pdf), Dan Boneh, Craig Gentry, Ben Lynn, Hovav Scaham, (2003)
 - Blind Signatures (Chaum)
 - TOPPSS
 - UOKMS
-- Other references from NIST submission
 - Ford-Kaliski on password hardening
-- NIST Draft on Threshold Security
-- [Threshold Schemes for Cryptographic Primitives: Challenges and Opportunities in Standardization and Validation of Threshold Cryptography](https://csrc.nist.gov/publications/detail/nistir/8214/final)
-https://www.nongnu.org/libtmcg/dg81_slides.pdf
+- [Distributed Key Generation in the Wild](https://eprint.iacr.org/2012/377.pdf), Aniket Kate, Yizhou Huang, Ian Goldberg, (2012)
+- ["Threshold Schemes for Cryptographic Primitives: Challenges and Opportunities in Standardization and Validation of Threshold Cryptography"](https://csrc.nist.gov/publications/detail/nistir/8214/final)
 
+https://www.nongnu.org/libtmcg/dg81_slides.pdf
 TODO: Add References from NIST presentation proposal
 
 ## Team
@@ -1076,7 +1078,10 @@ Contributions welcome! See [Contributing](CONTRIBUTING.md) for details.
 
 ## Related Projects
 
-- DKG implementation
-- Thunderella
-- https://en.wikipedia.org/wiki/Vanish_(computer_science)
+- [BFT-SMaRt Library](https://github.com/bft-smart/library)
+- [Thunderella](https://eprint.iacr.org/2017/913.pdf)
+- https://crysp.uwaterloo.ca/software/DKG/
+- https://github.com/helium/erlang-dkg
+- [Distributed Privacy Guard](http://nongnu.org/dkgpg/)
+- [Vanish](http://vanish.cs.washington.edu/pubs/usenixsec09-geambasu.pdf)
 - https://gitlab.com/neucrypt/mpecdsa
