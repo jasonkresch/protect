@@ -905,30 +905,84 @@ Operation complete. Certificate now ready for use.
 
 #### ECIES Decryption Client
 
+The "ecies-encrypt.sh" script allows one to encrypt a file with the public key of a shared secret and then later decrypt it using a private key is stored across an instance of ***PROTECT*** servers.  The private key itself is never reconstructed during the decryption operation.
+
 ##### Encrypting a File
 
-*Required Permissions:* `INFO`, `EXPONENTIATE`
+*Required Permissions:* `INFO`
+
+The following command uses the *administrator* user to encrypt the file "secret.txt" and output the encrypted result to a file named "out.enc", using the public key of *prf-secret* to perform that encryption:
 
 ```
+# Writes a secret to a file
+$ cat "This is my secret" > secret.txt
+
+# Encrypts the file
 $ ./ecies-encrypt.sh config/ administrator prf-secret ENCRYPT secret.txt out.enc
 ```
 
 Output:
 
 ```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Beginning encryption of file: secret.txt
+Accessing public key for secret: prf-secret...  (done)
+Public key for secret:    EcPoint [x=114324586278815358159403285865423707586515079119912211138349262325535939591572, y=96196372904301990529913546317445029333736110462708925299234835876317074236813]
+Current epoch for secret: 0
+
+Reading input file: secret.txt...  (done)
+Read 36 bytes.
+
+Performing ECIES encryption of file content...  (done)
+Encrypted length 165 bytes.
+
+Writing ciphertext to file: out.enc...  (done)
+Wrote 165 bytes.
+
+Done.
 ```
+
+Note: the `INFO` permission is required only to get the public key of the given secret.  A user having permission to encrypt things using this client may not necessarrily have permission to decrypt things. This requires the `EXPONENTIATE` permission.
 
 ##### Decrypting a File
 
 *Required Permissions:* `INFO`, `EXPONENTIATE`
 
 ```
+# Performs decryption of the file
 $ ./ecies-encrypt.sh config/ administrator prf-secret DECRYPT out.enc restored.txt
+
+# Views the plaintext that was decrypted
+$ cat restored.txt
 ```
 
 Output:
 
 ```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Beginning decryption of file: out.enc
+Reading input file: out.enc...  (done)
+Read 165 bytes of ciphertext.
+
+Extracting public value from ciphertext: out.enc...  (done)
+Public Value is: EcPoint [x=102982451109465048808421710427021373733130552241473722145177824843275289410800, y=39125118849913946305817596608474285813159876759100064987574954662484432339330]
+
+Accessing public key for secret: prf-secret...  (done)
+Public key for secret:    EcPoint [x=114324586278815358159403285865423707586515079119912211138349262325535939591572, y=96196372904301990529913546317445029333736110462708925299234835876317074236813]
+Current epoch for secret: 2
+
+Performing threshold exponentiation on public value using: prf-secret...  (done)
+Shared secret obtained:    EcPoint [x=111266831548464192862795979766955168504213940072659213626271620524626303320482, y=112509428695934305816529850305850718076594762115086722743653004840956852939645]
+
+Performing ECIES decryption of file content...  (done)
+Plaintext length 36 bytes.
+
+Writing plaintext to file: restored.txt...  (done)
+Wrote 36 bytes.
+
+Done.
 ```
 
 
