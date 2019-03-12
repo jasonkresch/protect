@@ -467,7 +467,11 @@ To verify the keys are successfully imported, there is an identity check page wh
 
 *Required Permissions:* `INFO` to view (`GENERATE` or `STORE`) to generate or store a secret
 
-Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG. 
+Before a secret is generated or stored it will be in an uninitialized state.  To store a secret of a specific value requires pre-storing shares of it with each of the shareholders and then initiating a DKG.
+
+**Generate or Store page of PROTECT:**
+
+![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
 
 To obtain a sharing of a particular value, one can use the "shamir-share.py" script. The following command shows an example with number of shareholders = 5, reconstruction threshold = 3, and sharing the value "1000":
 
@@ -496,10 +500,6 @@ In either case, to initiate the DKG and establish the secret click the "Initiate
 **Video demonstration of generating a secret and self healing:**
 
 [![Alt text](https://img.youtube.com/vi/ZMjMlC52MJc/0.jpg)](https://www.youtube.com/watch?v=ZMjMlC52MJc)
-
-**Generate or Store page of PROTECT:**
-
-![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/screenshots/pre-dkg.png "Generate Secret")
 
 ##### Share Information Page
 
@@ -530,19 +530,74 @@ All of the interactions that are possible through a web browser can be invoked v
 
 ##### Get Client Identity information via cURL
 
-The following command is an examaple of obtaining the identity information from a ***PROTECT*** server running as shareholder with index 1 and authenticating as the user *administrator*:
+The following command is an examaple of obtaining the identity information from a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *administrator*:
 
 ```bash
-$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-cert-administrator https://localhost:8081/id
+curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-administrator --key config/client/keys/private-administrator https://localhost:8081/id | html2text
+```
+
+Output:
+
+```
+You have authenticated as 'administrator'.
+
+You have the following permissions:
+
+my-secret
+    * GENERATE
+    * INFO
+    * DELETE
+    * DISABLE
+    * ENABLE
+
+rsa-secret
+    * INFO
+    * DELETE
+    * DISABLE
+    * ENABLE
+
+prf-secret
+    * GENERATE
+    * STORE
+    * READ
+    * INFO
+    * DELETE
+    * RECOVER
+    * DISABLE
+    * ENABLE
+    * EXPONENTIATE
 ```
 
 ##### Store Share via cURL
 
 There are two ways of storing a share of a secret to ***PROTECT*** one is for secrets over an Elliptic Curve group, and can be used for ECIES, ECDH, OPRF, and other operations via the "generate" call. The 
 
-###### Store Elliptic Curve Share`
+###### Store Elliptic Curve Share
+
+The following command is an examaple of storing a share to a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *storage_user*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-storage_user --key config/client/keys/private-storage_user "https://localhost:8081/store?secretName=my-secret&share=700"
+```
+Output:
+
+```
+s_1 has been stored, DKG will use it for representing 'my-secret' in the DKG.
+```
 
 ###### Store RSA Share
+
+The following command is an examaple of storing a share or an RSA key to a ***PROTECT*** server running as a shareholder with index 1 and authenticating as the user *signing_user*:
+
+```bash
+$ curl --cacert config/ca/ca-cert-server-1.pem --cert config/client/certs/cert-signing_user --key config/client/keys/private-signing_user "https://127.0.0.1:8081/store?secretName=rsa-secret&e=65537&n=103473605239433672988170242543400143644319618556329167288597941468783880585044744860755891943318036531628479114471645405651308652757893050422651869541014921685723605770516956182368925786350457876194164172876267931506341367115164995305663462654594362378366765664926543672950935191064350745789112227586965227913&v=89174595847525463567195138659796024553881389183729195174486088185568098465506494969619878728986175176936274201134062991704918018402744042326457662297578901935781618082021439811800776299725969143730373560068706239596299099669642165924311343152469433964341406082500651051649257301602532122964144705715709739339&v_1=67838606285772972709589636086946420179581610250472129734239753228790673888814805859199394195992311049323060626746860680534522475843626856861425244498224948490967625717997415935224286519633770095202024130167715781380557751895710445007491432720109793984792061519294955581897569031739493296547355637028466235729&v_2=49365490607479026700863538167517290765812483827500129781771433286228341351215126345765817238267616875533660071823553083533843603069475896324484818951028317813063757169751826364162562289350544976094693821579613905223548791948028150941742738518413691118263076780204375759793124634262098009499822250393938057130&v_3=70399170169480003218861751530647834162087045708118897096451809113247984113627561059474959048085724106745440834495366396302760983596034401111953555000790411666596979091233989605439434617369451714966101676686207804762895723478688012672136807011487457582172442697987305244652880337586498352869891493099956409944&v_4=3961783857571708675976410219076151745133917485317711635595061770608283982843735138339207703094017642180410314221097596897469749541785308302011009004299062194572050260293142604362740269803402396815394563817080089214192686105179492629145554516806403881871047087820945919651787634073215344291576993667283087064&v_5=57105980543489909017903447409550148455652202674350734474537216113701585408408878229765322530581962569580127421470132987825656641271491155550740038068773491753076020990326721329830790769787322154168998704249974943409186087736841621707795937528212269359601913333017914795670879284722127750939464182297253124123&share=3266332474335221848507334676466193427875612880474956052911982588842686456528877505496787394818223665966486495405835508519142171287699147344197435336220075008086394890172750159146977697724702757443712133588940630427827463235219649003761874533988659889506328095153097748438925104628611507713773689042845159093"
+
+```
+Output:
+
+```
+RSA share has been stored.
+```
 
 ##### Initiate DKG via cURL
 
