@@ -1,6 +1,4 @@
-package com.ibm.pross.server.configuration.permissions.exceptions;
-
-import com.ibm.pross.server.app.http.HttpStatusCode;
+package com.ibm.pross.common.exceptions.http;
 
 public class BadRequestException extends HttpException {
 

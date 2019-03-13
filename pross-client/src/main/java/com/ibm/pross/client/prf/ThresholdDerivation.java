@@ -14,9 +14,9 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
-import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.DerivationResult;
+import com.ibm.pross.common.EcPseudoRandomFunction;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.shamir.Polynomials;

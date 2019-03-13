@@ -2,7 +2,6 @@ package com.ibm.pross.server.configuration.permissions;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map.Entry;

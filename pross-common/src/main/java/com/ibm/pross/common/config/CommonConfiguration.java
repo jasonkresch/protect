@@ -4,11 +4,11 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.common;
+package com.ibm.pross.common.config;
 
+import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcCurveBc;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 
 /**
  * This class defines common configuration for a given setting for TOPPSS
@@ -47,4 +47,9 @@ public class CommonConfiguration {
 	public final static String EC_SIGNATURE_ALGORITHM = "SHA512withECDSA";
 	public final static String ED_SIGNATURE_ALGORITHM = "NONEwithEdDSA";
 	public final static String RSA_SIGNATURE_ALGORITHM = "SHA512withRSA";
+	
+	// Default TLS protocol for server and clients
+	public static final String TLS_VERSION = "TLSv1.2";
+	public static final int BASE_HTTP_PORT = 8080;
+
 }

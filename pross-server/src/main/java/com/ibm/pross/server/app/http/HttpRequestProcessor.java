@@ -24,6 +24,9 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.TrustManagerFactory;
 
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.handlers.DeleteHandler;
 import com.ibm.pross.server.app.http.handlers.DisableHandler;
@@ -43,15 +46,8 @@ import com.sun.net.httpserver.HttpsConfigurator;
 import com.sun.net.httpserver.HttpsParameters;
 import com.sun.net.httpserver.HttpsServer;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
-
 @SuppressWarnings("restriction")
 public class HttpRequestProcessor {
-
-	public static final String TLS_VERSION = "TLSv1.2";
-
-	public static final int BASE_HTTP_PORT = 8080;
 
 	public static int SHUTDOWN_DELAY_SECONDS = 5;
 	public static int NUM_PROCESSING_THREADS = 15;
@@ -65,7 +61,7 @@ public class HttpRequestProcessor {
 			throws IOException, NoSuchAlgorithmException, KeyManagementException, KeyStoreException,
 			UnrecoverableKeyException, CertificateException {
 
-		final int httpListenPort = BASE_HTTP_PORT + serverIndex;
+		final int httpListenPort = CommonConfiguration.BASE_HTTP_PORT + serverIndex;
 		this.server = HttpsServer.create(new InetSocketAddress(httpListenPort), 0);
 
 		setupTls(caCerts, hostCert, privateKey, serverIndex);
@@ -118,7 +114,7 @@ public class HttpRequestProcessor {
 			CertificateException, IOException, UnrecoverableKeyException {
 
 		// Configure SSL context
-		final SSLContext sslContext = SSLContext.getInstance(TLS_VERSION);
+		final SSLContext sslContext = SSLContext.getInstance(CommonConfiguration.TLS_VERSION);
 
 		// Create in-memory key store
 		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

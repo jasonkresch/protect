@@ -1,10 +1,4 @@
-/*
- * Copyright (c) IBM Corporation 2018. All Rights Reserved.
- * Project name: pross
- * This project is licensed under the MIT License, see LICENSE.
- */
-
-package com.ibm.pross.server.util;
+package com.ibm.pross.common.util.crypto.elgamal;
 
 import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
@@ -18,16 +12,18 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.pross.server.util.EciesEncryption;
-
+/*
+ * Copyright (c) IBM Corporation 2018. All Rights Reserved.
+ * Project name: pross
+ * This project is licensed under the MIT License, see LICENSE.
+ */
 public class EciesEncryptionTest {
 
 	@BeforeClass
-	public static void setupBeforeClass()
-	{
+	public static void setupBeforeClass() {
 		Security.addProvider(new BouncyCastleProvider());
 	}
-	
+
 	@Test
 	public void testEncryptDecrypt() throws Exception {
 

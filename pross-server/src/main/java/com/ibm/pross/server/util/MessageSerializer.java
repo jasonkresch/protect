@@ -1,7 +1,7 @@
 package com.ibm.pross.server.util;
 
-import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.Message;
+import com.ibm.pross.server.messages.Payload;
 import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;

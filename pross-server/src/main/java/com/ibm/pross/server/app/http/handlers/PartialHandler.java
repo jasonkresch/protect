@@ -11,16 +11,15 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.json.simple.JSONObject;
 
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.exceptions.http.BadRequestException;
+import com.ibm.pross.common.exceptions.http.HttpStatusCode;
+import com.ibm.pross.common.exceptions.http.NotFoundException;
+import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
+import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.app.http.HttpStatusCode;
-import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
-import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
-import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
-import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 /**
  * This handler is used by servers in share recovery operations. Servers are

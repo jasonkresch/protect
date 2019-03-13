@@ -21,8 +21,8 @@ import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.config.ServerConfigurationLoader;
 
 public class HostsConfig {
 

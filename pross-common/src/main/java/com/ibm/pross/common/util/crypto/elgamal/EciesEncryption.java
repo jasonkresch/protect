@@ -4,7 +4,7 @@
  * This project is licensed under the MIT License, see LICENSE.
  */
 
-package com.ibm.pross.server.util;
+package com.ibm.pross.common.util.crypto.elgamal;
 
 import java.io.IOException;
 import java.math.BigInteger;
@@ -18,7 +18,6 @@ import java.security.PublicKey;
 import java.security.interfaces.ECPrivateKey;
 import java.security.interfaces.ECPublicKey;
 import java.security.spec.ECPoint;
-import java.util.Arrays;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.Cipher;
@@ -26,15 +25,13 @@ import javax.crypto.IllegalBlockSizeException;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.kdf.EntropyExtractor;
 import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.serialization.Parse;
-import com.ibm.pross.server.messages.EncryptedPayload;
-import com.ibm.pross.server.messages.Payload;
 
 /**
  * Implements public key cryptography based on elliptic curves
@@ -89,27 +86,7 @@ public class EciesEncryption {
 		return plaintext;
 	}
 
-	public static Payload decryptPayload(final EncryptedPayload encryptedPayload, final byte[] rebuttalEvidence,
-			final PublicKey recipientPublicKey)
-			throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException {
 
-		// Get the combined ciphertext
-		byte[] ciphertext = encryptedPayload.getEncryptedBytes();
-
-		// Use the r value to get the shared secret and decrypt
-		final BigInteger r = new BigInteger(rebuttalEvidence);
-
-		// Decrypt the content
-		final byte[] decryptedBytes = decrypt(ciphertext, r, recipientPublicKey);
-
-		// Deserialize and return payload
-		final Object o = MessageSerializer.deserializePayload(decryptedBytes);
-		if (o instanceof Payload) {
-			return (Payload) o;
-		} else {
-			throw new IOException("Received invalid class serialization");
-		}
-	}
 
 	public static BigInteger generateR() {
 		return RandomNumberGenerator.generateRandomPositiveInteger(curve.getR());

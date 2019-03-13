@@ -38,23 +38,23 @@ import javax.net.ssl.TrustManagerFactory;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.exceptions.http.BadRequestException;
+import com.ibm.pross.common.exceptions.http.ConflictException;
+import com.ibm.pross.common.exceptions.http.HttpStatusCode;
+import com.ibm.pross.common.exceptions.http.NotFoundException;
+import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
+import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
 import com.ibm.pross.common.util.crypto.paillier.PaillierPrivateKey;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.avpss.SharingState;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
-import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
-import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
-import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
-import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
-import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
  * This handler initiates a share recovery operation for this shareholder.
@@ -173,7 +173,7 @@ public class RecoverHandler extends AuthenticatedClientRequestHandler {
 		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/partial?secretName=" + secretName;
 
 			if (serverId != serverIndex) {
@@ -346,7 +346,7 @@ public class RecoverHandler extends AuthenticatedClientRequestHandler {
 			UnrecoverableKeyException, KeyManagementException {
 
 		// Configure SSL context
-		final SSLContext sslContext = SSLContext.getInstance(HttpRequestProcessor.TLS_VERSION);
+		final SSLContext sslContext = SSLContext.getInstance(CommonConfiguration.TLS_VERSION);
 
 		// Create in-memory key store
 		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());

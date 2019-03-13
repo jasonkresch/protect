@@ -13,7 +13,7 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.conversion.prf.PrfKey;
 import com.ibm.pross.common.util.crypto.conversion.prf.PseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.conversion.prf.PseudoRandomFunction.PrfAlgorithm;

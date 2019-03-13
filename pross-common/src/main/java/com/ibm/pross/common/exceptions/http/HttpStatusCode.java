@@ -1,4 +1,4 @@
-package com.ibm.pross.server.app.http;
+package com.ibm.pross.common.exceptions.http;
 
 public class HttpStatusCode {
 

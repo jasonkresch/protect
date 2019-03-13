@@ -11,20 +11,19 @@ import java.util.concurrent.ConcurrentMap;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.exceptions.http.BadRequestException;
+import com.ibm.pross.common.exceptions.http.HttpStatusCode;
+import com.ibm.pross.common.exceptions.http.NotFoundException;
+import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.avpss.SharingState;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
-import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
-import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
-import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
  * This handler returns information about a secret. Client's must have a
@@ -155,7 +154,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		// This server
 		final InetSocketAddress thisServerAddress = serverConfig.getServerAddresses().get(serverIndex - 1);
 		final String ourIp = thisServerAddress.getAddress().getHostAddress();
-		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + serverIndex;
+		final int ourPort = CommonConfiguration.BASE_HTTP_PORT + serverIndex;
 
 		// Create response
 		final StringBuilder stringBuilder = new StringBuilder();
@@ -312,7 +311,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 		for (final InetSocketAddress serverAddress : serverConfig.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + secretName;
 			stringBuilder
 					.append("server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");

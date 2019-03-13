@@ -10,7 +10,7 @@ import java.util.function.Function;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;

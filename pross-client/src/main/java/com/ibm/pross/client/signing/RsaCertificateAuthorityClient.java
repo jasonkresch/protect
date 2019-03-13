@@ -1,4 +1,4 @@
-package com.ibm.pross.client;
+package com.ibm.pross.client.signing;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -63,8 +63,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.config.ServerConfigurationLoader;
+import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
 import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.RandomNumberGenerator;
+import com.ibm.pross.common.util.certificates.CertificateGeneration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
@@ -74,13 +80,7 @@ import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BelowThres
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.serialization.Pem;
-import com.ibm.pross.server.app.CertificateAuthorityCli;
-import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import sun.security.util.DerOutputStream;
 import sun.security.util.DerValue;
@@ -218,7 +218,7 @@ public class RsaCertificateAuthorityClient {
 
 		// Create and persist CA certificate
 		System.out.println("Creating self-signed root CA certificate for: " + issuerDn);
-		final X509Certificate caCert = CertificateAuthorityCli.generateCaCertificate(issuerDn, rsaSharing.getKeyPair());
+		final X509Certificate caCert = CertificateGeneration.generateCaCertificate(issuerDn, rsaSharing.getKeyPair());
 		Pem.storeCertificateToFile(caCert, caFile);
 		System.out.println("Certificate written to: " + caFile.getAbsolutePath());
 		System.out.println();
@@ -441,7 +441,7 @@ public class RsaCertificateAuthorityClient {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 
 			// Send share to the server
 			final BigInteger share = rsaSharing.getShares()[serverId - 1].getY();
@@ -523,7 +523,7 @@ public class RsaCertificateAuthorityClient {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/sign?secretName=" + this.secretName
 					+ "&message=" + toBeSigned.toString();
 
@@ -649,7 +649,7 @@ public class RsaCertificateAuthorityClient {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + this.secretName
 					+ "&json=true";
 
@@ -832,7 +832,7 @@ public class RsaCertificateAuthorityClient {
 			UnrecoverableKeyException, KeyManagementException {
 
 		// Configure SSL context
-		final SSLContext sslContext = SSLContext.getInstance(HttpRequestProcessor.TLS_VERSION);
+		final SSLContext sslContext = SSLContext.getInstance(CommonConfiguration.TLS_VERSION);
 
 		// Create in-memory key store
 		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
