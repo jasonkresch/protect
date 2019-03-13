@@ -329,7 +329,7 @@ server.9 = 127.0.0.1:65090
 
 #### Client Access Controls
 
-***PROTECT*** supports fine-grained user access controls. Each user can be granted any one of 10 defined permissions to each secret.  Access controls are defined in the config file `config/client/clients.config`.
+***PROTECT*** supports fine-grained user access controls. Each user can be granted any of 10 defined permissions to each secret.  Access controls are defined in the config file `config/client/clients.config`.
 
 **Video demonstration of editing clients.config and configuring Firefox with a client certificate:**
 
