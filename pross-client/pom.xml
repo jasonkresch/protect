@@ -71,33 +71,6 @@
 			<version>${current.version}</version>
 		</dependency>
 
-		<dependency>
-			<groupId>junit</groupId>
-			<artifactId>junit</artifactId>
-			<version>4.12</version>
-			<scope>test</scope>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/org.slf4j/slf4j-log4j12 -->
-		<dependency>
-			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
-			<version>1.7.25</version>
-		</dependency>
-
-		<dependency>
-			<groupId>org.bouncycastle</groupId>
-			<artifactId>bcprov-jdk15on</artifactId>
-			<version>1.59</version>
-		</dependency>
-
-		<!-- https://mvnrepository.com/artifact/commons-codec/commons-codec -->
-		<dependency>
-			<groupId>commons-codec</groupId>
-			<artifactId>commons-codec</artifactId>
-			<version>1.9</version>
-		</dependency>
-
 	</dependencies>
 
 </project>
