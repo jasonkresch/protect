@@ -5,12 +5,16 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.security.GeneralSecurityException;
+import java.security.InvalidKeyException;
 import java.security.KeyPair;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
+import java.security.SignatureException;
+import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Date;
@@ -18,6 +22,8 @@ import java.util.Date;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.SigningUtil;
 
+import sun.security.util.DerOutputStream;
+import sun.security.util.DerValue;
 import sun.security.x509.AlgorithmId;
 import sun.security.x509.BasicConstraintsExtension;
 import sun.security.x509.CertificateAlgorithmId;
@@ -37,7 +43,6 @@ import sun.security.x509.X509CertInfo;
 
 @SuppressWarnings("restriction")
 public class CertificateGeneration {
-
 
 	/**
 	 * Generates a self-signed root CA certificate from a given distinguished name
@@ -83,8 +88,33 @@ public class CertificateGeneration {
 		try {
 
 			// Look up algorithm based on CA private key
-			final String algorithm = SigningUtil.getSigningAlgorithm(caPrivateKey);
-			final AlgorithmId algorithmId = AlgorithmId.get(algorithm);
+			final String signingAlgorithm = SigningUtil.getSigningAlgorithm(caPrivateKey);
+
+			// Create Certificate Info
+			final X509CertInfo certificateInfo = createCertificateInfo(subjectDn, altNameIp, altNameHost,
+					subjectPublicKey, validForDays, makeCa, issuerDn, signingAlgorithm);
+
+			// Create and sign the certificate
+			final X509CertImpl certificate = new X509CertImpl(certificateInfo);
+
+			// Sign certificate
+			certificate.sign(caPrivateKey, signingAlgorithm);
+
+			return certificate;
+
+		} catch (GeneralSecurityException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static X509CertInfo createCertificateInfo(final String subjectDn, final String altNameIp,
+			final String altNameHost, final PublicKey subjectPublicKey, final long validForDays, final boolean makeCa,
+			final String issuerDn, final String certificateSigningAlgorithm) {
+
+		try {
+
+			// Look up algorithm based on CA private key
+			final AlgorithmId algorithmId = AlgorithmId.get(certificateSigningAlgorithm);
 
 			// Define validity period
 			final Date notBefore = new Date(new Date().getTime() - 300); // 5 minutes prior to avoid clock skew issues
@@ -103,11 +133,10 @@ public class CertificateGeneration {
 			certificateInfo.set(X509CertInfo.ISSUER, new X500Name(issuerDn));
 			certificateInfo.set(X509CertInfo.KEY, new CertificateX509Key(subjectPublicKey));
 			certificateInfo.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algorithmId));
-			// certificateInfo.set(CertificateAlgorithmId.NAME + "." +
-			// CertificateAlgorithmId.ALGORITHM, algorithmId);
 
 			// Process extensions
 			final CertificateExtensions extensions = new CertificateExtensions();
+
 			// Make the issued certificate a sub-CA of this one (or self-signed)
 			final BasicConstraintsExtension bce = new BasicConstraintsExtension(makeCa, 0);
 			extensions.set(BasicConstraintsExtension.NAME,
@@ -124,17 +153,54 @@ public class CertificateGeneration {
 
 			certificateInfo.set(X509CertInfo.EXTENSIONS, extensions);
 
-			// Create and sign the certificate
-			final X509CertImpl certificate = new X509CertImpl(certificateInfo);
-			certificate.sign(caPrivateKey, algorithm);
-
-			return certificate;
+			return certificateInfo;
 
 		} catch (GeneralSecurityException | IOException e) {
 			throw new RuntimeException(e);
 		}
 	}
-	
+
+	/**
+	 * Creates a certificate from an X509Certificate info and a raw signature
+	 * 
+	 * @param toBeSignedCertificateInfo
+	 * @param certificateSigningAlgorithm
+	 * @param signature
+	 * @return
+	 * @throws CertificateException
+	 * @throws NoSuchAlgorithmException
+	 * @throws InvalidKeyException
+	 * @throws NoSuchProviderException
+	 * @throws SignatureException
+	 */
+	public static final X509Certificate createCertificateFromTbsAndSignature(
+			final X509CertInfo toBeSignedCertificateInfo, final String certificateSigningAlgorithm,
+			final byte[] signature) throws CertificateException, NoSuchAlgorithmException, InvalidKeyException,
+			NoSuchProviderException, SignatureException {
+
+		try (DerOutputStream out = new DerOutputStream(); DerOutputStream tmp = new DerOutputStream();) {
+
+			// Append the certificate information
+			toBeSignedCertificateInfo.encode(tmp);
+
+			// Append the signature algorithm
+			final AlgorithmId algId = AlgorithmId.get(certificateSigningAlgorithm);
+			algId.encode(tmp);
+
+			// Append the signature
+			tmp.putBitString(signature);
+
+			// Wrap the signed data in a SEQUENCE { data, algorithm, sig }
+			out.write(DerValue.tag_Sequence, tmp);
+			byte[] signedCert = out.toByteArray();
+
+			// Create a certificate
+			return new X509CertImpl(signedCert);
+
+		} catch (IOException e) {
+			throw new CertificateEncodingException(e.toString());
+		}
+	}
 
 	/**
 	 * Create a bundled file with the client certificate and private key.

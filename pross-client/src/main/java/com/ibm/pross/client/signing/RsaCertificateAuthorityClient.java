@@ -1,45 +1,25 @@
 package com.ibm.pross.client.signing;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
-import java.net.URL;
-import java.security.GeneralSecurityException;
 import java.security.InvalidKeyException;
-import java.security.KeyManagementException;
-import java.security.KeyPair;
-import java.security.KeyPairGenerator;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
-import java.security.interfaces.RSAPrivateKey;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -48,10 +28,6 @@ import java.util.stream.Collectors;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 
 import org.bouncycastle.asn1.ASN1Encoding;
 import org.bouncycastle.asn1.DERNull;
@@ -63,15 +39,14 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import com.ibm.pross.client.util.BaseClient;
+import com.ibm.pross.client.util.PartialResultTask;
 import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.common.config.ServerConfiguration;
 import com.ibm.pross.common.config.ServerConfigurationLoader;
 import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
-import com.ibm.pross.common.util.Exponentiation;
-import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.certificates.CertificateGeneration;
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureShareProof;
@@ -82,22 +57,6 @@ import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicCo
 import com.ibm.pross.common.util.serialization.Pem;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
-import sun.security.util.DerOutputStream;
-import sun.security.util.DerValue;
-import sun.security.x509.AlgorithmId;
-import sun.security.x509.BasicConstraintsExtension;
-import sun.security.x509.CertificateAlgorithmId;
-import sun.security.x509.CertificateExtensions;
-import sun.security.x509.CertificateSerialNumber;
-import sun.security.x509.CertificateValidity;
-import sun.security.x509.CertificateVersion;
-import sun.security.x509.CertificateX509Key;
-import sun.security.x509.DNSName;
-import sun.security.x509.GeneralName;
-import sun.security.x509.GeneralNames;
-import sun.security.x509.IPAddressName;
-import sun.security.x509.SubjectAlternativeNameExtension;
-import sun.security.x509.X500Name;
 import sun.security.x509.X509CertImpl;
 import sun.security.x509.X509CertInfo;
 
@@ -107,7 +66,7 @@ import sun.security.x509.X509CertInfo;
  * the CA's private key
  */
 @SuppressWarnings("restriction")
-public class RsaCertificateAuthorityClient {
+public class RsaCertificateAuthorityClient extends BaseClient {
 
 	public static final String HASH_ALGORITHM = "SHA-512";
 	public static final String CERTIFICATE_SIGNING_ALGORITHM = "SHA512withRSA"; // Must match hash algorithm
@@ -124,17 +83,6 @@ public class RsaCertificateAuthorityClient {
 	public static String CLIENT_KEYS_DIRECTORY = "client/keys";
 	public static String CA_DIRECTORY = "ca";
 	public static String CERTS_DIRECTORY = "certs";
-
-	// For connecting to servers
-	private final ServerConfiguration serverConfiguration;
-
-	// For authenticating the servers
-	private final List<X509Certificate> caCertificates;
-	private final KeyLoader serverKeys;
-
-	// For loading our own private key and certificate
-	private final X509Certificate clientCertificate;
-	private final PrivateKey clientTlsKey;
 
 	// Parameters of operation
 	private final String secretName;
@@ -155,11 +103,10 @@ public class RsaCertificateAuthorityClient {
 			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
 			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
 			final File caFile, final String issuerDn) {
-		this.serverConfiguration = serverConfiguration;
-		this.caCertificates = caCertificates;
-		this.serverKeys = serverKeys;
-		this.clientCertificate = clientCertificate;
-		this.clientTlsKey = clientTlsKey;
+
+		super(serverConfiguration, caCertificates, serverKeys, clientCertificate, clientTlsKey);
+
+		// USed to generate
 		this.secretName = secretName;
 		this.caFile = caFile;
 		this.issuerDn = issuerDn;
@@ -177,11 +124,10 @@ public class RsaCertificateAuthorityClient {
 			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
 			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
 			final File caFile, final File publicKeyFile, final File certificateOutputFile, final String subjectDn) {
-		this.serverConfiguration = serverConfiguration;
-		this.caCertificates = caCertificates;
-		this.serverKeys = serverKeys;
-		this.clientCertificate = clientCertificate;
-		this.clientTlsKey = clientTlsKey;
+
+		super(serverConfiguration, caCertificates, serverKeys, clientCertificate, clientTlsKey);
+
+		// Used to issue
 		this.secretName = secretName;
 		this.caFile = caFile;
 		this.publicKeyFile = publicKeyFile;
@@ -260,8 +206,8 @@ public class RsaCertificateAuthorityClient {
 		System.out.println("done.");
 
 		System.out.print("  Creating a To-Be-Signed Certificate for: " + this.subjectDn + "... ");
-		final X509CertInfo certificateInfo = createCertificateInfo(subjectDn, null, null, entityPublicKey, 365, false,
-				caCertificate.getSubjectDN().getName());
+		final X509CertInfo certificateInfo = CertificateGeneration.createCertificateInfo(subjectDn, null, null,
+				entityPublicKey, 365, false, caCertificate.getSubjectDN().getName(), CERTIFICATE_SIGNING_ALGORITHM);
 		final X509CertImpl certificate = new X509CertImpl(certificateInfo);
 		final byte[] toBeSigned = certificate.getTBSCertificate();
 		final BigInteger toBeSignedRaw = EMSA_PKCS1_V1_5_ENCODE(toBeSigned,
@@ -277,8 +223,9 @@ public class RsaCertificateAuthorityClient {
 
 		System.out.print("  Creating certificate using signature... ");
 		final byte[] signature = signatureResult.toByteArray();
-		final X509Certificate cert = createCertificateFromTbsAndSignature(certificateInfo, signature);
-		// cert.verify(caCertificate.getPublicKey());
+		final X509Certificate cert = CertificateGeneration.createCertificateFromTbsAndSignature(certificateInfo,
+				CERTIFICATE_SIGNING_ALGORITHM, signature);
+		cert.verify(caCertificate.getPublicKey());
 		System.out.println("  done. Certificate is valid!");
 
 		// Write plaintext to output file
@@ -451,10 +398,10 @@ public class RsaCertificateAuthorityClient {
 					+ share;
 
 			// Create new task to get the partial exponentiation result from the server
-			executor.submit(new PartialResultTask(serverId, linkUrl, successfulResults, latch, failureCounter,
+			executor.submit(new PartialResultTask(this, serverId, linkUrl, successfulResults, latch, failureCounter,
 					maximumFailures) {
 				@Override
-				void parseJsonResult(final String json) throws Exception {
+				protected void parseJsonResult(final String json) throws Exception {
 
 					// Store result for later processing
 					successfulResults.add(Boolean.TRUE);
@@ -530,10 +477,10 @@ public class RsaCertificateAuthorityClient {
 			final int thisServerId = serverId;
 
 			// Create new task to get the partial exponentiation result from the server
-			executor.submit(new PartialResultTask(serverId, linkUrl, signatureResponses, latch, failureCounter,
+			executor.submit(new PartialResultTask(this, serverId, linkUrl, signatureResponses, latch, failureCounter,
 					maximumFailures) {
 				@Override
-				void parseJsonResult(final String json) throws Exception {
+				protected void parseJsonResult(final String json) throws Exception {
 
 					// FIXME: Do majority voting of correct parameters
 
@@ -614,337 +561,7 @@ public class RsaCertificateAuthorityClient {
 		}
 	}
 
-	/**
-	 * Interacts with the servers to determine the public key of the secret (by
-	 * majority vote)
-	 * 
-	 * @param inputPoint
-	 * @return
-	 * @throws ResourceUnavailableException
-	 * @throws BelowThresholdException
-	 */
-	@SuppressWarnings("unchecked")
-	private SimpleEntry<EcPoint, Long> getServerPublicKey(final String secretName)
-			throws ResourceUnavailableException, BelowThresholdException {
-
-		// Server configuration
-		final int numShareholders = this.serverConfiguration.getNumServers();
-		final int reconstructionThreshold = this.serverConfiguration.getReconstructionThreshold();
-
-		// We create a thread pool with a thread for each task and remote server
-		final ExecutorService executor = Executors.newFixedThreadPool(numShareholders - 1);
-
-		// The countdown latch tracks progress towards reaching a threshold
-		final CountDownLatch latch = new CountDownLatch(reconstructionThreshold);
-		final AtomicInteger failureCounter = new AtomicInteger(0);
-		final int maximumFailures = (numShareholders - reconstructionThreshold);
-
-		// Each task deposits its result into this map after verifying it is correct and
-		// consistent
-		// TODO: Add verification via proofs
-		final List<Object> collectedResults = Collections.synchronizedList(new ArrayList<>());
-
-		// Create a partial result task for everyone except ourselves
-		int serverId = 0;
-		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
-			serverId++;
-			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + this.secretName
-					+ "&json=true";
-
-			final int thisServerId = serverId;
-
-			// Create new task to get the secret info from the server
-			executor.submit(
-					new PartialResultTask(serverId, linkUrl, collectedResults, latch, failureCounter, maximumFailures) {
-						@Override
-						void parseJsonResult(final String json) throws Exception {
-
-							// Parse JSON
-							final JSONParser parser = new JSONParser();
-							final Object obj = parser.parse(json);
-							final JSONObject jsonObject = (JSONObject) obj;
-							final Long responder = (Long) jsonObject.get("responder");
-							final long epoch = (Long) jsonObject.get("epoch");
-							final JSONArray resultPoint = (JSONArray) jsonObject.get("public_key");
-							final BigInteger x = new BigInteger((String) resultPoint.get(0));
-							final BigInteger y = new BigInteger((String) resultPoint.get(1));
-
-							// Store parsed result
-							if ((responder == thisServerId)) {
-
-								final EcPoint publicKey = new EcPoint(x, y);
-
-								// Store result for later processing
-								collectedResults.add(new SimpleEntry<EcPoint, Long>(publicKey, epoch));
-
-								// Everything checked out, increment successes
-								latch.countDown();
-							} else {
-								throw new Exception("Server " + thisServerId + " sent inconsistent results");
-							}
-
-						}
-					});
-		}
-
-		try {
-			// Once we have K successful responses we can interpolate our share
-			latch.await();
-
-			// Check that we have enough results to interpolate the share
-			if (failureCounter.get() <= maximumFailures) {
-
-				executor.shutdown();
-
-				return (SimpleEntry<EcPoint, Long>) getConsistentConfiguration(collectedResults,
-						reconstructionThreshold);
-			} else {
-				executor.shutdown();
-				throw new ResourceUnavailableException();
-			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static Object getConsistentConfiguration(final Collection<Object> configurationData, int threshold)
-			throws BelowThresholdException {
-
-		// Count up the number of consistencies among the configurations
-		final Map<Object, Integer> voteTracker = new HashMap<>();
-		for (final Object object : configurationData) {
-			if (!voteTracker.containsKey(object)) {
-				voteTracker.put(object, 1);
-			} else {
-				Integer currentCount = voteTracker.get(object);
-				voteTracker.put(object, new Integer(currentCount + 1));
-			}
-		}
-
-		// Determine which view is the most consistent
-		Object mostCommonConfig = null;
-		int maxConsistencies = 0;
-		for (Entry<Object, Integer> entry : voteTracker.entrySet()) {
-			if (entry.getValue() > maxConsistencies) {
-				maxConsistencies = entry.getValue();
-				mostCommonConfig = entry.getKey();
-			}
-		}
-
-		// Ensure there is at least a threshold agreement
-		if (maxConsistencies < threshold) {
-			System.out.println();
-			for (Object o : configurationData) {
-				System.out.println(" --- " + o);
-			}
-			throw new BelowThresholdException("Insufficient consistency to permit recovery (below threshold)");
-		}
-
-		return mostCommonConfig;
-	}
-
-	public abstract class PartialResultTask implements Runnable {
-
-		// Remote server info
-		private final int remoteServerId;
-		private final String requestUrl;
-
-		// State management
-		private final CountDownLatch latch;
-		private final AtomicInteger failureCounter;
-		private final int maximumFailures;
-
-		public PartialResultTask(final int remoteServerId, final String requestUrl, final List<Object> verifiedResults,
-				final CountDownLatch latch, final AtomicInteger failureCounter, final int maximumFailures) {
-
-			// Remote server info
-			this.remoteServerId = remoteServerId;
-			this.requestUrl = requestUrl;
-
-			// State management
-			this.latch = latch;
-			this.failureCounter = failureCounter;
-			this.maximumFailures = maximumFailures;
-		}
-
-		@Override
-		public void run() {
-
-			try {
-				// Create HTTPS connection to the remote server
-				final URL url = new URL(this.requestUrl);
-				final HttpsURLConnection httpsConnection = (HttpsURLConnection) url.openConnection();
-				configureHttps(httpsConnection, remoteServerId);
-
-				// Configure timeouts and method
-				httpsConnection.setRequestMethod("GET");
-				httpsConnection.setConnectTimeout(10_000);
-				httpsConnection.setReadTimeout(10_000);
-
-				httpsConnection.connect();
-
-				// Read data from it
-				try (final InputStream inputStream = httpsConnection.getInputStream();
-						final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-						final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);) {
-
-					// Verify server identity is what we expect
-					final Certificate[] certs = httpsConnection.getServerCertificates();
-					final X509Certificate peerCertificate = (X509Certificate) certs[0];
-					final PublicKey peerPublicKey = peerCertificate.getPublicKey();
-
-					// Attempt to link the public key in the certificate to a known entity's key
-					final Integer serverId = RsaCertificateAuthorityClient.this.serverKeys
-							.getEntityIndex(peerPublicKey);
-					if (serverId != remoteServerId) {
-						System.err.println("Invalid server!!!: was " + serverId + ", expected: " + remoteServerId);
-						throw new CertificateException("Invalid peer certificate");
-					}
-
-					final String inputLine = bufferedReader.readLine();
-					// System.out.println("Received encrypted partial: " + inputLine);
-
-					// Parse and process
-					this.parseJsonResult(inputLine);
-
-				}
-
-			} catch (Exception e) {
-				// Increment failure counter
-				final int numFailures = this.failureCounter.incrementAndGet();
-				// Check if there have been too many failures to succeed
-				if (numFailures == (maximumFailures + 1)) { // n - k + 1
-					while (latch.getCount() > 0) {
-						latch.countDown();
-					}
-				}
-				System.err.println(e.getMessage());
-			}
-		}
-
-		abstract void parseJsonResult(String json) throws Exception;
-	}
-
-	private void configureHttps(final HttpsURLConnection httpsConnection, final int remoteServerId)
-			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException,
-			UnrecoverableKeyException, KeyManagementException {
-
-		// Configure SSL context
-		final SSLContext sslContext = SSLContext.getInstance(CommonConfiguration.TLS_VERSION);
-
-		// Create in-memory key store
-		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-		final char[] password = "password".toCharArray();
-		keyStore.load(null, password);
-
-		// Add the CA certificate for the server
-		keyStore.setCertificateEntry("ca-" + remoteServerId, this.caCertificates.get(remoteServerId - 1));
-
-		// Add certificate and private key for the server
-		// Note: Client CA cert is last after all the servers
-		final X509Certificate ourCaCert = this.caCertificates.get(this.serverConfiguration.getNumServers());
-		keyStore.setKeyEntry("host", this.clientTlsKey, password,
-				new X509Certificate[] { clientCertificate, ourCaCert });
-
-		// Make Key Manager Factory
-		final KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-		kmf.init(keyStore, password);
-
-		// Setup the trust manager factory
-		final TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-		tmf.init(keyStore);
-
-		// Initialize the context
-		sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-		// Get the socket factory from the context
-		httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
-	}
-
 	/*** Static Methods ***/
-
-	private static X509CertInfo createCertificateInfo(final String subjectDn, final String altNameIp,
-			final String altNameHost, final PublicKey subjectPublicKey, final long validForDays, final boolean makeCa,
-			final String issuerDn) {
-
-		try {
-
-			// Look up algorithm based on CA private key
-			final AlgorithmId algorithmId = AlgorithmId.get(CERTIFICATE_SIGNING_ALGORITHM);
-
-			// Define validity period
-			final Date notBefore = new Date(new Date().getTime() - 300); // 5 minutes prior to avoid clock skew issues
-			final Date notAfter = new Date(notBefore.getTime() + (validForDays * 24 * 3600 * 1000));
-			final CertificateValidity validity = new CertificateValidity(notBefore, notAfter);
-
-			// Random serial number
-			final BigInteger serialNumber = RandomNumberGenerator.generateRandomInteger(128);
-
-			// Define information within certificate
-			final X509CertInfo certificateInfo = new X509CertInfo();
-			certificateInfo.set(X509CertInfo.VERSION, new CertificateVersion(CertificateVersion.V3));
-			certificateInfo.set(X509CertInfo.VALIDITY, validity);
-			certificateInfo.set(X509CertInfo.SERIAL_NUMBER, new CertificateSerialNumber(serialNumber));
-			certificateInfo.set(X509CertInfo.SUBJECT, new X500Name(subjectDn));
-			certificateInfo.set(X509CertInfo.ISSUER, new X500Name(issuerDn));
-			certificateInfo.set(X509CertInfo.KEY, new CertificateX509Key(subjectPublicKey));
-			certificateInfo.set(X509CertInfo.ALGORITHM_ID, new CertificateAlgorithmId(algorithmId));
-
-			// Process extensions
-			final CertificateExtensions extensions = new CertificateExtensions();
-
-			// Make the issued certificate a sub-CA of this one (or self-signed)
-			final BasicConstraintsExtension bce = new BasicConstraintsExtension(makeCa, 0);
-			extensions.set(BasicConstraintsExtension.NAME,
-					new BasicConstraintsExtension(true, bce.getExtensionValue()));
-
-			// Add a subject alternative name (if not null)
-			if (altNameIp != null) {
-				final GeneralNames generalNames = new GeneralNames();
-				generalNames.add(new GeneralName(new IPAddressName(altNameIp)));
-				generalNames.add(new GeneralName(new DNSName(altNameHost)));
-				final SubjectAlternativeNameExtension san = new SubjectAlternativeNameExtension(false, generalNames);
-				extensions.set(SubjectAlternativeNameExtension.NAME, san);
-			}
-
-			certificateInfo.set(X509CertInfo.EXTENSIONS, extensions);
-
-			return certificateInfo;
-
-		} catch (GeneralSecurityException | IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	private static final X509Certificate createCertificateFromTbsAndSignature(X509CertInfo info, final byte[] signature)
-			throws CertificateException, NoSuchAlgorithmException, InvalidKeyException, NoSuchProviderException,
-			SignatureException {
-
-		try (DerOutputStream out = new DerOutputStream(); DerOutputStream tmp = new DerOutputStream();) {
-
-			// Append the certificate information
-			info.encode(tmp);
-
-			// Append the signature algorithm
-			final AlgorithmId algId = AlgorithmId.get(CERTIFICATE_SIGNING_ALGORITHM);
-			algId.encode(tmp);
-
-			// Append the signature
-			tmp.putBitString(signature);
-
-			// Wrap the signed data in a SEQUENCE { data, algorithm, sig }
-			out.write(DerValue.tag_Sequence, tmp);
-			byte[] signedCert = out.toByteArray();
-
-			// Create a certificate
-			return new X509CertImpl(signedCert);
-
-		} catch (IOException e) {
-			throw new CertificateEncodingException(e.toString());
-		}
-	}
 
 	private static BigInteger EMSA_PKCS1_V1_5_ENCODE(byte[] input, final BigInteger modulus)
 			throws NoSuchAlgorithmException, IOException {
@@ -967,35 +584,6 @@ public class RsaCertificateAuthorityClient {
 		}
 
 		return new BigInteger(1, block);
-	}
-
-	public static void exampleRawSignatureGeneration() throws NoSuchAlgorithmException, InvalidKeyException,
-			SignatureException, IOException, CertificateException, NoSuchProviderException {
-
-		// Key generation
-		KeyPairGenerator generator = KeyPairGenerator.getInstance("RSA");
-		generator.initialize(1024);
-		KeyPair rsaKeyPair = generator.generateKeyPair();
-		RSAPrivateKey rsaPrivateKey = (RSAPrivateKey) rsaKeyPair.getPrivate();
-		RSAPublicKey rsaPublicKey = (RSAPublicKey) rsaKeyPair.getPublic();
-
-		// Generate certificate without a signature
-		final X509CertInfo certInfo = createCertificateInfo("CN=test", null, null, rsaKeyPair.getPublic(), 365, true,
-				"CN=test");
-		final X509CertImpl certificate = new X509CertImpl(certInfo);
-		final byte[] toBeSigned = certificate.getTBSCertificate();
-
-		// Manually sign it
-		final BigInteger toBeSignedRaw = EMSA_PKCS1_V1_5_ENCODE(toBeSigned, rsaPublicKey.getModulus());
-		final byte[] signature = Exponentiation
-				.modPow(toBeSignedRaw, rsaPrivateKey.getPrivateExponent(), rsaPrivateKey.getModulus()).toByteArray();
-
-		// Create the certificate passing in the signature
-		final X509Certificate cert = createCertificateFromTbsAndSignature(certInfo, signature);
-
-		System.out.println(cert);
-		cert.verify(rsaKeyPair.getPublic());
-		System.out.println("Certificate is valid!");
 	}
 
 }
