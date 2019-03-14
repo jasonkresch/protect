@@ -30,7 +30,7 @@ The following actions are performed by servers, although the distributed key gen
 
 The following are supported user actions related to the management of shares.  Note that ***PROTECT*** implements fine-grained access controls, permitting different users to be authorized to perform different functions or operations for different secrets.
 
-* **Store Share** - Stores a specified share to enable reliably maintenance of a specific secret
+* **Store Share** - Stores a specified share to enable reliable maintenance of a specific secret
 * **Read Share** - Reads a share to enable determination of a secret's value
 * **Delete Share** - Deletes a share to allow destruction of a secret
 * **Recover Share** - Initiates an immediate share recovery of a deleted share
@@ -77,7 +77,7 @@ $ git clone https://github.com/jasonkresch/protect.git
 $ cd protect && ./build.sh
 $ cd bin && ./start-all-servers.sh 5
 ```
-However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure in reliable manner.
+However this will launch protect using default configuration parameters, with default (***not secure***) keys, and running all instances on a single machine (***not reliable***).  The following subsections provide details on how to deploy ***PROTECT*** in a secure and reliable manner.
 
 ### Downloading PROTECT
 
