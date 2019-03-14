@@ -115,7 +115,7 @@ Note that this option requires extracting the ZIP file using an unzip utility or
 
 ### Building
 
-Once downloaded the entire project can be compiled into a self-contained jar by running the "build.sh" script contained in the base directory of the protect project. Details are included in the following subsections.
+Once downloaded the entire project can be compiled into two self-contained jar files by running the "build.sh" script contained in the base directory of the protect project. Details are included in the following subsections.
 
 #### Dependencies
 
@@ -135,7 +135,7 @@ $ sudo apt-get install git python curl jq html2text openssl
 
 Once the above prerequisites are installed PROTECT may be built by invoking the `build.sh` script.
 
-**Video demonstration of compiling PROTECT into a jar:**
+**Video demonstration of compiling PROTECT into jar files:**
 
 [![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
@@ -144,9 +144,11 @@ $ git clone https://github.com/jasonkresch/protect.git
 $ cd protect
 $ ./build.sh
 ```
-The end result of the build script is a self-contained jar file: `pross-server/target/pross-server-1.0-SNAPSHOT-shaded.jar`
+The end result of the build script is a two self-contained jar files:
+Server: `pross-server/target/pross-server-1.0-SNAPSHOT-shaded.jar`
+Client: `pross-client/target/pross-client-1.0-SNAPSHOT-shaded.jar`
 
-This jar file contains all client and server functionality.
+This client jar file contains all example client functionality while the server jar file contains all shareholder server functionality.
 
 ### Configuration
 
@@ -1047,21 +1049,31 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 
 ## References
 
-- ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf), Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, and Moti Yung, (1995)
+- ["Proactive Secret Sharing Or: How to Cope with Perpetual Leakage"](https://pdfs.semanticscholar.org/d367/55ccc7902e3e09db5c82897401ab0877df3d.pdf). Amir Herzberg, Stanislaw Jarecki, Hugo Krawczyk, Moti Yung. 10.1007/3-540-44750-4_27, 1995, CRYPTO.
 - ["Practical Threshold Signatures"](http://threshsig.sourceforge.net/pdfs/shoup.pdf), Victor Shoup
 - ["Secure Distributed Key Generation for Discrete-Log Based Cryptosystems"](https://groups.csail.mit.edu/cis/pubs/stasio/vss.ps.gz), Rosario Gennaro, Stanislaw Jarecki, Hugo Krawczyk, and Tal Rabin, (1999)
-- ["Byzantine Fault Tolerant (BFT) State Machine Replication (SMR)"](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf) 
-- ["Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing"](https://www.cs.cornell.edu/courses/cs754/2001fa/129.PDF), Torben Pryds Pedersen
+- ["State Machine Replication for the Masses with BFT-SMART"](http://repositorio.ul.pt/bitstream/10451/14170/1/TR-2013-07.pdf). Alysson Bessani, João Sousa, Eduardo E. P. Alchieri. 2014, DSN '14 Proceedings of the 2014 44th Annual IEEE/IFIP International Conference on Dependable Systems and Networks, Vol. 44, pp. 355-362.
+- ["Non-Interactive and Information-Theoretic Secure Verifiable Secret Sharing"](https://www.cs.cornell.edu/courses/cs754/2001fa/129.PDF). Pedersen, Torben P. ISBN:3-540-55188-3, 1991, CRYPTO '91 Proceedings of the 11th Annual International Cryptology Conference on Advances in Cryptology, pp. 129-140.
 - ["Aggregate and Verifiably Encrypted Signatures from Bilinear Maps"](https://crypto.stanford.edu/~dabo/pubs/papers/aggreg.pdf), Dan Boneh, Craig Gentry, Ben Lynn, Hovav Scaham, (2003)
-- Blind Signatures (Chaum)
-- TOPPSS
-- UOKMS
-- Ford-Kaliski on password hardening
+- ["Blind Signatures for Untraceable Payments"](https://sceweb.sce.uhcl.edu/yang/teaching/csci5234WebSecurityFall2011/Chaum-blind-signatures.PDF), David Chaum, (1998)
+- ["TOPPSS: Cost-minimal Password-Protected Secret Sharing based on Threshold OPRF"](https://eprint.iacr.org/2017/363.pdf). Stanislaw Jarecki, Aggelos Kiayias,Hugo Krawczyk, Jiayu Xu. 10.1007/978-3-319-61204-1_3, 2017, Applied Cryptography and Network Security: 15th International Conference, pp. 39-58.
+- ["Threshold Partially-Oblivious PRFs with Applications to Key Management"](https://eprint.iacr.org/2018/733.pdf). Stanislaw Jarecki, Hugo Krawczy, Jason Resch. 2018, Cryptology ePrint Archive: Report 2018/733.
+- ["Server-Assisted Generation of a Strong Secret from a Password"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.17.9502&rep=rep1&type=pdf), Warwick Ford, Burton S. Kaliski Jr., (2000)
 - [Distributed Key Generation in the Wild](https://eprint.iacr.org/2012/377.pdf), Aniket Kate, Yizhou Huang, Ian Goldberg, (2012)
 - ["Threshold Schemes for Cryptographic Primitives: Challenges and Opportunities in Standardization and Validation of Threshold Cryptography"](https://csrc.nist.gov/publications/detail/nistir/8214/final)
-
-https://www.nongnu.org/libtmcg/dg81_slides.pdf
-TODO: Add References from NIST presentation proposal
+- Highly-Efficient and Composable Password-Protected Secret Sharing (Or: How to Protect Your Bitcoin Wallet Online). Stanislaw Jarecki, Aggelos Kiayias, Hugo Krawczyk, Jiayu Xu. 10.1109/EuroSP.2016.30, 2016, 2016 IEEE European Symposium on Security and Privacy (EuroS&P).
+- SPHINX: A Password Store that Perfectly Hides Passwords from Itself. Maliheh Shirvanian, Stanislaw Jareckiy, Hugo Krawczykz. Nitesh Saxena. 10.1109/ICDCS.2017.64, 2017, 2017 IEEE 37th International Conference on Distributed Computing Systems (ICDCS).
+- OPAQUE: An Asymmetric PAKE Protocol Secure Against Pre-Computation Attacks. Stanislaw Jarecki, Hugo Krawczyk, Jiayu Xu. 10.1007/978-3-319-78372-7_15, 2018, Advances in Cryptology – EUROCRYPT 2018, pp. 456-486.
+- Simplified VSS and fast-track multiparty computations with applications to threshold cryptography. Rosario Gennaro, Michael O. Rabin, Tal Rabin. 1998, PODC '98 Proceedings of the seventeenth annual ACM symposium on Principles of distributed computing, pp. 101-111.
+- Share Conversion, Pseudorandom Secret-Sharing and Applications to Secure Computation. Ronald Cramer, Ivan Damgård, Yuval Ishai. TCC 2005. Lecture Notes in Computer Science, 2005, Kilian J. (eds) Theory of Cryptography., Vol. 3378.
+- Generating hard instances of lattice problems. Ajtai, M. ISBN:0-89791-785-5, 1996, STOC '96 Proceedings of the twenty-eighth annual ACM symposium on Theory of computing, pp. 99-108.
+- Towards quantum-resistant cryptosystems from supersingular elliptic curve isogenies. David Jao, Luca De Feo. ISBN: 978-3-642-25404-8, 2011, PQCrypto'11 Proceedings of the 4th international conference on Post-Quantum Cryptography, pp. 19-34.
+- Efficient, robust and constant-round distributed RSA key generation. Ivan Damgård, Gert Læssøe Mikkelsen. ISBN:3-642-11798-8 978-3-642-11798-5, 2010, TCC'10 Proceedings of the 7th international conference on Theory of Cryptography, pp. 183-200.
+- Short Signatures from the Weil Pairing. Dan Boneh, Ben Lynn, Hovav Shacham. 2001, In Proceedings of the 7th International Conference on the Theory and Application of Cryptology and Information Security: Advances in Cryptology (ASIACRYPT '01), Colin Boyd (Ed.), pp. Springer-Verlag, Berlin, Heidelberg, 514-532.
+- The pythia PRF service. Adam Everspaugh, Rahul Chatterjee, Samuel Scott, Ari Juels, Thomas Ristenpart. ISBN: 978-1-931971-232, 2015, Proceeding SEC'15 Proceedings of the 24th USENIX Conference on Security Symposium, pp. 547-562.
+- Identity-Based Encryption from the Weil Pairing. Dan Boneh, Matthew K. Franklin. ISBN:3-540-42456-3, 2001, CRYPTO '01 Proceedings of the 21st Annual International Cryptology Conference on Advances in Cryptology, pp. 213-229.
+- Fail-aware untrusted storage. Christian Cachin, Idit Keidar, Alexander Shraer. 2011, SIAM Journal on Computing, Vols. 40(2):493-533, April 2011.
+- Beyond one-third faulty replicas in byzantine fault tolerant systems. Jinyuan Li, David Maziéres. 2007, NSDI'07 Proceedings of the 4th USENIX conference on Networked systems design & implementation, pp. 10-10.
 
 ## Team
 
