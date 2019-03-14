@@ -81,7 +81,7 @@ However this will launch protect using default configuration parameters, with de
 
 ### Downloading PROTECT
 
-There are two options for downloading protect as a ZIP file and using `git`.
+There are two options for downloading protect: 1. as a ZIP file and 2. using `git`.
 
 #### Checking out via git
 
@@ -101,13 +101,13 @@ Checking out PROTECT via HTTPS can be accomplished with the following command:
 
 ##### Checking out via SSH
 
-Checking out PROTECT via HTTPS can be accomplished with the following command:
+Checking out PROTECT via SSH can be accomplished with the following command:
 
 `$ git clone git@github.com:jasonkresch/protect.git`
 
 ### Downloading ZIP file
 
-One can download ***PROTECT*** clicking the green "Clone or download" button at the top-right of this page, and then clicking the link labeled "Download ZIP" or by clicking this following link:
+One can download ***PROTECT*** by clicking the green "Clone or download" button at the top-right of this page, and then clicking the link labeled "Download ZIP" or by clicking this following link:
 
 https://github.com/jasonkresch/protect/archive/master.zip
 
@@ -122,6 +122,7 @@ Once downloaded the entire project can be compiled into two self-contained jar f
 **PROTECT** is written in Java 1.8 but also includes some examples in python.  It uses `maven` to for dependency management and for building.  On a fresh Ubuntu install the following packages may need to be installed in order to compile and launch ***PROTECT***.
 
 ```bash
+# Determine latest versions of available packages
 $ sudo apt-get-update
 
 # Required for building and running
@@ -139,13 +140,17 @@ Once the above prerequisites are installed PROTECT may be built by invoking the 
 
 [![Alt text](https://img.youtube.com/vi/Cz9VV0FzW10/0.jpg)](https://www.youtube.com/watch?v=Cz9VV0FzW10)
 
+**Commands to perform download and compilation:**
+
 ```bash
 $ git clone https://github.com/jasonkresch/protect.git
 $ cd protect
 $ ./build.sh
 ```
 The end result of the build script is a two self-contained jar files:
+
 Server: `pross-server/target/pross-server-1.0-SNAPSHOT-shaded.jar`
+
 Client: `pross-client/target/pross-client-1.0-SNAPSHOT-shaded.jar`
 
 This client jar file contains all example client functionality while the server jar file contains all shareholder server functionality.
