@@ -176,7 +176,7 @@ For ease of getting started, ***PROTECT*** comes with a set of certificates and 
 4. Take all the files from the common location and deploy them to each server and each client:
     1. Place each server's public key into `config/server/keys/`
     2. Place each server's certificate into `config/server/certs/` 
-    3. Place each server's CA certificat into `config/ca/`
+    3. Place each server's CA certificate into `config/ca/`
 
 
 ##### Generate a set of keys for each client
@@ -192,11 +192,11 @@ For ease of getting started, ***PROTECT*** comes with a set of certificates and 
 4. Take all the files from the common location and deploy them to each server:
     1. Place each users's public key into `config/client/keys/`
     2. Place each user's certificate into `config/client/certs/` 
-    3. Place the common client CA certificat into `config/ca/`
+    3. Place the common client CA certificate into `config/ca/`
 
 Note that there is no security requirement around the client CA private key, and the same client CA may be used for all users. This is because ***PROTECT*** servers always use the exact public key of the client to auhenticate, and ignore the certificate or the CA used to issue it.
 
-Note, however, that most browsers require the server to present the client CA certificate in order to prompt the user to provide one.  This is why the client CA certificate must be known to servers. This is not an issue for command line interaction via cURL where client certificate authentication can be forced.
+Note, however, that most browsers require the server to present the client CA certificate in order to prompt the user to provide a client certificate for authentication.  This is why the client CA certificate must be known to servers. This is not an issue for command line interaction via cURL where client certificate authentication can be forced.
 
 #### Common Configuration
 
@@ -514,7 +514,7 @@ In either case, to initiate the DKG and establish the secret click the "Initiate
 
 Once a secret is established this info page will change from the Generate or Store page to a page displaying information about the secret.
 
-It lists the public key of the secret, the group and field information, and the shareholder public keys.
+It lists the public key of the secret, the group and field information, and the share public verification keys.
 
 **Share Information page of PROTECT:**
 
@@ -524,7 +524,7 @@ It lists the public key of the secret, the group and field information, and the 
 
 *Required Permissions:* `READ`
 
-With the `READ` permission, one can read the raw value of a share, providing the capacity to recover the raw secret.  This permission is typically only given for secrets that are stored.
+With the `READ` permission, one can read the raw value of a share, providing the ability to recover the raw secret.  This permission is typically only given for secrets that are stored.
 
 **Read Share page of PROTECT:**
 
@@ -773,7 +773,7 @@ The "store-secret.sh" script allows one to store a secret which is shared across
 
 ##### Storing a specific secret
 
-*Required Permissions:* `STORE`
+*Required Permissions:* `STORE` and `INFO`
 
 Note: This command must be done before DKG or RSA storage is performed. Once a value is stored for a given secret, it cannot be changed.
 
@@ -804,7 +804,7 @@ DKG complete. Secret is now stored and available for reading.
 
 ##### Reading a stored secret
 
-*Required Permissions:* `READ`
+*Required Permissions:* `READ` and `INFO`
 
 The following command uses the *administrator* user to read the value of the secret stored to *prf-secret*:
 
@@ -835,7 +835,7 @@ The "threshold-ca.sh" script allows one to generate a CA certifiate whose privat
 
 ##### Generating a new RSA Private Key
 
-*Required Permissions:* `STORE` and `GENERATE`
+*Required Permissions:* `STORE` and `INFO`
 
 The following command uses the *signing_user* user to create and store a new RSA private key to secret *rsa-secret* and output a CA certificate to a file *threshold-ca.pem*. It then shows how to use openssl to view the newly created CA certificate:
 
@@ -870,13 +870,13 @@ CA Creation Completed. Ready to issue certificates.
 WARNING: Refresh and reconstruction are not active for RSA keys, do not use them for encrypting anything that must be recovered
 ```
 
-Note: the RSA private key is not persisted anywhere, it is turned into shares and distributed across the servers as shares. It exists on the machine that it was generated from in RAM only and only temporarily.  Aftewards, it can be used to create RSA signatures ***without*** ever having to restore the private key at any location.
+Note: the RSA private key is not persisted anywhere. Instead, it is turned into shares and distributed across the servers as shares. It exists on the machine that it was generated from in RAM only and only temporarily.  Aftewards, it can be used to create RSA signatures ***without*** ever having to restore the private key at any location.
 
 ##### Issuing a Certificate with the RSA Private Key
 
-*Required Permissions:* `INFO`, `SIGN`
+*Required Permissions:* `INFO` and `SIGN`
 
-The following command uses the *signing_user* user to issue a new end-entity certificate signed by the RSA private key held by the secret *rsa-secret* using the issuer name from the CA certificate file *threshold-ca.pem*, and outputting the newly created certificate to the file *new-cert.pem* with the public key in file *pub-key.pem*. It then shows how to use openssl to verify and view the newly created CA certificate:
+The following command uses the *signing_user* user to issue a new end-entity certificate signed by the RSA private key held by the secret *rsa-secret* using the issuer name from the CA certificate file *threshold-ca.pem*, and outputting the newly created certificate to the file *new-cert.pem* taking the end-entity public key from the file *pub-key.pem*. It then shows how to use openssl to verify and view the newly created end-entity certificate using the previously created CA certificate:
 
 ```bash
 # Generate new EC key pair (the following command needs only the public key of the end-entity)
@@ -954,7 +954,9 @@ Note: the `INFO` permission is required only to get the public key of the given 
 
 ##### Decrypting a File
 
-*Required Permissions:* `INFO`, `EXPONENTIATE`
+*Required Permissions:* `INFO` and `EXPONENTIATE`
+
+The following command uses the *administrator* user to decrypt the file "out.enc" and output the decrypted result to a file named "restored.txt", using the secret *prf-secret* as the private key to perform that encryption:
 
 ```
 # Performs decryption of the file
@@ -1009,25 +1011,25 @@ If agreement can be reached by 3/4 of the shareholders, then a message in the BF
 
 All three of these operations, DKG, Refresh, and Recovery are based on a single primitive, called a Multi-APVSS, which consists of each shareholder performing an Publicly Verifiable Secret Sharing.  The result of this Multi-APVSS yields shares of the secret, as well as public verification keys for each shareholder’s share, as well as Feldman commitments to the shared polynomial.
 
-Clients interact with the shareholder through an HTTPS API, and authenticate directly to each shareholder via client certificates over TLS.
+Clients interact with shareholders through an HTTPS API, authenticating directly to each shareholder via client certificates over TLS.
 
 ### Protocols
 
 At the core of ***PROTECT's*** Distributed Key Genearation, Share Refresh, and Share Recovery Protocols is a single operation we call a *Multiple Asynchronous Publicly Verifiable Secret Sharing* (Multi-APVSS).  One round of a Multi-APVSS consists of each shareholder performing a single APVSS to all the shareholders.
 
-An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network, unlike [Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing), a publically verifiable secret sharing may be verifiable by anyone who knows the public keys of the shareholders. This prevents dishonest behavior during the Multi-APVSS to result in some honest shareholders not receiving their share of the secret.
+An APVSS is a [Publicly Verifiable Secret Sharing](https://en.wikipedia.org/wiki/Publicly_Verifiable_Secret_Sharing) (PVSS) designed to operate over an asnchronous network, unlike [Verifiable Secret Scharing](https://en.wikipedia.org/wiki/Verifiable_secret_sharing), a publically verifiable secret sharing is verifiable by anyone who knows the public keys of the shareholders. This prevents dishonest behavior during the Multi-APVSS from resulting in some honest shareholders not receiving their shares of the secret.
 
 ### Fault Tolerances
 
-Faults include not only unintentional events such as software crashes, hardware failure, power outage, memory corruption, network corruption, dropped packets, but malicious and intentional deviations from the protocol in arbitrary ways, such as sending incorrect messages, duplicating messages, lying about which messages have been received in which orders to different sets of honest shareholders, failing to respond to messages, failing to relay messages, sending malformed messages, coordinating misbehavior among multiple corrupted shareholders, and so forth.  Such arbitrary failures are known as *Byzantine* faults, and it is crucial for any system aiming to be resilient to breaches of the system to tolerate them while maintaining liveness (responsiveness and availability) and safety (correctness, and privacy and durability of data).
+Faults include not only unintentional events such as software crashes, hardware failure, power outage, memory corruption, network corruption, and dropped packets, but also malicious and intentional deviations from the protocol in arbitrary ways, such as sending incorrect messages, duplicating messages, lying about which messages have been received in which orders to different sets of honest shareholders, failing to respond to messages, failing to relay messages, sending malformed messages, coordinating misbehavior among multiple corrupted shareholders, and so forth.  Such arbitrary failures are known as *Byzantine* faults, and it is crucial for any system aiming to be resilient to breaches of the system to tolerate them while maintaining liveness (responsiveness and availability) and safety (correctness, and privacy and durability of data).
 
-The following chart details different fault tolerance levels for different numbers of shareholders in a ***PROTECT*** system:
+The following chart details different fault tolerances for different numbers of shareholders in a ***PROTECT*** system:
 
 ![alt text](https://raw.githubusercontent.com/jasonkresch/protect/master/docs/diagrams/fault-tolerances.png "Fault Tolerances within PROTECT")
 
 Where *f_S* is the maximum number of Byzantine faults that can occur while the system preserves ***safety***.
 Where *f_L* is the maximum number of Byzantine faults that can occur while the system preserves ***liveness***.
-Where *f* is the maximum number of Byzantine faults that can occur while the atomic broadcast maintains safety and livness.
+Where *f* is the maximum number of Byzantine faults that can occur while the atomic broadcast maintains safety and liveness.
 
 In ***PROTECT***, liveness refers to the ability to make continual progress in share refresh and share recovery operations. Loss of liveness here does not prevent clients from reading or writing secrets, nor using them to perform cryptographic operations, which in general requires only the availability of (*f_S* + 1) shareholders who are at the same epoch (version of a secret).
 
@@ -1082,7 +1084,7 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 
 ## Team
 
-***PROTECT*** was designed and implementated by a team that includes experts from the fields of threshold cryptography and Byzantin fault tolerant systems. The team members include:
+***PROTECT*** was designed and implementated by a team that includes experts from the fields of threshold cryptography and Byzantine fault tolerant systems. The team members include:
 
 * Christian Cachin - Professor of Computer Science, University of Bern 
 * Hugo Krawczyk - IBM Fellow, Distinguished Research Staff Member, IBM Research
