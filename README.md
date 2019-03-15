@@ -1081,6 +1081,7 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 - ["Identity-Based Encryption from the Weil Pairing. Dan Boneh"](https://crypto.stanford.edu/~dabo/papers/bfibe.pdf). Matthew K. Franklin. ISBN:3-540-42456-3, 2001, CRYPTO '01 Proceedings of the 21st Annual International Cryptology Conference on Advances in Cryptology, pp. 213-229.
 - ["Fail-aware untrusted storage"](http://webee.technion.ac.il/~idish/ftp/faust-dsn09.pdf). Christian Cachin, Idit Keidar, Alexander Shraer. 2011, SIAM Journal on Computing, Vols. 40(2):493-533, April 2011.
 - ["Beyond one-third faulty replicas in byzantine fault tolerant systems"](http://www.scs.stanford.edu/~jinyuan/bft2f.pdf). Jinyuan Li, David Maziéres. 2007, NSDI'07 Proceedings of the 4th USENIX conference on Networked systems design & implementation, pp. 10-10.
+- ["Public-Key Cryptosystems Based on Composite Degree Residuosity Classes"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf). Pascal Paillier. 1999, Advances in Cryptology --- EUROCRYPT '99, pp. 223-238
 
 ## Team
 
