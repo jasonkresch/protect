@@ -11,8 +11,6 @@ import java.util.concurrent.ConcurrentMap;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 
-import com.ibm.pross.common.CommonConfiguration;
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;

@@ -8,8 +8,6 @@ package com.ibm.pross.common.util.crypto.kdf;
 
 import org.junit.Assert;
 
-import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
-
 import junit.framework.TestCase;
 
 public class HmacKeyDerivationFunctionTest extends TestCase {

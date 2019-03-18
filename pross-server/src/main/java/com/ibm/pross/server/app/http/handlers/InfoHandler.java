@@ -275,10 +275,7 @@ public class InfoHandler extends AuthenticatedClientRequestHandler {
 			if (sharingState.getShare1() != null) {
 				stringBuilder.append("exists        =  TRUE     (<a href=\"" + readLink + "\">Read Share</a>)  (<a href=\"" + deleteLink + "\">Delete Share</a>) \n");
 			} else {
-				// FIXME: Get this working (perhaps only show on latest epoch page...
-				// stringBuilder.append("exists = FALSE (<a href=\"" + recoverLink + "\">Recover
-				// Share</a>) \n");
-				stringBuilder.append("exists        =  FALSE    (<a href=\"" + readLink + "\">Read Share</a>) \n");
+				stringBuilder.append("exists        =  FALSE    (<a href=\"" + readLink + "\">Read Share</a>)  (<a href=\"" + recoverLink + "\">Recover Share</a>) \n");
 			}
 			if (shareholder.isEnabled()) {
 				stringBuilder.append("status        =  ENABLED  (<a href=\"" + disableLink + "\">Disable Share</a>) \n");

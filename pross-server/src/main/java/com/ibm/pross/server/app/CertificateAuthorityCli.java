@@ -24,7 +24,6 @@ import java.util.Date;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.util.io.pem.PemReader;
 
-import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.SigningUtil;
 import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;

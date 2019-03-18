@@ -749,6 +749,9 @@ public class ApvssShareholder {
 	public void recoverShare(final SharingState sharingState,
 			final ConcurrentHashMap<Long, SimpleEntry<BigInteger, BigInteger>> verifiedResults) {
 
+		// FIXME: This reconstructs the previous (n-1) epoch version of the share!
+		// FIXME: Add verification of each received result
+		
 		// Determine list of contributors
 		final List<Long> contributors = new ArrayList<>(verifiedResults.keySet());
 		Collections.sort(contributors);
@@ -951,7 +954,7 @@ public class ApvssShareholder {
 	}
 
 	public int getRefreshFrequency() {
-		return 15;
+		return 60;
 	}
 
 	public SharingType getSharingType() {

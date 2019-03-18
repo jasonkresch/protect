@@ -48,7 +48,6 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BelowThresholdException;

@@ -10,8 +10,8 @@ import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.EcPseudoRandomFunction;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 import com.ibm.pross.common.util.crypto.kdf.EntropyExtractor;
+import com.ibm.pross.common.util.crypto.kdf.HmacKeyDerivationFunction;
 
 public class PrfClient {
 

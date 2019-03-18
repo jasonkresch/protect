@@ -18,8 +18,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-import com.ibm.pross.server.util.EciesEncryption;
-
 public class EciesEncryptionTest {
 
 	@BeforeClass

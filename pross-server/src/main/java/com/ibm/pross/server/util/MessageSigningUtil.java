@@ -11,8 +11,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 
 import com.ibm.pross.common.util.SigningUtil;
-import com.ibm.pross.server.messages.MessageSignature;
 import com.ibm.pross.server.messages.Message;
+import com.ibm.pross.server.messages.MessageSignature;
 import com.ibm.pross.server.messages.RelayedMessage;
 
 public class MessageSigningUtil {

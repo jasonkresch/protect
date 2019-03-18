@@ -6,9 +6,9 @@
 
 package com.ibm.pross.common;
 
+import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcCurveBc;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 
 /**
  * This class defines common configuration for a given setting for TOPPSS
