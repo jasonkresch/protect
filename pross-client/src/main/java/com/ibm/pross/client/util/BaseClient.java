@@ -127,19 +127,21 @@ public class BaseClient {
 		// Get the socket factory from the context
 		httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
 	}
-	
 
 	protected Object getConsistentConfiguration(final Collection<Object> configurationData, int threshold)
 			throws BelowThresholdException {
 
 		// Count up the number of consistencies among the configurations
 		final Map<Object, Integer> voteTracker = new HashMap<>();
-		for (final Object object : configurationData) {
-			if (!voteTracker.containsKey(object)) {
-				voteTracker.put(object, 1);
-			} else {
-				Integer currentCount = voteTracker.get(object);
-				voteTracker.put(object, Integer.valueOf(currentCount + 1));
+		
+		synchronized (configurationData) {
+			for (final Object object : configurationData) {
+				if (!voteTracker.containsKey(object)) {
+					voteTracker.put(object, 1);
+				} else {
+					Integer currentCount = voteTracker.get(object);
+					voteTracker.put(object, Integer.valueOf(currentCount + 1));
+				}
 			}
 		}
 
@@ -164,7 +166,6 @@ public class BaseClient {
 
 		return mostCommonConfig;
 	}
-	
 
 	/**
 	 * Interacts with the servers to determine the public key of the secret (by
@@ -208,45 +209,44 @@ public class BaseClient {
 			final int thisServerId = serverId;
 
 			// Create new task to get the secret info from the server
-			executor.submit(
-					new PartialResultTask(this, serverId, linkUrl, collectedResults, latch, failureCounter, maximumFailures) {
-						@Override
-						protected void parseJsonResult(final String json) throws Exception {
+			executor.submit(new PartialResultTask(this, serverId, linkUrl, collectedResults, latch, failureCounter,
+					maximumFailures) {
+				@Override
+				protected void parseJsonResult(final String json) throws Exception {
 
-							// Parse JSON
-							final JSONParser parser = new JSONParser();
-							final Object obj = parser.parse(json);
-							final JSONObject jsonObject = (JSONObject) obj;
-							final Long responder = (Long) jsonObject.get("responder");
-							final long epoch = (Long) jsonObject.get("epoch");
-							final List<EcPoint> verificationKeys = new ArrayList<>();
+					// Parse JSON
+					final JSONParser parser = new JSONParser();
+					final Object obj = parser.parse(json);
+					final JSONObject jsonObject = (JSONObject) obj;
+					final Long responder = (Long) jsonObject.get("responder");
+					final long epoch = (Long) jsonObject.get("epoch");
+					final List<EcPoint> verificationKeys = new ArrayList<>();
 
-							final JSONArray publicKeyPoint = (JSONArray) jsonObject.get("public_key");
-							final BigInteger x = new BigInteger((String) publicKeyPoint.get(0));
-							final BigInteger y = new BigInteger((String) publicKeyPoint.get(1));
-							verificationKeys.add(new EcPoint(x, y));
-							for (int i = 1; i <= numShareholders; i++) {
-								final JSONArray verificationKey = (JSONArray) jsonObject
-										.get("share_verification_key_" + i);
-								final BigInteger x2 = new BigInteger((String) verificationKey.get(0));
-								final BigInteger y2 = new BigInteger((String) verificationKey.get(1));
-								verificationKeys.add(new EcPoint(x2, y2));
-							}
+					final JSONArray publicKeyPoint = (JSONArray) jsonObject.get("public_key");
+					final BigInteger x = new BigInteger((String) publicKeyPoint.get(0));
+					final BigInteger y = new BigInteger((String) publicKeyPoint.get(1));
+					verificationKeys.add(new EcPoint(x, y));
+					for (int i = 1; i <= numShareholders; i++) {
+						final JSONArray verificationKey = (JSONArray) jsonObject.get("share_verification_key_" + i);
+						final BigInteger x2 = new BigInteger((String) verificationKey.get(0));
+						final BigInteger y2 = new BigInteger((String) verificationKey.get(1));
+						verificationKeys.add(new EcPoint(x2, y2));
+					}
 
-							// Store parsed result
-							if ((responder == thisServerId)) {
+					// Store parsed result
+					if ((responder == thisServerId)) {
 
-								// Store result for later processing
-								collectedResults.add(new SimpleEntry<List<EcPoint>, Long>(verificationKeys, epoch));
+						// Store result for later processing
+						collectedResults.add(new SimpleEntry<List<EcPoint>, Long>(verificationKeys, epoch));
 
-								// Everything checked out, increment successes
-								latch.countDown();
-							} else {
-								throw new Exception("Server " + thisServerId + " sent inconsistent results");
-							}
+						// Everything checked out, increment successes
+						latch.countDown();
+					} else {
+						throw new Exception("Server " + thisServerId + " sent inconsistent results");
+					}
 
-						}
-					});
+				}
+			});
 		}
 
 		try {
