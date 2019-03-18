@@ -17,8 +17,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 
-import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.paillier.PaillierCipher;
@@ -43,8 +44,6 @@ import com.ibm.pross.server.messages.Message;
 import com.ibm.pross.server.messages.Payload.OpCode;
 import com.ibm.pross.server.messages.payloads.apvss.PublicSharingPayload;
 import com.ibm.pross.server.messages.payloads.apvss.ZkpPayload;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 public class ApvssShareholder {
 

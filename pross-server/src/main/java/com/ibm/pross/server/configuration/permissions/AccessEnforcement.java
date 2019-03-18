@@ -6,9 +6,9 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import com.ibm.pross.common.exceptions.http.NotFoundException;
+import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.ibm.pross.server.configuration.permissions.ClientPermissions.Permissions;
-import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
-import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
 
 public class AccessEnforcement {
 

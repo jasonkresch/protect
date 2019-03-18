@@ -24,6 +24,9 @@ import org.apache.log4j.LogManager;
 import org.apache.log4j.Logger;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.config.ServerConfigurationLoader;
 import com.ibm.pross.common.util.serialization.Pem;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
@@ -33,9 +36,6 @@ import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.ibm.pross.server.configuration.permissions.ClientPermissionLoader;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 
 public class ServerApplication {

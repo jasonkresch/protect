@@ -8,8 +8,8 @@ package com.ibm.pross.client.prf;
 
 import java.math.BigInteger;
 
-import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.EcPseudoRandomFunction;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 

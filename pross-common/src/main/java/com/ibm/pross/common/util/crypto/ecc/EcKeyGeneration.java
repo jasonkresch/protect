@@ -17,7 +17,7 @@ import java.security.spec.ECGenParameterSpec;
 
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 
 public class EcKeyGeneration {
 

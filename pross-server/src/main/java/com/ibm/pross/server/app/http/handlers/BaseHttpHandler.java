@@ -6,14 +6,14 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.nio.charset.StandardCharsets;
 
-import com.ibm.pross.server.app.http.HttpStatusCode;
-import com.ibm.pross.server.configuration.permissions.exceptions.BadRequestException;
-import com.ibm.pross.server.configuration.permissions.exceptions.ConflictException;
-import com.ibm.pross.server.configuration.permissions.exceptions.HttpException;
-import com.ibm.pross.server.configuration.permissions.exceptions.InternalServerException;
-import com.ibm.pross.server.configuration.permissions.exceptions.NotFoundException;
-import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
-import com.ibm.pross.server.configuration.permissions.exceptions.UnauthorizedException;
+import com.ibm.pross.common.exceptions.http.BadRequestException;
+import com.ibm.pross.common.exceptions.http.ConflictException;
+import com.ibm.pross.common.exceptions.http.HttpException;
+import com.ibm.pross.common.exceptions.http.HttpStatusCode;
+import com.ibm.pross.common.exceptions.http.InternalServerException;
+import com.ibm.pross.common.exceptions.http.NotFoundException;
+import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
+import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 

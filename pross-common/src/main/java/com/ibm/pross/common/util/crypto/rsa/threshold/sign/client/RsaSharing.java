@@ -48,13 +48,13 @@ public class RsaSharing {
 		final int primeLength = (keySizeBits / 2);
 		
 		System.out.print("  Generating p...");
-		final BigInteger pPrime = Primes.generateSophieGermainPrime(primeLength-1);
-		final BigInteger p = Primes.getSafePrime(pPrime);
+		final BigInteger p = Primes.generateSafePrime(primeLength);
+		final BigInteger pPrime = Primes.getSophieGermainPrime(p);
 		System.out.println(" done.");
 
 		System.out.print("  Generating q...");
-		final BigInteger qPrime = Primes.generateSophieGermainPrime(primeLength-1);
-		final BigInteger q = Primes.getSafePrime(qPrime);
+		final BigInteger q = Primes.generateSafePrime(primeLength);
+		final BigInteger qPrime = Primes.getSophieGermainPrime(q);
 		System.out.println(" done.");
 
 		System.out.print("  Computing moduli...");

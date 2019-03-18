@@ -12,6 +12,7 @@ import java.util.Set;
 import java.util.Timer;
 import java.util.TimerTask;
 
+import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.server.communication.handlers.MessageHandler;
 import com.ibm.pross.server.communication.pointtopoint.MessageReceiver;
 import com.ibm.pross.server.communication.pointtopoint.MessageSender;
@@ -20,8 +21,6 @@ import com.ibm.pross.server.messages.RelayedMessage;
 import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.SignedRelayedMessage;
 import com.ibm.pross.server.util.MessageSerializer;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 /**
  * Tracks all of the connections related to a server

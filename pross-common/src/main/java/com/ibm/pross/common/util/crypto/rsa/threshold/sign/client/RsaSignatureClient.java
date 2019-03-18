@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.rsa.RsaUtil;

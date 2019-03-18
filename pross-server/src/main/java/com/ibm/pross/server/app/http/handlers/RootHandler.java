@@ -7,12 +7,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.Map.Entry;
 import java.util.concurrent.ConcurrentMap;
 
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.exceptions.http.HttpStatusCode;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
-import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.app.http.HttpStatusCode;
 import com.sun.net.httpserver.HttpExchange;
-
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
 
 /**
  * This handler returns basic configuration information about the server,
@@ -61,7 +60,7 @@ public class RootHandler extends BaseHttpHandler {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/";
 			stringBuilder.append(
 					"server." + serverId + " = " + "<a href=\"" + linkUrl + "\">" + serverAddress + "</a>\n");
@@ -71,7 +70,7 @@ public class RootHandler extends BaseHttpHandler {
 		// Secrets
 		stringBuilder.append("<b>Secrets:</b>\n");
 		final String ourHost = this.serverConfiguration.getServerAddresses().get(this.serverIndex - 1).getAddress().getHostAddress();
-		final int ourPort = HttpRequestProcessor.BASE_HTTP_PORT + this.serverIndex;
+		final int ourPort = CommonConfiguration.BASE_HTTP_PORT + this.serverIndex;
 		int secretId = 0;
 		for (final Entry<String, ApvssShareholder> entry : this.shareholders.entrySet()) {
 			secretId++;

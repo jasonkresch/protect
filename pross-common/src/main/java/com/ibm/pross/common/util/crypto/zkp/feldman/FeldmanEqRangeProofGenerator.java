@@ -4,7 +4,7 @@ import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.Exponentiation;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;

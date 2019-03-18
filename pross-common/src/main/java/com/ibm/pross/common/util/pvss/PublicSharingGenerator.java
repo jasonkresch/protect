@@ -2,7 +2,7 @@ package com.ibm.pross.common.util.pvss;
 
 import java.math.BigInteger;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;

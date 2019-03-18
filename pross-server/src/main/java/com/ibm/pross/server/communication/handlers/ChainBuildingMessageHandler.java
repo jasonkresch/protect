@@ -13,6 +13,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
+import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.server.app.avpss.channel.FifoAtomicBroadcastChannel;
 import com.ibm.pross.server.channel.ChannelListener;
 import com.ibm.pross.server.channel.ChannelSender;
@@ -24,8 +25,6 @@ import com.ibm.pross.server.messages.SignedMessage;
 import com.ibm.pross.server.messages.payloads.optbft.CertificationPayload;
 import com.ibm.pross.server.util.AtomicFileOperations;
 import com.ibm.pross.server.util.MessageSerializer;
-
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
 
 /**
  * Connects the BFT layer to the Certified Opt chain

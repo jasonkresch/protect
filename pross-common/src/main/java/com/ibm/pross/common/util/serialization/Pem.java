@@ -100,7 +100,26 @@ public class Pem {
 		case "PRIVATE KEY":
 			return edKeyFactory.generatePrivate(new PKCS8EncodedKeySpec(pemObject.getContent()));
 		case "PUBLIC KEY":
-			return edKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+			
+			// Try ECDSA
+			try {
+				return ecKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+			} catch (Exception e) {
+			}
+			
+			// Try RSA
+			try {
+				return rsaKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+			} catch (Exception e) {
+			}
+			
+			// Try EdDSA
+			try {
+				return edKeyFactory.generatePublic(new X509EncodedKeySpec(pemObject.getContent()));
+			} catch (Exception e) {
+			}			
+			
+			
 		default:
 			throw new IllegalArgumentException("Unrecognized type");
 		}

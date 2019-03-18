@@ -1,4 +1,4 @@
-package com.ibm.pross.server.configuration.permissions.exceptions;
+package com.ibm.pross.common.exceptions.http;
 
 public abstract class HttpException extends Exception {
 

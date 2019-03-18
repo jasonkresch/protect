@@ -20,7 +20,8 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.StringTokenizer;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
+import com.ibm.pross.common.config.KeyLoader;
+
 import bftsmart.tom.util.Logger;
 
 public class TOMConfiguration extends Configuration {

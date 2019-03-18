@@ -15,7 +15,7 @@ import java.util.Random;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcKeyGeneration;
 
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;

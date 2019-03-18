@@ -15,7 +15,7 @@ import java.security.Signature;
 import java.security.SignatureException;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 
 public class SigningUtil {
 

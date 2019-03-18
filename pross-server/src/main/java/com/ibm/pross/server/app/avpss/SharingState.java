@@ -1,6 +1,5 @@
 package com.ibm.pross.server.app.avpss;
 
-import java.math.BigInteger;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Date;
@@ -11,7 +10,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.commons.codec.binary.Hex;
 
-import com.ibm.pross.common.CommonConfiguration;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.zkp.splitting.ZeroKnowledgeProof;

@@ -158,7 +158,7 @@ else:
   #print coefficients
   print "Shares:"
   for share in shares:
-    print share
+    print "(" + str(share[0]) + ", " + str(share[1]) + ")"
   print "Secret Public Key:"
   print curve.multiply_point(g, secret)
 

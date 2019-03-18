@@ -1,39 +1,25 @@
-package com.ibm.pross.client;
+package com.ibm.pross.client.signing;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.math.BigInteger;
 import java.net.InetSocketAddress;
-import java.net.URL;
 import java.security.InvalidKeyException;
-import java.security.KeyManagementException;
-import java.security.KeyStore;
-import java.security.KeyStoreException;
+import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.security.NoSuchProviderException;
 import java.security.PrivateKey;
 import java.security.PublicKey;
-import java.security.SecureRandom;
 import java.security.Security;
 import java.security.SignatureException;
-import java.security.UnrecoverableKeyException;
-import java.security.cert.Certificate;
 import java.security.cert.CertificateEncodingException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.security.interfaces.RSAPublicKey;
 import java.security.spec.InvalidKeySpecException;
-import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -42,17 +28,25 @@ import java.util.stream.Collectors;
 
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
-import javax.net.ssl.HttpsURLConnection;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.TrustManagerFactory;
 
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.DERNull;
+import org.bouncycastle.asn1.nist.NISTObjectIdentifiers;
+import org.bouncycastle.asn1.x509.AlgorithmIdentifier;
+import org.bouncycastle.asn1.x509.DigestInfo;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
-import com.ibm.pross.common.util.crypto.ecc.EcPoint;
+import com.ibm.pross.client.util.BaseClient;
+import com.ibm.pross.client.util.PartialResultTask;
+import com.ibm.pross.common.config.CommonConfiguration;
+import com.ibm.pross.common.config.KeyLoader;
+import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.config.ServerConfigurationLoader;
+import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
+import com.ibm.pross.common.util.certificates.CertificateGeneration;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureShareProof;
@@ -61,23 +55,21 @@ import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BelowThres
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.serialization.Pem;
-import com.ibm.pross.server.app.CertificateAuthorityCli;
-import com.ibm.pross.server.app.http.HttpRequestProcessor;
-import com.ibm.pross.server.configuration.permissions.exceptions.ResourceUnavailableException;
 
-import bftsmart.reconfiguration.util.sharedconfig.KeyLoader;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfiguration;
-import bftsmart.reconfiguration.util.sharedconfig.ServerConfigurationLoader;
 import net.i2p.crypto.eddsa.EdDSASecurityProvider;
 import sun.security.x509.X509CertImpl;
 import sun.security.x509.X509CertInfo;
 
 /**
- * Performs ECIES (Elliptic Curve based ElGamal Encryption and Decryption of
- * files used a distributed secret key)
+ * Performs generation and storage of a locally generated RSA private key and
+ * can then be used to issue certificates using that distributed private key as
+ * the CA's private key
  */
 @SuppressWarnings("restriction")
-public class RsaCertificateAuthorityClient {
+public class RsaCertificateAuthorityClient extends BaseClient {
+
+	public static final String HASH_ALGORITHM = "SHA-512";
+	public static final String CERTIFICATE_SIGNING_ALGORITHM = "SHA512withRSA"; // Must match hash algorithm
 
 	static {
 		Security.addProvider(new BouncyCastleProvider());
@@ -91,17 +83,6 @@ public class RsaCertificateAuthorityClient {
 	public static String CLIENT_KEYS_DIRECTORY = "client/keys";
 	public static String CA_DIRECTORY = "ca";
 	public static String CERTS_DIRECTORY = "certs";
-
-	// For connecting to servers
-	private final ServerConfiguration serverConfiguration;
-
-	// For authenticating the servers
-	private final List<X509Certificate> caCertificates;
-	private final KeyLoader serverKeys;
-
-	// For loading our own private key and certificate
-	private final X509Certificate clientCertificate;
-	private final PrivateKey clientTlsKey;
 
 	// Parameters of operation
 	private final String secretName;
@@ -122,11 +103,10 @@ public class RsaCertificateAuthorityClient {
 			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
 			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
 			final File caFile, final String issuerDn) {
-		this.serverConfiguration = serverConfiguration;
-		this.caCertificates = caCertificates;
-		this.serverKeys = serverKeys;
-		this.clientCertificate = clientCertificate;
-		this.clientTlsKey = clientTlsKey;
+
+		super(serverConfiguration, caCertificates, serverKeys, clientCertificate, clientTlsKey);
+
+		// USed to generate
 		this.secretName = secretName;
 		this.caFile = caFile;
 		this.issuerDn = issuerDn;
@@ -144,11 +124,10 @@ public class RsaCertificateAuthorityClient {
 			final List<X509Certificate> caCertificates, final KeyLoader serverKeys,
 			final X509Certificate clientCertificate, final PrivateKey clientTlsKey, final String secretName,
 			final File caFile, final File publicKeyFile, final File certificateOutputFile, final String subjectDn) {
-		this.serverConfiguration = serverConfiguration;
-		this.caCertificates = caCertificates;
-		this.serverKeys = serverKeys;
-		this.clientCertificate = clientCertificate;
-		this.clientTlsKey = clientTlsKey;
+
+		super(serverConfiguration, caCertificates, serverKeys, clientCertificate, clientTlsKey);
+
+		// Used to issue
 		this.secretName = secretName;
 		this.caFile = caFile;
 		this.publicKeyFile = publicKeyFile;
@@ -185,7 +164,7 @@ public class RsaCertificateAuthorityClient {
 
 		// Create and persist CA certificate
 		System.out.println("Creating self-signed root CA certificate for: " + issuerDn);
-		final X509Certificate caCert = CertificateAuthorityCli.generateCaCertificate(issuerDn, rsaSharing.getKeyPair());
+		final X509Certificate caCert = CertificateGeneration.generateCaCertificate(issuerDn, rsaSharing.getKeyPair());
 		Pem.storeCertificateToFile(caCert, caFile);
 		System.out.println("Certificate written to: " + caFile.getAbsolutePath());
 		System.out.println();
@@ -202,13 +181,14 @@ public class RsaCertificateAuthorityClient {
 		System.out.println(" (done)");
 
 		System.out.println("CA Creation Completed. Ready to issue certificates.");
-		System.out.println("WARNING: Refresh and reconstruction are not active for RSA keys, do not use them for encrypting anything that must be recovered");
+		System.out.println(
+				"WARNING: Refresh and reconstruction are not active for RSA keys, do not use them for encrypting anything that must be recovered");
 	}
 
-	public void issuerCertificate()
-			throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, IOException,
-			ResourceUnavailableException, BelowThresholdException, NoSuchAlgorithmException, CertificateException,
-			InvalidKeySpecException, InvalidKeyException, NoSuchProviderException, SignatureException, BadArgumentException {
+	public void issuerCertificate() throws BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
+			IOException, ResourceUnavailableException, BelowThresholdException, NoSuchAlgorithmException,
+			CertificateException, InvalidKeySpecException, InvalidKeyException, NoSuchProviderException,
+			SignatureException, BadArgumentException {
 
 		// Test most common configuration
 
@@ -226,11 +206,11 @@ public class RsaCertificateAuthorityClient {
 		System.out.println("done.");
 
 		System.out.print("  Creating a To-Be-Signed Certificate for: " + this.subjectDn + "... ");
-		final X509CertInfo certificateInfo = RsaSigningClient.createCertificateInfo(subjectDn, null, null,
-				entityPublicKey, 365, false, caCertificate.getSubjectDN().getName());
+		final X509CertInfo certificateInfo = CertificateGeneration.createCertificateInfo(subjectDn, null, null,
+				entityPublicKey, 365, false, caCertificate.getSubjectDN().getName(), CERTIFICATE_SIGNING_ALGORITHM);
 		final X509CertImpl certificate = new X509CertImpl(certificateInfo);
 		final byte[] toBeSigned = certificate.getTBSCertificate();
-		final BigInteger toBeSignedRaw = RsaSigningClient.EMSA_PKCS1_V1_5_ENCODE(toBeSigned,
+		final BigInteger toBeSignedRaw = EMSA_PKCS1_V1_5_ENCODE(toBeSigned,
 				((RSAPublicKey) caCertificate.getPublicKey()).getModulus());
 		System.out.println("done.");
 
@@ -243,8 +223,9 @@ public class RsaCertificateAuthorityClient {
 
 		System.out.print("  Creating certificate using signature... ");
 		final byte[] signature = signatureResult.toByteArray();
-		final X509Certificate cert = RsaSigningClient.createCertificateFromTbsAndSignature(certificateInfo, signature);
-		//cert.verify(caCertificate.getPublicKey());
+		final X509Certificate cert = CertificateGeneration.createCertificateFromTbsAndSignature(certificateInfo,
+				CERTIFICATE_SIGNING_ALGORITHM, signature);
+		cert.verify(caCertificate.getPublicKey());
 		System.out.println("  done. Certificate is valid!");
 
 		// Write plaintext to output file
@@ -256,10 +237,10 @@ public class RsaCertificateAuthorityClient {
 		System.out.println("Operation complete. Certificate now ready for use.");
 	}
 
-	public static void main(final String args[])
-			throws IOException, NoSuchAlgorithmException, InvalidKeySpecException, CertificateException,
-			BadPaddingException, IllegalBlockSizeException, ClassNotFoundException, ResourceUnavailableException,
-			BelowThresholdException, InvalidKeyException, NoSuchProviderException, SignatureException, BadArgumentException {
+	public static void main(final String args[]) throws IOException, NoSuchAlgorithmException, InvalidKeySpecException,
+			CertificateException, BadPaddingException, IllegalBlockSizeException, ClassNotFoundException,
+			ResourceUnavailableException, BelowThresholdException, InvalidKeyException, NoSuchProviderException,
+			SignatureException, BadArgumentException {
 
 		// Parse arguments
 		if (args.length < 6) {
@@ -341,12 +322,12 @@ public class RsaCertificateAuthorityClient {
 
 		// Perform operation
 		if (generate) {
-			// Create encryption client
+			// Create new generation client
 			final RsaCertificateAuthorityClient signingClient = new RsaCertificateAuthorityClient(configuration,
 					caCerts, serverKeys, clientCertificate, clientPrivateKey, secretName, caFile, issuerDn);
 			signingClient.generateCaCertificate();
 		} else {
-			// Create encryption client
+			// Create new issuing client
 			final RsaCertificateAuthorityClient signingClient = new RsaCertificateAuthorityClient(configuration,
 					caCerts, serverKeys, clientCertificate, clientPrivateKey, secretName, caFile, publicKeyFile,
 					certificateOutputFile, subjectDn);
@@ -407,7 +388,7 @@ public class RsaCertificateAuthorityClient {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 
 			// Send share to the server
 			final BigInteger share = rsaSharing.getShares()[serverId - 1].getY();
@@ -417,10 +398,10 @@ public class RsaCertificateAuthorityClient {
 					+ share;
 
 			// Create new task to get the partial exponentiation result from the server
-			executor.submit(new PartialResultTask(serverId, linkUrl, successfulResults, latch, failureCounter,
+			executor.submit(new PartialResultTask(this, serverId, linkUrl, successfulResults, latch, failureCounter,
 					maximumFailures) {
 				@Override
-				void parseJsonResult(final String json) throws Exception {
+				protected void parseJsonResult(final String json) throws Exception {
 
 					// Store result for later processing
 					successfulResults.add(Boolean.TRUE);
@@ -460,10 +441,11 @@ public class RsaCertificateAuthorityClient {
 	 * @param inputPoint
 	 * @return
 	 * @throws ResourceUnavailableException
-	 * @throws BadArgumentException 
-	 * @throws BelowThresholdException 
+	 * @throws BadArgumentException
+	 * @throws BelowThresholdException
 	 */
-	private BigInteger signMessage(final BigInteger toBeSigned) throws ResourceUnavailableException, BadArgumentException, BelowThresholdException {
+	private BigInteger signMessage(final BigInteger toBeSigned)
+			throws ResourceUnavailableException, BadArgumentException, BelowThresholdException {
 
 		// Server configuration
 		final int numShareholders = this.serverConfiguration.getNumServers();
@@ -488,63 +470,65 @@ public class RsaCertificateAuthorityClient {
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
 			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
+			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/sign?secretName=" + this.secretName
 					+ "&message=" + toBeSigned.toString();
 
 			final int thisServerId = serverId;
 
 			// Create new task to get the partial exponentiation result from the server
-			executor.submit(
-					new PartialResultTask(serverId, linkUrl, signatureResponses, latch, failureCounter, maximumFailures) {
-						@Override
-						void parseJsonResult(final String json) throws Exception {
+			executor.submit(new PartialResultTask(this, serverId, linkUrl, signatureResponses, latch, failureCounter,
+					maximumFailures) {
+				@Override
+				protected void parseJsonResult(final String json) throws Exception {
 
-							// FIXME: Do majority voting of correct parameters
+					// FIXME: Do majority voting of correct parameters
 
-							// Parse JSON
-							final JSONParser parser = new JSONParser();
-							final Object obj = parser.parse(json);
-							final JSONObject jsonObject = (JSONObject) obj;
-							final Long responder = (Long) jsonObject.get("responder");
-							final long epoch = (Long) jsonObject.get("epoch");
-							final BigInteger signatureShare = new BigInteger((String) jsonObject.get("share"));
+					// Parse JSON
+					final JSONParser parser = new JSONParser();
+					final Object obj = parser.parse(json);
+					final JSONObject jsonObject = (JSONObject) obj;
+					final Long responder = (Long) jsonObject.get("responder");
+					final long epoch = (Long) jsonObject.get("epoch");
+					final BigInteger signatureShare = new BigInteger((String) jsonObject.get("share"));
 
-							final JSONArray proof = (JSONArray) jsonObject.get("share_proof");
-							final BigInteger c = new BigInteger((String) proof.get(0));
-							final BigInteger z = new BigInteger((String) proof.get(1));
+					final JSONArray proof = (JSONArray) jsonObject.get("share_proof");
+					final BigInteger c = new BigInteger((String) proof.get(0));
+					final BigInteger z = new BigInteger((String) proof.get(1));
 
-							final BigInteger e = new BigInteger((String) jsonObject.get("e"));
-							final BigInteger n = new BigInteger((String) jsonObject.get("n"));
-							final BigInteger v = new BigInteger((String) jsonObject.get("v"));
+					final BigInteger e = new BigInteger((String) jsonObject.get("e"));
+					final BigInteger n = new BigInteger((String) jsonObject.get("n"));
+					final BigInteger v = new BigInteger((String) jsonObject.get("v"));
 
-							final BigInteger[] sharePublicKeys = new BigInteger[numShareholders];
-							final JSONArray vertificationKeys = (JSONArray) jsonObject.get("verification_keys");
-							for (int i = 0; i < numShareholders; i++) {
-								sharePublicKeys[i] = new BigInteger((String) vertificationKeys.get(i));
-							}
+					final BigInteger[] sharePublicKeys = new BigInteger[numShareholders];
+					final JSONArray vertificationKeys = (JSONArray) jsonObject.get("verification_keys");
+					for (int i = 0; i < numShareholders; i++) {
+						sharePublicKeys[i] = new BigInteger((String) vertificationKeys.get(i));
+					}
 
-							// Verify result
-							// TOOD: Implement retry if epoch mismatch and below threshold
-							if ((responder == thisServerId)) {
+					// Verify result
+					// TOOD: Implement retry if epoch mismatch and below threshold
+					if ((responder == thisServerId)) {
 
-								// Add both to lists, one is private, one is public and should be agreed upon
-								final SignatureResponse signatureResponse = new SignatureResponse(BigInteger.valueOf(thisServerId), signatureShare, new SignatureShareProof(c, z));
-								final ServerPublicConfiguration publicConfiguration = new ServerPublicConfiguration(numShareholders, reconstructionThreshold, n, e, v, sharePublicKeys);
-								
-								// Store result for later processing
-								signatureResponses.add(signatureResponse);
-								publicConfigurations.add(publicConfiguration);
+						// Add both to lists, one is private, one is public and should be agreed upon
+						final SignatureResponse signatureResponse = new SignatureResponse(
+								BigInteger.valueOf(thisServerId), signatureShare, new SignatureShareProof(c, z));
+						final ServerPublicConfiguration publicConfiguration = new ServerPublicConfiguration(
+								numShareholders, reconstructionThreshold, n, e, v, sharePublicKeys);
 
-								// Everything checked out, increment successes
-								latch.countDown();
-							} else {
-								throw new Exception("Server " + thisServerId
-										+ " sent inconsistent results (likely during epoch change)");
-							}
+						// Store result for later processing
+						signatureResponses.add(signatureResponse);
+						publicConfigurations.add(publicConfiguration);
 
-						}
-					});
+						// Everything checked out, increment successes
+						latch.countDown();
+					} else {
+						throw new Exception(
+								"Server " + thisServerId + " sent inconsistent results (likely during epoch change)");
+					}
+
+				}
+			});
 		}
 
 		try {
@@ -552,17 +536,19 @@ public class RsaCertificateAuthorityClient {
 			latch.await();
 
 			// Get consistent view of public sharings
-			final ServerPublicConfiguration publicConfiguration = (ServerPublicConfiguration) getConsistentConfiguration(publicConfigurations, reconstructionThreshold);
-			
+			final ServerPublicConfiguration publicConfiguration = (ServerPublicConfiguration) getConsistentConfiguration(
+					publicConfigurations, reconstructionThreshold);
+
 			// Check that we have enough results to interpolate the share
 			if (failureCounter.get() <= maximumFailures) {
 
-				final List<SignatureResponse> results = signatureResponses.stream().map(obj -> createSignatureResult(obj))
-						.collect(Collectors.toList());
+				final List<SignatureResponse> results = signatureResponses.stream()
+						.map(obj -> createSignatureResult(obj)).collect(Collectors.toList());
 
 				// When complete, interpolate the result at zero (where the secret lies)
-				final BigInteger signature = ThresholdSignatures.recoverSignature(toBeSigned, results, publicConfiguration);
-				
+				final BigInteger signature = ThresholdSignatures.recoverSignature(toBeSigned, results,
+						publicConfiguration);
+
 				executor.shutdown();
 
 				return signature;
@@ -575,253 +561,29 @@ public class RsaCertificateAuthorityClient {
 		}
 	}
 
-	/**
-	 * Interacts with the servers to determine the public key of the secret (by
-	 * majority vote)
-	 * 
-	 * @param inputPoint
-	 * @return
-	 * @throws ResourceUnavailableException
-	 * @throws BelowThresholdException
-	 */
-	@SuppressWarnings("unchecked")
-	private SimpleEntry<EcPoint, Long> getServerPublicKey(final String secretName)
-			throws ResourceUnavailableException, BelowThresholdException {
+	/*** Static Methods ***/
 
-		// Server configuration
-		final int numShareholders = this.serverConfiguration.getNumServers();
-		final int reconstructionThreshold = this.serverConfiguration.getReconstructionThreshold();
+	private static BigInteger EMSA_PKCS1_V1_5_ENCODE(byte[] input, final BigInteger modulus)
+			throws NoSuchAlgorithmException, IOException {
 
-		// We create a thread pool with a thread for each task and remote server
-		final ExecutorService executor = Executors.newFixedThreadPool(numShareholders - 1);
+		// Digest the input
+		final MessageDigest md = MessageDigest.getInstance(HASH_ALGORITHM);
+		final byte[] digest = md.digest(input);
 
-		// The countdown latch tracks progress towards reaching a threshold
-		final CountDownLatch latch = new CountDownLatch(reconstructionThreshold);
-		final AtomicInteger failureCounter = new AtomicInteger(0);
-		final int maximumFailures = (numShareholders - reconstructionThreshold);
+		// Create a digest info consisting of the algorithm id and the hash
+		final AlgorithmIdentifier algId = new AlgorithmIdentifier(NISTObjectIdentifiers.id_sha512, DERNull.INSTANCE);
+		final DigestInfo digestInfo = new DigestInfo(algId, digest);
+		final byte[] message = digestInfo.getEncoded(ASN1Encoding.DER);
 
-		// Each task deposits its result into this map after verifying it is correct and
-		// consistent
-		// TODO: Add verification via proofs
-		final List<Object> collectedResults = Collections.synchronizedList(new ArrayList<>());
-
-		// Create a partial result task for everyone except ourselves
-		int serverId = 0;
-		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
-			serverId++;
-			final String serverIp = serverAddress.getAddress().getHostAddress();
-			final int serverPort = HttpRequestProcessor.BASE_HTTP_PORT + serverId;
-			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/info?secretName=" + this.secretName
-					+ "&json=true";
-
-			final int thisServerId = serverId;
-
-			// Create new task to get the secret info from the server
-			executor.submit(
-					new PartialResultTask(serverId, linkUrl, collectedResults, latch, failureCounter, maximumFailures) {
-						@Override
-						void parseJsonResult(final String json) throws Exception {
-
-							// Parse JSON
-							final JSONParser parser = new JSONParser();
-							final Object obj = parser.parse(json);
-							final JSONObject jsonObject = (JSONObject) obj;
-							final Long responder = (Long) jsonObject.get("responder");
-							final long epoch = (Long) jsonObject.get("epoch");
-							final JSONArray resultPoint = (JSONArray) jsonObject.get("public_key");
-							final BigInteger x = new BigInteger((String) resultPoint.get(0));
-							final BigInteger y = new BigInteger((String) resultPoint.get(1));
-
-							// Store parsed result
-							if ((responder == thisServerId)) {
-
-								final EcPoint publicKey = new EcPoint(x, y);
-
-								// Store result for later processing
-								collectedResults.add(new SimpleEntry<EcPoint, Long>(publicKey, epoch));
-
-								// Everything checked out, increment successes
-								latch.countDown();
-							} else {
-								throw new Exception("Server " + thisServerId + " sent inconsistent results");
-							}
-
-						}
-					});
+		// Do PKCS1 padding
+		final byte[] block = new byte[((modulus.bitLength() + 7) / 8) - 1];
+		System.arraycopy(message, 0, block, block.length - message.length, message.length);
+		block[0] = 0x01; // type code 1
+		for (int i = 1; i != block.length - message.length - 1; i++) {
+			block[i] = (byte) 0xFF;
 		}
 
-		try {
-			// Once we have K successful responses we can interpolate our share
-			latch.await();
-
-			// Check that we have enough results to interpolate the share
-			if (failureCounter.get() <= maximumFailures) {
-
-				executor.shutdown();
-
-				return (SimpleEntry<EcPoint, Long>) getConsistentConfiguration(collectedResults,
-						reconstructionThreshold);
-			} else {
-				executor.shutdown();
-				throw new ResourceUnavailableException();
-			}
-		} catch (InterruptedException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static Object getConsistentConfiguration(final Collection<Object> configurationData, int threshold)
-			throws BelowThresholdException {
-
-		// Count up the number of consistencies among the configurations
-		final Map<Object, Integer> voteTracker = new HashMap<>();
-		for (final Object object : configurationData) {
-			if (!voteTracker.containsKey(object)) {
-				voteTracker.put(object, 1);
-			} else {
-				Integer currentCount = voteTracker.get(object);
-				voteTracker.put(object, new Integer(currentCount + 1));
-			}
-		}
-
-		// Determine which view is the most consistent
-		Object mostCommonConfig = null;
-		int maxConsistencies = 0;
-		for (Entry<Object, Integer> entry : voteTracker.entrySet()) {
-			if (entry.getValue() > maxConsistencies) {
-				maxConsistencies = entry.getValue();
-				mostCommonConfig = entry.getKey();
-			}
-		}
-
-		// Ensure there is at least a threshold agreement
-		if (maxConsistencies < threshold) {
-			System.out.println();
-			for (Object o : configurationData) {
-				System.out.println(" --- " + o);
-			}
-			throw new BelowThresholdException("Insufficient consistency to permit recovery (below threshold)");
-		}
-
-		return mostCommonConfig;
-	}
-
-	public abstract class PartialResultTask implements Runnable {
-
-		// Remote server info
-		private final int remoteServerId;
-		private final String requestUrl;
-
-		// State management
-		private final CountDownLatch latch;
-		private final AtomicInteger failureCounter;
-		private final int maximumFailures;
-
-		public PartialResultTask(final int remoteServerId, final String requestUrl, final List<Object> verifiedResults,
-				final CountDownLatch latch, final AtomicInteger failureCounter, final int maximumFailures) {
-
-			// Remote server info
-			this.remoteServerId = remoteServerId;
-			this.requestUrl = requestUrl;
-
-			// State management
-			this.latch = latch;
-			this.failureCounter = failureCounter;
-			this.maximumFailures = maximumFailures;
-		}
-
-		@Override
-		public void run() {
-
-			try {
-				// Create HTTPS connection to the remote server
-				final URL url = new URL(this.requestUrl);
-				final HttpsURLConnection httpsConnection = (HttpsURLConnection) url.openConnection();
-				configureHttps(httpsConnection, remoteServerId);
-
-				// Configure timeouts and method
-				httpsConnection.setRequestMethod("GET");
-				httpsConnection.setConnectTimeout(10_000);
-				httpsConnection.setReadTimeout(10_000);
-
-				httpsConnection.connect();
-
-				// Read data from it
-				try (final InputStream inputStream = httpsConnection.getInputStream();
-						final InputStreamReader inputStreamReader = new InputStreamReader(inputStream);
-						final BufferedReader bufferedReader = new BufferedReader(inputStreamReader);) {
-
-					// Verify server identity is what we expect
-					final Certificate[] certs = httpsConnection.getServerCertificates();
-					final X509Certificate peerCertificate = (X509Certificate) certs[0];
-					final PublicKey peerPublicKey = peerCertificate.getPublicKey();
-
-					// Attempt to link the public key in the certificate to a known entity's key
-					final Integer serverId = RsaCertificateAuthorityClient.this.serverKeys
-							.getEntityIndex(peerPublicKey);
-					if (serverId != remoteServerId) {
-						System.err.println("Invalid server!!!: was " + serverId + ", expected: " + remoteServerId);
-						throw new CertificateException("Invalid peer certificate");
-					}
-
-					final String inputLine = bufferedReader.readLine();
-					// System.out.println("Received encrypted partial: " + inputLine);
-
-					// Parse and process
-					this.parseJsonResult(inputLine);
-
-				}
-
-			} catch (Exception e) {
-				// Increment failure counter
-				final int numFailures = this.failureCounter.incrementAndGet();
-				// Check if there have been too many failures to succeed
-				if (numFailures == (maximumFailures + 1)) { // n - k + 1
-					while (latch.getCount() > 0) {
-						latch.countDown();
-					}
-				}
-				System.err.println(e.getMessage());
-			}
-		}
-
-		abstract void parseJsonResult(String json) throws Exception;
-	}
-
-	private void configureHttps(final HttpsURLConnection httpsConnection, final int remoteServerId)
-			throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException,
-			UnrecoverableKeyException, KeyManagementException {
-
-		// Configure SSL context
-		final SSLContext sslContext = SSLContext.getInstance(HttpRequestProcessor.TLS_VERSION);
-
-		// Create in-memory key store
-		final KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
-		final char[] password = "password".toCharArray();
-		keyStore.load(null, password);
-
-		// Add the CA certificate for the server
-		keyStore.setCertificateEntry("ca-" + remoteServerId, this.caCertificates.get(remoteServerId - 1));
-
-		// Add certificate and private key for the server
-		// Note: Client CA cert is last after all the servers
-		final X509Certificate ourCaCert = this.caCertificates.get(this.serverConfiguration.getNumServers());
-		keyStore.setKeyEntry("host", this.clientTlsKey, password,
-				new X509Certificate[] { clientCertificate, ourCaCert });
-
-		// Make Key Manager Factory
-		final KeyManagerFactory kmf = KeyManagerFactory.getInstance("SunX509");
-		kmf.init(keyStore, password);
-
-		// Setup the trust manager factory
-		final TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-		tmf.init(keyStore);
-
-		// Initialize the context
-		sslContext.init(kmf.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-		// Get the socket factory from the context
-		httpsConnection.setSSLSocketFactory(sslContext.getSocketFactory());
+		return new BigInteger(1, block);
 	}
 
 }

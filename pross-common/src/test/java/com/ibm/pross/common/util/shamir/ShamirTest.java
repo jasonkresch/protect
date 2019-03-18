@@ -20,8 +20,8 @@ import java.util.Set;
 import org.junit.Assert;
 import org.junit.Test;
 
-import com.ibm.pross.common.CommonConfiguration;
 import com.ibm.pross.common.DerivationResult;
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;

@@ -1,4 +1,4 @@
-package bftsmart.reconfiguration.util.sharedconfig;
+package com.ibm.pross.common.config;
 
 import java.io.File;
 import java.io.FileNotFoundException;
