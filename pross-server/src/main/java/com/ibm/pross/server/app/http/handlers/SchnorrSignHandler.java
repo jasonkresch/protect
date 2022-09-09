@@ -6,7 +6,6 @@ import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.SortedMap;
@@ -15,9 +14,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.codec.Charsets;
-import org.bouncycastle.math.field.Polynomial;
-import org.json.simple.JSONArray;
+import org.apache.commons.codec.DecoderException;
 import org.json.simple.JSONObject;
 
 import com.ibm.pross.common.config.CommonConfiguration;
@@ -27,14 +24,9 @@ import com.ibm.pross.common.exceptions.http.HttpStatusCode;
 import com.ibm.pross.common.exceptions.http.NotFoundException;
 import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
 import com.ibm.pross.common.exceptions.http.UnauthorizedException;
-import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.RsaShareConfiguration;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.crypto.schnorr.NonceCommitment;
+import com.ibm.pross.common.util.serialization.HexUtil;
 import com.ibm.pross.common.util.serialization.Parse;
 import com.ibm.pross.common.util.shamir.Polynomials;
 import com.ibm.pross.common.util.shamir.ShamirShare;
@@ -122,7 +114,13 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 		if (message == null) {
 			throw new BadRequestException();
 		}
-		final byte[] messageBytes = message.getBytes(Charsets.UTF_8);
+		byte[] messageBytes;
+		try {
+			messageBytes = HexUtil.hexToBin(message);
+		} catch (DecoderException e) {
+			throw new BadRequestException();
+		}
+
 
 		// Obtain the commitments (B)
 		final SortedMap<BigInteger, EcPoint> eCommitments = new TreeMap<>();
@@ -150,7 +148,7 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			}
 		}
 
-		if (!eCommitments.containsKey(shareholder.getIndex())) {
+		if (!eCommitments.containsKey(BigInteger.valueOf(shareholder.getIndex()))) {
 			// We were given a request for a signing operation we are not part of
 			throw new BadRequestException();
 		}
@@ -203,17 +201,11 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			final SortedMap<BigInteger, EcPoint> dCommitments, final byte[] messageBytes,
 			final NonceCommitment ourCommitment) throws NotFoundException, IOException {
 
-		// Our share of the private key
-		final int myIndex = shareholder.getIndex();
-		final ShamirShare myShare = shareholder.getShare1();
-		final EcPoint mySharePublicKey = shareholder.getSharePublicKey();
-		final EcPoint secretPublicKey = shareholder.getSecretPublicKey();
-
 		final BigInteger modulus =  CommonConfiguration.CURVE.getR();
 		
 		// Our nonce values
-		final BigInteger myE = ourCommitment.getE();
-		final BigInteger myD = ourCommitment.getD();
+		final BigInteger ei = ourCommitment.getE();
+		final BigInteger di = ourCommitment.getD();
 
 		MessageDigest md;
 		try {
@@ -222,22 +214,27 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			throw new IOException();
 		}
 		
-		if ((shareholder.getSecretPublicKey() == null) || (myShare == null)) {
+		if ((shareholder.getSecretPublicKey() == null) || (shareholder.getShare1() == null)) {
 			throw new NotFoundException();
 		} else {
 			// Do FROST-based threshold Schnorr Signature calculation (
 			// https://eprint.iacr.org/2020/852.pdf )
+			
+			// Our share of the private key
+			final int myIndex = shareholder.getIndex();
+			final BigInteger si = shareholder.getShare1().getY();
+			final EcPoint secretPublicKey = shareholder.getSecretPublicKey();
 
 			// Serialize the commitments (B)
 			byte[] combinedString = messageBytes.clone();
-			for (BigInteger index : eCommitments.keySet()) {
+			for (final BigInteger index : eCommitments.keySet()) {
 				byte[] tuple = Parse.concatenate(index, eCommitments.get(index).getX(), eCommitments.get(index).getY(), dCommitments.get(index).getX(), dCommitments.get(index).getY());
 				combinedString = Parse.concatenate(combinedString, tuple);
 			}
 			
 			// Compute R from multiplying each Ri
 			EcPoint R = EcPoint.pointAtInfinity;
-			for (BigInteger index : eCommitments.keySet()) {
+			for (final BigInteger index : eCommitments.keySet()) {
 				
 				final EcPoint Di = new EcPoint(dCommitments.get(index).getX(), dCommitments.get(index).getY());
 				
@@ -254,15 +251,16 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			
 			
 			// Compute challenge c = H(R, Y, m)
-			byte[] challenge = Parse.concatenate(Parse.concatenate(R, secretPublicKey), messageBytes);
+			byte[] challenge = Parse.concatenate(Parse.concatenate(R), Parse.concatenate(secretPublicKey), messageBytes);
 			final BigInteger c = new BigInteger(1, md.digest(challenge));
 			
 			// Compute our share of the signature zi = di + ei*pi + Li
-			final BigInteger myPi = new BigInteger(1, md.digest(Parse.concatenate(BigInteger.valueOf(myIndex).toByteArray(), combinedString))).mod(modulus);
+			final BigInteger pi = new BigInteger(1, md.digest(Parse.concatenate(BigInteger.valueOf(myIndex).toByteArray(), combinedString))).mod(modulus);
+
+			final BigInteger coefficient = Polynomials.computeLagrange(eCommitments.keySet().toArray(new BigInteger[eCommitments.size()]), BigInteger.valueOf(myIndex), modulus);
 			
-			final BigInteger lagrangeCoefficient = Polynomials.interpolatePartial(eCommitments.keySet().toArray(new BigInteger[eCommitments.size()]), BigInteger.valueOf(myIndex), BigInteger.ZERO, modulus);
-			
-			final BigInteger zi = myD.add(myE.multiply(myPi)).add(lagrangeCoefficient.multiply(myShare.getY().multiply(c))).mod(modulus);
+			final BigInteger zi = ((di.add(ei.multiply(pi))).add(coefficient.multiply(si).multiply(c))).mod(modulus);
+	
 			
 			return zi;
 		}

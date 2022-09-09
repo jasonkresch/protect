@@ -81,6 +81,41 @@ public class Polynomials {
 		final BigInteger invDenominator = denominator.modInverse(modulo);
 		return numerator.multiply(invDenominator).mod(modulo);
 	}
+	
+	
+	/**
+	 * Comepute a specific Lagrange coefficient
+	 * 
+	 * @param points The x-coordinates of the values being used in this
+	 *               interpolation
+	 * @param i      The x-coordinate which we are considering solving for
+	 * @param j      The given x-coordinate we have and are considering using to
+	 *               solve for
+	 * @param m
+	 * @return Lambda_ij which when multiplied by the y-coordinate at j, will be a
+	 *         "partial" slice, which can be summed with others to yield F(i)
+	 * @throws BadArgumentException
+	 * @throws Exception            When the numerator is not evenly divisible by
+	 *                              the denominator
+	 */
+	public static BigInteger computeLagrange(final BigInteger[] xCoords, final BigInteger i,
+			final BigInteger modulo) {
+		BigInteger numerator = BigInteger.ONE;
+		BigInteger denominator = BigInteger.ONE;
+
+		for (int k = 0; k < xCoords.length; k++) {
+			BigInteger j = xCoords[k];
+			if (!j.equals(i)) {
+				numerator = numerator.multiply(j).mod(modulo);
+				denominator = denominator.multiply(j.subtract(i)).mod(modulo);
+			}
+		}
+
+		final BigInteger invDenominator = denominator.modInverse(modulo);
+		return numerator.multiply(invDenominator).mod(modulo);
+	}
+	
+	
 
 	public static BigInteger interpolateComplete(final Collection<ShamirShare> shares, final int threshold,
 			final int x) {
