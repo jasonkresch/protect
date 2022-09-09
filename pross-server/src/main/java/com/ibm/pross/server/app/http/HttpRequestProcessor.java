@@ -17,6 +17,8 @@ import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.net.ssl.KeyManagerFactory;
@@ -27,6 +29,7 @@ import javax.net.ssl.TrustManagerFactory;
 import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.common.config.ServerConfiguration;
+import com.ibm.pross.common.util.crypto.schnorr.NonceCommitment;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.http.handlers.DeleteHandler;
 import com.ibm.pross.server.app.http.handlers.DisableHandler;
@@ -39,7 +42,9 @@ import com.ibm.pross.server.app.http.handlers.PartialHandler;
 import com.ibm.pross.server.app.http.handlers.ReadHandler;
 import com.ibm.pross.server.app.http.handlers.RecoverHandler;
 import com.ibm.pross.server.app.http.handlers.RootHandler;
-import com.ibm.pross.server.app.http.handlers.SignHandler;
+import com.ibm.pross.server.app.http.handlers.RsaSignHandler;
+import com.ibm.pross.server.app.http.handlers.SchnorrNonceHandler;
+import com.ibm.pross.server.app.http.handlers.SchnorrSignHandler;
 import com.ibm.pross.server.app.http.handlers.StoreHandler;
 import com.ibm.pross.server.configuration.permissions.AccessEnforcement;
 import com.sun.net.httpserver.HttpsConfigurator;
@@ -103,7 +108,12 @@ public class HttpRequestProcessor {
 
 		// Handlers for using the shares to perform functions
 		this.server.createContext("/exponentiate", new ExponentiateHandler(clientKeys, accessEnforcement, shareholders));
-		this.server.createContext("/sign", new SignHandler(clientKeys, accessEnforcement, shareholders));
+		this.server.createContext("/sign", new RsaSignHandler(clientKeys, accessEnforcement, shareholders));
+		
+		// Handlers for Schnorr threshold signatures
+		final ConcurrentHashMap<UUID, NonceCommitment> nonceCommitments = new ConcurrentHashMap<>();
+		this.server.createContext("/schnorr-nonce", new SchnorrNonceHandler(clientKeys, accessEnforcement, shareholders, nonceCommitments));
+		this.server.createContext("/schnorr-sign", new SchnorrSignHandler(clientKeys, accessEnforcement, shareholders, nonceCommitments));
 
 		// Define server to server requests
 		this.server.createContext("/partial", new PartialHandler(serverKeys, shareholders));

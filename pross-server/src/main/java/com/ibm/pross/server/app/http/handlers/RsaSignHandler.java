@@ -37,7 +37,7 @@ import com.sun.net.httpserver.HttpExchange;
  * is returned.
  */
 @SuppressWarnings("restriction")
-public class SignHandler extends AuthenticatedClientRequestHandler {
+public class RsaSignHandler extends AuthenticatedClientRequestHandler {
 
 	public static final Permissions REQUEST_PERMISSION = Permissions.SIGN;
 
@@ -49,7 +49,7 @@ public class SignHandler extends AuthenticatedClientRequestHandler {
 	private final AccessEnforcement accessEnforcement;
 	private final ConcurrentMap<String, ApvssShareholder> shareholders;
 
-	public SignHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement,
+	public RsaSignHandler(final KeyLoader clientKeys, final AccessEnforcement accessEnforcement,
 			final ConcurrentMap<String, ApvssShareholder> shareholders) {
 		super(clientKeys);
 		this.shareholders = shareholders;
