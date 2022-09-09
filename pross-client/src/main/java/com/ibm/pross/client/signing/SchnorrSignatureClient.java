@@ -16,6 +16,10 @@ import java.util.AbstractMap.SimpleEntry;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map.Entry;
+import java.util.SortedMap;
+import java.util.SortedSet;
+import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
@@ -27,7 +31,6 @@ import java.util.stream.Collectors;
 import javax.crypto.BadPaddingException;
 import javax.crypto.IllegalBlockSizeException;
 
-import org.bouncycastle.util.encoders.Hex;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -39,12 +42,16 @@ import com.ibm.pross.common.config.KeyLoader;
 import com.ibm.pross.common.config.ServerConfiguration;
 import com.ibm.pross.common.config.ServerConfigurationLoader;
 import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
+import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.rsa.threshold.sign.exceptions.BelowThresholdException;
+import com.ibm.pross.common.util.crypto.schnorr.NonceCommitment;
 import com.ibm.pross.common.util.crypto.schnorr.SchnorrSignatures;
+import com.ibm.pross.common.util.crypto.schnorr.SchnorrUtil;
 import com.ibm.pross.common.util.serialization.HexUtil;
 import com.ibm.pross.common.util.serialization.Parse;
 import com.ibm.pross.common.util.serialization.Pem;
+import com.ibm.pross.common.util.shamir.Polynomials;
 
 /**
  * Performs FROST style ( https://eprint.iacr.org/2020/852.pdf ) distributed
@@ -97,8 +104,9 @@ public class SchnorrSignatureClient extends BaseClient {
 		// Perform distributed Schnorr signature calculation
 		System.out.print("Performing threshold Schnorr signature calculation using: " + this.secretName + "... ");
 		final byte[] fileDigest = MessageDigest.getInstance("SHA-512").digest(messageBytes);
+		// final byte[] signatureBytes = localSign(fileDigest);
 		final byte[] signatureBytes = this.computeSignature(fileDigest, currentEpoch,
-				shareVerificationKeysAndEpoch.getKey());
+				shareVerificationKeysAndEpoch.getKey(), publicKey);
 		System.out.println(" (done)");
 		System.out.println("Signature obtained:    " + HexUtil.binToHex(signatureBytes));
 		System.out.println();
@@ -152,7 +160,8 @@ public class SchnorrSignatureClient extends BaseClient {
 
 		try {
 			final byte[] fileDigest = MessageDigest.getInstance("SHA-512").digest(message);
-			SchnorrSignatures.verifySchnorrSignature2(CommonConfiguration.CURVE, MessageDigest.getInstance("SHA-512"),
+			// localVerify(fileDigest, signatureBytes);
+			SchnorrSignatures.verify(CommonConfiguration.CURVE, MessageDigest.getInstance("SHA-512"),
 					publicKey, fileDigest, signatureBytes);
 			System.out.println(" (done)");
 			System.out.println("Signature is VALID.");
@@ -227,83 +236,89 @@ public class SchnorrSignatureClient extends BaseClient {
 		}
 	}
 
-	private static CommitmentResponse createCommitmentResponse(Object obj) {
-		return (CommitmentResponse) obj;
-	}
-
 	/**
 	 * Interacts with the servers to to compute a signature for a given message
 	 * 
 	 * @param messageBytes
+	 * @param publicKey
 	 * @return
 	 * @throws ResourceUnavailableException
 	 */
 	private byte[] computeSignature(byte[] messageBytes, final long expectedEpoch,
-			final List<EcPoint> shareVerificationKeys) throws ResourceUnavailableException {
+			final List<EcPoint> shareVerificationKeys, final EcPoint publicKey) throws ResourceUnavailableException {
 
+		// Choose a UUID for this signature calculation to reference between the two
+		// phases of the protocol
 		final UUID nonceCacheId = UUID.randomUUID();
 
-		final List<CommitmentResponse> commitments = collectCommitments(expectedEpoch, nonceCacheId);
-		TreeSet<CommitmentResponse> sortedCommitments = new TreeSet<>(commitments);
+		// Phase 1: Collect the commitments from the servers
+		final List<NonceCommitment> commitmentList = collectCommitments(expectedEpoch, nonceCacheId);
+		final SortedMap<BigInteger, NonceCommitment> nonceCommitmentMap = SchnorrUtil
+				.mapNonceCommitments(commitmentList);
 
-		System.out.println("Received " + commitments.size() + " commitments from the servers. Proceeding to phase 2...");
-		
-		final List<SignatureResponse> signatureContributions = collectSignatureContributions(messageBytes, expectedEpoch,
-				nonceCacheId, commitments);
+		// System.out.println(sortedCommitments.toString());
 
-		System.out.println("Received " + signatureContributions.size() + " signature contributions from the servers. Generating signature...");
-		
-		// TODO: Verify each result according to its share public key
+		// Phase 2: Send the collected commitments to each server to obtain its share of
+		// the signature
+		System.out.println(
+				"Received " + nonceCommitmentMap.size() + " commitments from the servers. Proceeding to phase 2...");
 
-		// Compute R from the known commitment values and the message
-		final BigInteger modulus =  CommonConfiguration.CURVE.getR();
-		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-512");
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
+		final List<SignatureResponse> signatureContributionsList = collectSignatureContributions(messageBytes,
+				expectedEpoch, nonceCacheId, nonceCommitmentMap);
+		final TreeSet<SignatureResponse> sortedContributions = new TreeSet<>(signatureContributionsList);
+
+		System.out.println("Received " + sortedContributions.size()
+				+ " signature contributions from the servers. Generating signature...");
+
+		// Begin signature reconstruction
+
+		// Determin set of participants
+		final BigInteger[] participantIndices = SchnorrUtil.getParticipantIndices(nonceCommitmentMap);
+
+		// Create M || B
+		byte[] stringB = SchnorrUtil.serializeNonceCommitments(nonceCommitmentMap);
+		byte[] combinedString = Parse.concatenate(messageBytes, stringB);
+
+		// System.out.println("combined: " + HexUtil.binToHex(combinedString));
+
+		// Compute R_i sub values
+		final SortedMap<BigInteger, EcPoint> Ris = SchnorrUtil.comptuteRValues(nonceCommitmentMap, combinedString);
+
+		// Compute combined R
+		final EcPoint R = SchnorrUtil.sumEcPoints(Ris.values());
+
+		// System.out.println("R: " + R.toString());
+
+		// Compute challenge c = H(R, Y, m)
+		final BigInteger challenge = SchnorrUtil.computeChallenge(R, publicKey, messageBytes);
+
+		System.out.println("c: " + challenge.toString());
+
+		// Verify all the share contributions
+		for (SignatureResponse signatureResponse : sortedContributions) {
+			final BigInteger participantIndex = BigInteger.valueOf(signatureResponse.getResponderIndex());
+			final BigInteger signatureShare = signatureResponse.getSignatureContribution();
+			final EcPoint shareholderPublicKey = shareVerificationKeys.get(participantIndex.intValue());
+			final EcPoint Ri = Ris.get(participantIndex);
+
+			try {
+				SchnorrUtil.verifySignatureShare(participantIndex, participantIndices, shareholderPublicKey,
+						signatureShare, challenge, Ri);
+			} catch (SignatureException e) {
+				System.err.println("Server at index " + participantIndex.toString()
+						+ " provided an invalid contribution. Aborting signature attempt. Please notify the administrator.");
+				System.exit(1);
+				// TODO: Rerun protocol while excluding the server at this index.
+			}
 		}
-		
-		// Serialize the commitments (B)
-		byte[] combinedString = messageBytes.clone();
-		for (final CommitmentResponse commitment : sortedCommitments) {
-			byte[] tuple = Parse.concatenate(BigInteger.valueOf(commitment.getResponderIndex()),commitment.eCommitment.getX(), commitment.geteCommitment().getY(), commitment.getdCommitment().getX(), commitment.getdCommitment().getY());
-			combinedString = Parse.concatenate(combinedString, tuple);
-		}
-		
-		
-		EcPoint R = EcPoint.pointAtInfinity;
-		for (final CommitmentResponse commitment : sortedCommitments) {
-			
-			final EcPoint Di = commitment.getdCommitment();
-			
-			final EcPoint Ei = commitment.geteCommitment();
-			final BigInteger Pi = new BigInteger(1, md.digest(Parse.concatenate(BigInteger.valueOf(commitment.getResponderIndex()).toByteArray(), combinedString))).mod(modulus);
-			
-			final EcPoint EiPi = CommonConfiguration.CURVE.multiply(Ei, Pi);
-			
-			final EcPoint Ri = CommonConfiguration.CURVE.addPoints(Di, EiPi);
-			
-			// Sum up the Ris
-			R = CommonConfiguration.CURVE.addPoints(R, Ri);
-		}
-		
+
 		// Interpolate/combine results to produce signature
 		BigInteger combinedSignature = BigInteger.ZERO;
-		for (SignatureResponse response : signatureContributions) {
-			combinedSignature = combinedSignature.add(response.getSignatureContribution()); 
+		for (final SignatureResponse response : sortedContributions) {
+			combinedSignature = combinedSignature.add(response.getSignatureContribution()).mod(SchnorrUtil.MOD);
 		}
 
-		// Now that we have collected commitments, we can proceed to the signature
-		// calculation
-		///
-
-		// When complete, interpolate the result at zero (where the secret lies)
-		// final EcPoint interpolatedResult = Polynomials.interpolateExponents(results,
-		// reconstructionThreshold,
-		// 0);
-
-		return Parse.concatenate(Parse.concatenate(R), Parse.concatenate(combinedSignature));
+		return SchnorrUtil.composeSignature(R, combinedSignature);
 	}
 
 	/**
@@ -314,7 +329,7 @@ public class SchnorrSignatureClient extends BaseClient {
 	 * @return
 	 * @throws ResourceUnavailableException
 	 */
-	private List<CommitmentResponse> collectCommitments(final long expectedEpoch, final UUID nonceCacheId)
+	private List<NonceCommitment> collectCommitments(final long expectedEpoch, final UUID nonceCacheId)
 			throws ResourceUnavailableException {
 
 		// Server configuration
@@ -376,7 +391,7 @@ public class SchnorrSignatureClient extends BaseClient {
 						final EcPoint eCommitmentPoint = new EcPoint(ex, ey);
 
 						// Store result for later processing
-						verifiedResults.add(new CommitmentResponse(responder, dCommitmentPoint, eCommitmentPoint));
+						verifiedResults.add(new NonceCommitment(thisServerId, dCommitmentPoint, eCommitmentPoint));
 
 						// Everything checked out, increment successes
 						latch.countDown();
@@ -396,7 +411,7 @@ public class SchnorrSignatureClient extends BaseClient {
 			// Check that we have enough results to interpolate the share
 			if (failureCounter.get() <= maximumFailures) {
 
-				List<CommitmentResponse> results = verifiedResults.stream().map(obj -> createCommitmentResponse(obj))
+				List<NonceCommitment> results = verifiedResults.stream().map(obj -> createNonceCommitment(obj))
 						.collect(Collectors.toList());
 
 				return results;
@@ -414,6 +429,10 @@ public class SchnorrSignatureClient extends BaseClient {
 		return (SignatureResponse) obj;
 	}
 
+	private static NonceCommitment createNonceCommitment(Object obj) {
+		return (NonceCommitment) obj;
+	}
+
 	/**
 	 * Interacts with the servers to collect signature contributions and derive
 	 * signature (second round of signature calculation)
@@ -423,15 +442,15 @@ public class SchnorrSignatureClient extends BaseClient {
 	 * @return
 	 * @throws ResourceUnavailableException
 	 */
-	private List<SignatureResponse> collectSignatureContributions(byte[] messageBytes, final long expectedEpoch,
-			final UUID nonceCacheId, final List<CommitmentResponse> commitments) throws ResourceUnavailableException {
-
+	private List<SignatureResponse> collectSignatureContributions(final byte[] messageBytes, final long expectedEpoch,
+			final UUID nonceCacheId, final SortedMap<BigInteger, NonceCommitment> commitmentMap)
+			throws ResourceUnavailableException {
 
 		// We create a thread pool with a thread for each task and remote server
-		final ExecutorService executor = Executors.newFixedThreadPool(commitments.size());
+		final ExecutorService executor = Executors.newFixedThreadPool(commitmentMap.size());
 
 		// The countdown latch tracks progress towards reaching a threshold
-		final CountDownLatch latch = new CountDownLatch(commitments.size());
+		final CountDownLatch latch = new CountDownLatch(commitmentMap.size());
 		final AtomicInteger failureCounter = new AtomicInteger(0);
 		final int maximumFailures = 0;
 
@@ -443,21 +462,26 @@ public class SchnorrSignatureClient extends BaseClient {
 		int serverId = 0;
 		for (final InetSocketAddress serverAddress : this.serverConfiguration.getServerAddresses()) {
 			serverId++;
-			
-			if (!found(commitments, serverId)) { 
+
+			if (!commitmentMap.containsKey(BigInteger.valueOf(serverId))) {
 				continue;
 			}
-			
+
 			final String serverIp = serverAddress.getAddress().getHostAddress();
 			final int serverPort = CommonConfiguration.BASE_HTTP_PORT + serverId;
 
 			// Compose parameter string of all commitments
 			final StringBuffer commitmentParams = new StringBuffer();
-			for (final CommitmentResponse response : commitments) {
-				commitmentParams.append("&ex_" + response.getResponderIndex() + "=" + response.geteCommitment().getX());
-				commitmentParams.append("&ey_" + response.getResponderIndex() + "=" + response.geteCommitment().getY());
-				commitmentParams.append("&dx_" + response.getResponderIndex() + "=" + response.getdCommitment().getX());
-				commitmentParams.append("&dy_" + response.getResponderIndex() + "=" + response.getdCommitment().getY());
+			for (final Entry<BigInteger, NonceCommitment> entry : commitmentMap.entrySet()) {
+				final NonceCommitment response = entry.getValue();
+				commitmentParams
+						.append("&dx_" + response.getParticipantIndex() + "=" + response.getCommitmentD().getX());
+				commitmentParams
+						.append("&dy_" + response.getParticipantIndex() + "=" + response.getCommitmentD().getY());
+				commitmentParams
+						.append("&ex_" + response.getParticipantIndex() + "=" + response.getCommitmentE().getX());
+				commitmentParams
+						.append("&ey_" + response.getParticipantIndex() + "=" + response.getCommitmentE().getY());
 			}
 
 			final String linkUrl = "https://" + serverIp + ":" + serverPort + "/schnorr-sign?secretName="
@@ -523,81 +547,7 @@ public class SchnorrSignatureClient extends BaseClient {
 
 	}
 
-	private boolean found(List<CommitmentResponse> commitments, int serverId) {
-		for (CommitmentResponse response : commitments)
-		{
-			if (response.getResponderIndex() == serverId)
-				return true;
-		}
-		return false;
-	}
-
-	public static final class CommitmentResponse implements Comparable<CommitmentResponse> {
-		private final long responderIndex;
-		private final EcPoint dCommitment;
-		private final EcPoint eCommitment;
-
-		public CommitmentResponse(long responderIndex, EcPoint dCommitment, EcPoint eCommitment) {
-			super();
-			this.responderIndex = responderIndex;
-			this.dCommitment = dCommitment;
-			this.eCommitment = eCommitment;
-		}
-
-		public long getResponderIndex() {
-			return responderIndex;
-		}
-
-		public EcPoint getdCommitment() {
-			return dCommitment;
-		}
-
-		public EcPoint geteCommitment() {
-			return eCommitment;
-		}
-
-		@Override
-		public int hashCode() {
-			final int prime = 31;
-			int result = 1;
-			result = prime * result + ((dCommitment == null) ? 0 : dCommitment.hashCode());
-			result = prime * result + ((eCommitment == null) ? 0 : eCommitment.hashCode());
-			result = prime * result + (int) (responderIndex ^ (responderIndex >>> 32));
-			return result;
-		}
-
-		@Override
-		public boolean equals(Object obj) {
-			if (this == obj)
-				return true;
-			if (obj == null)
-				return false;
-			if (getClass() != obj.getClass())
-				return false;
-			CommitmentResponse other = (CommitmentResponse) obj;
-			if (dCommitment == null) {
-				if (other.dCommitment != null)
-					return false;
-			} else if (!dCommitment.equals(other.dCommitment))
-				return false;
-			if (eCommitment == null) {
-				if (other.eCommitment != null)
-					return false;
-			} else if (!eCommitment.equals(other.eCommitment))
-				return false;
-			if (responderIndex != other.responderIndex)
-				return false;
-			return true;
-		}
-
-		@Override
-		public int compareTo(CommitmentResponse arg0) {
-			return Long.compare(this.responderIndex, arg0.responderIndex);
-		}
-
-	}
-
-	public static final class SignatureResponse {
+	public static final class SignatureResponse implements Comparable<SignatureResponse> {
 		private final long responderIndex;
 		private final BigInteger signatureContribution;
 
@@ -643,5 +593,57 @@ public class SchnorrSignatureClient extends BaseClient {
 			return true;
 		}
 
+		@Override
+		public int compareTo(SignatureResponse other) {
+			return Long.valueOf(this.responderIndex).compareTo(Long.valueOf(other.responderIndex));
+		}
+
 	}
+
+	@Deprecated
+	public static byte[] localSign(byte[] message) {
+		// Static fields
+		final EcCurve curve = CommonConfiguration.CURVE;
+		final EcPoint generator = curve.getG();
+		final BigInteger fieldModulus = curve.getR();
+
+		// Constant key
+		final BigInteger privateSigningKey = BigInteger.TEN.mod(fieldModulus);
+		final EcPoint publicVerificationKey = curve.multiply(generator, privateSigningKey);
+
+		try {
+			final MessageDigest md = MessageDigest.getInstance("SHA-512");
+
+			byte[] signature = SchnorrSignatures.sign(curve, md, privateSigningKey, publicVerificationKey, message);
+
+			return signature;
+
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
+	@Deprecated
+	public static void localVerify(byte[] message, byte[] signature) throws SignatureException {
+		// Static fields
+		final EcCurve curve = CommonConfiguration.CURVE;
+		final EcPoint generator = curve.getG();
+		final BigInteger fieldModulus = curve.getR();
+
+		// Constant key
+		final BigInteger privateSigningKey = BigInteger.TEN.mod(fieldModulus);
+		final EcPoint publicVerificationKey = curve.multiply(generator, privateSigningKey);
+
+		try {
+			final MessageDigest md = MessageDigest.getInstance("SHA-512");
+
+			SchnorrSignatures.verify(curve, md, publicVerificationKey, message, signature);
+
+		} catch (NoSuchAlgorithmException e) {
+			throw new RuntimeException(e);
+		}
+
+	}
+
 }

@@ -10,53 +10,87 @@ import com.ibm.pross.common.util.crypto.ecc.EcPoint;
  * This class is meant to cache a FROST ( https://eprint.iacr.org/2020/852.pdf )
  * commitment to a nonce in a threshold Schnorr signing operation
  */
-public class NonceCommitment {
+public class NonceCommitment implements Comparable<NonceCommitment> {
 
-	private final BigInteger d;
-	private final BigInteger e;
-	private final EcPoint gD;
-	private final EcPoint gE;
+	private final int participantIndex;
+	private final BigInteger dNonce;
+	private final BigInteger eNonce;
+	private final EcPoint dCommitment;
+	private final EcPoint eCommitment;
 
-	public NonceCommitment(final BigInteger d, final BigInteger e, final EcPoint gD, final EcPoint gE) {
-		this.d = d;
-		this.e = e;
-		this.gD = gD;
-		this.gE = gE;
+	/**
+	 * Constructor for privately held (by the participant) nonce commitment
+	 * 
+	 * @param participantIndex
+	 * @param dNonce
+	 * @param eNonce
+	 * @param dCommitment
+	 * @param eCommitment
+	 */
+	public NonceCommitment(final int participantIndex, final BigInteger dNonce, final BigInteger eNonce,
+			final EcPoint dCommitment, EcPoint eCommitment) {
+		this.participantIndex = participantIndex;
+		this.dNonce = dNonce;
+		this.eNonce = eNonce;
+		this.dCommitment = dCommitment;
+		this.eCommitment = eCommitment;
 	}
 
-	public static NonceCommitment generateCommitment(EcCurve curve) {
+	/**
+	 * Constructor for other participants or the aggregator, which does not contain
+	 * private nonces
+	 * 
+	 * @param participantIndex
+	 * @param dCommitment
+	 * @param eCommitment
+	 */
+	public NonceCommitment(int participantIndex, EcPoint dCommitment, EcPoint eCommitment) {
+		this(participantIndex, null, null, dCommitment, eCommitment);
+	}
+
+	public static NonceCommitment generateNonceCommitment(final EcCurve curve, final int participantIndex) {
 		final BigInteger fieldModulus = curve.getR();
-		final BigInteger e = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
-		final BigInteger d = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
-		final EcPoint gE = curve.multiply(curve.getG(), e);
-		final EcPoint gD = curve.multiply(curve.getG(), d);
-		return new NonceCommitment(e, d, gE, gD);
+		final BigInteger dNonce = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
+		final BigInteger eNonce = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
+		final EcPoint dCommitment = curve.multiply(curve.getG(), dNonce);
+		final EcPoint eCommitment = curve.multiply(curve.getG(), eNonce);
+		return new NonceCommitment(participantIndex, dNonce, eNonce, dCommitment, eCommitment);
 	}
 
-	public BigInteger getD() {
-		return d;
+	@Override
+	public int compareTo(final NonceCommitment other) {
+		return Long.valueOf(this.participantIndex).compareTo(Long.valueOf(other.getParticipantIndex()));
 	}
 
-	public BigInteger getE() {
-		return e;
+	public int getParticipantIndex() {
+		return participantIndex;
 	}
 
-	public EcPoint getgD() {
-		return gD;
+	public BigInteger getNonceD() {
+		return dNonce;
 	}
 
-	public EcPoint getgE() {
-		return gE;
+	public BigInteger getNonceE() {
+		return eNonce;
+	}
+
+	public EcPoint getCommitmentD() {
+		return dCommitment;
+	}
+
+	public EcPoint getCommitmentE() {
+		return eCommitment;
 	}
 
 	@Override
 	public int hashCode() {
 		final int prime = 31;
 		int result = 1;
-		result = prime * result + ((d == null) ? 0 : d.hashCode());
-		result = prime * result + ((e == null) ? 0 : e.hashCode());
-		result = prime * result + ((gD == null) ? 0 : gD.hashCode());
-		result = prime * result + ((gE == null) ? 0 : gE.hashCode());
+		result = prime * result + ((dCommitment == null) ? 0 : dCommitment.hashCode());
+		result = prime * result + ((dNonce == null) ? 0 : dNonce.hashCode());
+		result = prime * result + ((eCommitment == null) ? 0 : eCommitment.hashCode());
+		result = prime * result + ((eNonce == null) ? 0 : eNonce.hashCode());
+		result = prime * result + participantIndex;
 		return result;
 	}
 
@@ -69,29 +103,35 @@ public class NonceCommitment {
 		if (getClass() != obj.getClass())
 			return false;
 		NonceCommitment other = (NonceCommitment) obj;
-		if (d == null) {
-			if (other.d != null)
+		if (dCommitment == null) {
+			if (other.dCommitment != null)
 				return false;
-		} else if (!d.equals(other.d))
+		} else if (!dCommitment.equals(other.dCommitment))
 			return false;
-		if (e == null) {
-			if (other.e != null)
+		if (dNonce == null) {
+			if (other.dNonce != null)
 				return false;
-		} else if (!e.equals(other.e))
+		} else if (!dNonce.equals(other.dNonce))
 			return false;
-		if (gD == null) {
-			if (other.gD != null)
+		if (eCommitment == null) {
+			if (other.eCommitment != null)
 				return false;
-		} else if (!gD.equals(other.gD))
+		} else if (!eCommitment.equals(other.eCommitment))
 			return false;
-		if (gE == null) {
-			if (other.gE != null)
+		if (eNonce == null) {
+			if (other.eNonce != null)
 				return false;
-		} else if (!gE.equals(other.gE))
+		} else if (!eNonce.equals(other.eNonce))
+			return false;
+		if (participantIndex != other.participantIndex)
 			return false;
 		return true;
 	}
-	
-	
+
+	@Override
+	public String toString() {
+		return "NonceCommitment [participantIndex=" + participantIndex + ", dNonce=" + dNonce + ", eNonce=" + eNonce
+				+ ", dCommitment=" + dCommitment + ", eCommitment=" + eCommitment + "]";
+	}
 
 }

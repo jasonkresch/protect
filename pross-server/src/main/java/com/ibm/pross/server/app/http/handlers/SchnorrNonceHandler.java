@@ -2,7 +2,6 @@ package com.ibm.pross.server.app.http.handlers;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.math.BigInteger;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
@@ -19,13 +18,7 @@ import com.ibm.pross.common.exceptions.http.HttpStatusCode;
 import com.ibm.pross.common.exceptions.http.NotFoundException;
 import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
 import com.ibm.pross.common.exceptions.http.UnauthorizedException;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.client.RsaSharing;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.data.SignatureResponse;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.math.ThresholdSignatures;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.RsaShareConfiguration;
-import com.ibm.pross.common.util.crypto.rsa.threshold.sign.server.ServerPublicConfiguration;
 import com.ibm.pross.common.util.crypto.schnorr.NonceCommitment;
-import com.ibm.pross.common.util.shamir.ShamirShare;
 import com.ibm.pross.server.app.avpss.ApvssShareholder;
 import com.ibm.pross.server.app.avpss.ApvssShareholder.SharingType;
 import com.ibm.pross.server.app.http.HttpRequestProcessor;
@@ -82,6 +75,8 @@ public class SchnorrNonceHandler extends AuthenticatedClientRequestHandler {
 		if (shareholder == null) {
 			throw new NotFoundException();
 		}
+		final int serverIndex = shareholder.getIndex();
+		
 		// Make sure secret is not disabled
 		if (!shareholder.isEnabled()) {
 			throw new ResourceUnavailableException();
@@ -108,7 +103,7 @@ public class SchnorrNonceHandler extends AuthenticatedClientRequestHandler {
 	
 		// Do processing
 		final long startTime = System.nanoTime();
-		final NonceCommitment nonceCommitment = NonceCommitment.generateCommitment(ApvssShareholder.curve);
+		final NonceCommitment nonceCommitment = NonceCommitment.generateNonceCommitment(ApvssShareholder.curve, serverIndex);
 		this.nonceCommitments.putIfAbsent(nonceUUID, nonceCommitment);
 		final NonceCommitment existingCommitment = this.nonceCommitments.get(nonceUUID);
 		final long endTime = System.nanoTime();
@@ -117,7 +112,6 @@ public class SchnorrNonceHandler extends AuthenticatedClientRequestHandler {
 		final long processingTimeUs = (endTime - startTime) / 1_000;
 
 		// Create response
-		final int serverIndex = shareholder.getIndex();
 		final long epoch = shareholder.getEpoch();
 		
 		// Return the result in json
@@ -125,17 +119,19 @@ public class SchnorrNonceHandler extends AuthenticatedClientRequestHandler {
 		obj.put("responder", new Integer(serverIndex));
 		obj.put("epoch", new Long(epoch));
 
-		// gE
-		JSONArray gE = new JSONArray();
-		gE.add(existingCommitment.getgE().getX().toString());
-		gE.add(existingCommitment.getgE().getY().toString());
-		obj.put("ge", gE);
-		
 		// gD
 		JSONArray gD = new JSONArray();
-		gD.add(existingCommitment.getgD().getX().toString());
-		gD.add(existingCommitment.getgD().getY().toString());
+		gD.add(existingCommitment.getCommitmentD().getX().toString());
+		gD.add(existingCommitment.getCommitmentD().getY().toString());
 		obj.put("gd", gD);
+		
+		// gE
+		JSONArray gE = new JSONArray();
+		gE.add(existingCommitment.getCommitmentE().getX().toString());
+		gE.add(existingCommitment.getCommitmentE().getY().toString());
+		obj.put("ge", gE);
+		
+
 
 		obj.put("compute_time_us", new Long(processingTimeUs));
 

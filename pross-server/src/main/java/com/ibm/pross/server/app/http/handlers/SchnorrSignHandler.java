@@ -26,6 +26,7 @@ import com.ibm.pross.common.exceptions.http.ResourceUnavailableException;
 import com.ibm.pross.common.exceptions.http.UnauthorizedException;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
 import com.ibm.pross.common.util.crypto.schnorr.NonceCommitment;
+import com.ibm.pross.common.util.crypto.schnorr.SchnorrUtil;
 import com.ibm.pross.common.util.serialization.HexUtil;
 import com.ibm.pross.common.util.serialization.Parse;
 import com.ibm.pross.common.util.shamir.Polynomials;
@@ -121,19 +122,20 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			throw new BadRequestException();
 		}
 
-
 		// Obtain the commitments (B)
-		final SortedMap<BigInteger, EcPoint> eCommitments = new TreeMap<>();
-		final SortedMap<BigInteger, EcPoint> dCommitments = new TreeMap<>();
+		final SortedMap<BigInteger, NonceCommitment> commitmentMap = new TreeMap<>();
 		for (int i = 1; i <= shareholder.getN(); i++) {
-			final String exStrI = HttpRequestProcessor.getParameterValue(params, Ex_COMMITMENTS + i);
-			final String eyStrI = HttpRequestProcessor.getParameterValue(params, Ey_COMMITMENTS + i);
+
 			final String dxStrI = HttpRequestProcessor.getParameterValue(params, Dx_COMMITMENTS + i);
 			final String dyStrI = HttpRequestProcessor.getParameterValue(params, Dy_COMMITMENTS + i);
+
+			final String exStrI = HttpRequestProcessor.getParameterValue(params, Ex_COMMITMENTS + i);
+			final String eyStrI = HttpRequestProcessor.getParameterValue(params, Ey_COMMITMENTS + i);
+
 			if ((exStrI != null) && (eyStrI != null) && (dxStrI != null) && (dyStrI != null)) {
 
-				final EcPoint eCommitment = new EcPoint(new BigInteger(exStrI), new BigInteger(eyStrI));
 				final EcPoint dCommitment = new EcPoint(new BigInteger(dxStrI), new BigInteger(dyStrI));
+				final EcPoint eCommitment = new EcPoint(new BigInteger(exStrI), new BigInteger(eyStrI));
 
 				// Ensure the resulting point exists on the curve
 				if (!CommonConfiguration.CURVE.isPointOnCurve(eCommitment)) {
@@ -143,12 +145,13 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 					throw new BadRequestException();
 				}
 
-				eCommitments.put(BigInteger.valueOf(i), eCommitment);
-				dCommitments.put(BigInteger.valueOf(i), dCommitment);
+				// Add commitment to map
+				final NonceCommitment commitment = new NonceCommitment(i, dCommitment, eCommitment);
+				commitmentMap.put(BigInteger.valueOf(i), commitment);
 			}
 		}
 
-		if (!eCommitments.containsKey(BigInteger.valueOf(shareholder.getIndex()))) {
+		if (!commitmentMap.containsKey(BigInteger.valueOf(shareholder.getIndex()))) {
 			// We were given a request for a signing operation we are not part of
 			throw new BadRequestException();
 		}
@@ -160,12 +163,11 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 		}
 
 		// Get the cached nonce, we remove it because it should only be used once
-		final NonceCommitment ourCommitment = this.nonceCommitments.remove(nonceUUID);
+		final NonceCommitment privateCommitment = this.nonceCommitments.remove(nonceUUID);
 
 		// Do processing
 		final long startTime = System.nanoTime();
-		final BigInteger signatureResponse = doSigning(shareholder, eCommitments, dCommitments, messageBytes,
-				ourCommitment);
+		final BigInteger signatureResponse = doSigning(shareholder, commitmentMap, messageBytes, privateCommitment);
 		final long endTime = System.nanoTime();
 
 		// Compute processing time
@@ -197,71 +199,43 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 		}
 	}
 
-	private BigInteger doSigning(final ApvssShareholder shareholder, final SortedMap<BigInteger, EcPoint> eCommitments,
-			final SortedMap<BigInteger, EcPoint> dCommitments, final byte[] messageBytes,
-			final NonceCommitment ourCommitment) throws NotFoundException, IOException {
+	private BigInteger doSigning(final ApvssShareholder shareholder,
+			final SortedMap<BigInteger, NonceCommitment> nonceCommitmentMap, final byte[] messageBytes,
+			final NonceCommitment privateCommitment) throws NotFoundException, IOException {
 
-		final BigInteger modulus =  CommonConfiguration.CURVE.getR();
-		
-		// Our nonce values
-		final BigInteger ei = ourCommitment.getE();
-		final BigInteger di = ourCommitment.getD();
-
-		MessageDigest md;
-		try {
-			md = MessageDigest.getInstance("SHA-512");
-		} catch (NoSuchAlgorithmException e) {
-			throw new IOException();
-		}
-		
 		if ((shareholder.getSecretPublicKey() == null) || (shareholder.getShare1() == null)) {
 			throw new NotFoundException();
 		} else {
 			// Do FROST-based threshold Schnorr Signature calculation (
 			// https://eprint.iacr.org/2020/852.pdf )
-			
+
 			// Our share of the private key
-			final int myIndex = shareholder.getIndex();
 			final BigInteger si = shareholder.getShare1().getY();
 			final EcPoint secretPublicKey = shareholder.getSecretPublicKey();
+			
+			// Create M || B
+			byte[] stringB = SchnorrUtil.serializeNonceCommitments(nonceCommitmentMap);
+			byte[] combinedString = Parse.concatenate(messageBytes, stringB);
 
-			// Serialize the commitments (B)
-			byte[] combinedString = messageBytes.clone();
-			for (final BigInteger index : eCommitments.keySet()) {
-				byte[] tuple = Parse.concatenate(index, eCommitments.get(index).getX(), eCommitments.get(index).getY(), dCommitments.get(index).getX(), dCommitments.get(index).getY());
-				combinedString = Parse.concatenate(combinedString, tuple);
-			}
-			
-			// Compute R from multiplying each Ri
-			EcPoint R = EcPoint.pointAtInfinity;
-			for (final BigInteger index : eCommitments.keySet()) {
-				
-				final EcPoint Di = new EcPoint(dCommitments.get(index).getX(), dCommitments.get(index).getY());
-				
-				final EcPoint Ei = new EcPoint(eCommitments.get(index).getX(), eCommitments.get(index).getY());
-				final BigInteger Pi = new BigInteger(1, md.digest(Parse.concatenate(index.toByteArray(), combinedString))).mod(modulus);
-				
-				final EcPoint EiPi = CommonConfiguration.CURVE.multiply(Ei, Pi);
-				
-				final EcPoint Ri = CommonConfiguration.CURVE.addPoints(Di, EiPi);
-				
-				// Sum up the Ris
-				R = CommonConfiguration.CURVE.addPoints(R, Ri);
-			}
-			
-			
+			// System.out.println("combined: " + HexUtil.binToHex(combinedString));
+
+			// Compute R
+			final BigInteger[] participantIndices = SchnorrUtil.getParticipantIndices(nonceCommitmentMap);
+			final SortedMap<BigInteger, EcPoint> Ris = SchnorrUtil.comptuteRValues(nonceCommitmentMap, combinedString);
+			final EcPoint R = SchnorrUtil.sumEcPoints(Ris.values());
+
+
+			// System.out.println("R: " + R.toString());
+
 			// Compute challenge c = H(R, Y, m)
-			byte[] challenge = Parse.concatenate(Parse.concatenate(R), Parse.concatenate(secretPublicKey), messageBytes);
-			final BigInteger c = new BigInteger(1, md.digest(challenge));
-			
-			// Compute our share of the signature zi = di + ei*pi + Li
-			final BigInteger pi = new BigInteger(1, md.digest(Parse.concatenate(BigInteger.valueOf(myIndex).toByteArray(), combinedString))).mod(modulus);
+			final BigInteger challenge = SchnorrUtil.computeChallenge(R, secretPublicKey, messageBytes);
 
-			final BigInteger coefficient = Polynomials.computeLagrange(eCommitments.keySet().toArray(new BigInteger[eCommitments.size()]), BigInteger.valueOf(myIndex), modulus);
-			
-			final BigInteger zi = ((di.add(ei.multiply(pi))).add(coefficient.multiply(si).multiply(c))).mod(modulus);
-	
-			
+			System.out.println("c: " + challenge.toString());
+
+			// Compute our share of the signature zi = di + ei*pi + Li*si*c
+			final BigInteger zi = SchnorrUtil.computeSignatureShare(privateCommitment, si,
+					combinedString, participantIndices, challenge);
+
 			return zi;
 		}
 
