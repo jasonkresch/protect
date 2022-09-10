@@ -2,6 +2,7 @@ package com.ibm.pross.common.util.crypto.schnorr;
 
 import java.math.BigInteger;
 
+import com.ibm.pross.common.config.CommonConfiguration;
 import com.ibm.pross.common.util.RandomNumberGenerator;
 import com.ibm.pross.common.util.crypto.ecc.EcCurve;
 import com.ibm.pross.common.util.crypto.ecc.EcPoint;
@@ -52,8 +53,8 @@ public class NonceCommitment implements Comparable<NonceCommitment> {
 		final BigInteger fieldModulus = curve.getR();
 		final BigInteger dNonce = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
 		final BigInteger eNonce = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
-		final EcPoint dCommitment = curve.multiply(curve.getG(), dNonce);
-		final EcPoint eCommitment = curve.multiply(curve.getG(), eNonce);
+		final EcPoint dCommitment = curve.multiply(CommonConfiguration.g, dNonce);
+		final EcPoint eCommitment = curve.multiply(CommonConfiguration.g, eNonce);
 		return new NonceCommitment(participantIndex, dNonce, eNonce, dCommitment, eCommitment);
 	}
 

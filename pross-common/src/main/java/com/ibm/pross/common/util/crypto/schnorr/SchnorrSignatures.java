@@ -30,7 +30,7 @@ public class SchnorrSignatures {
 		final BigInteger k = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
 
 		// Calculate r = g^k
-		final EcPoint r = curve.multiply(curve.getG(), k);
+		final EcPoint r = curve.multiply(CommonConfiguration.g, k);
 
 		// Compute e as hash(R, Y, m)
 		byte[] challenge = Parse.concatenate(Parse.concatenate(r), Parse.concatenate(publicKey), message);
@@ -48,7 +48,7 @@ public class SchnorrSignatures {
 		final BigInteger s = new BigInteger(1, sePair[0]);
 		final BigInteger e = new BigInteger(1, sePair[1]);
 
-		final EcPoint gS = curve.multiply(curve.getG(), s);
+		final EcPoint gS = curve.multiply(CommonConfiguration.g, s);
 		final EcPoint yE = curve.multiply(publicKey, e);
 		final EcPoint rv = curve.addPoints(gS, yE);
 
@@ -70,7 +70,7 @@ public class SchnorrSignatures {
 		final BigInteger k = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
 
 		// Calculate r = g^k
-		final EcPoint r = curve.multiply(curve.getG(), k);
+		final EcPoint r = curve.multiply(CommonConfiguration.g, k);
 
 		// Compute e as hash(R, Y, m)
 		byte[] challenge = Parse.concatenate(Parse.concatenate(r), Parse.concatenate(publicKey), message);
@@ -82,8 +82,8 @@ public class SchnorrSignatures {
 		return Parse.concatenate(Parse.concatenate(r), Parse.concatenate(z));
 	}
 
-	public static void verify(final EcCurve curve, final MessageDigest md, final EcPoint publicKey,
-			byte[] message, byte[] signature) throws SignatureException {
+	public static void verify(final EcCurve curve, final MessageDigest md, final EcPoint publicKey, byte[] message,
+			byte[] signature) throws SignatureException {
 		byte[][] sePair = Parse.splitArrays(signature);
 		final byte[][] rParts = Parse.splitArrays(sePair[0]);
 		EcPoint r = new EcPoint(new BigInteger(1, rParts[0]), new BigInteger(1, rParts[1]));
@@ -93,7 +93,7 @@ public class SchnorrSignatures {
 		byte[] challenge = Parse.concatenate(Parse.concatenate(r), Parse.concatenate(publicKey), message);
 		BigInteger c = new BigInteger(1, md.digest(challenge));
 
-		final EcPoint gZ = curve.multiply(curve.getG(), z);
+		final EcPoint gZ = curve.multiply(CommonConfiguration.g, z);
 		final EcPoint yC = curve.multiply(publicKey, BigInteger.ZERO.subtract(c));
 		final EcPoint rv = curve.addPoints(gZ, yC);
 
@@ -108,13 +108,12 @@ public class SchnorrSignatures {
 	public static void main(String[] args) throws NoSuchAlgorithmException, SignatureException {
 		// Static fields
 		final EcCurve curve = CommonConfiguration.CURVE;
-		final EcPoint generator = curve.getG();
 		final BigInteger fieldModulus = curve.getR();
 
 		final MessageDigest md = MessageDigest.getInstance("SHA-512");
 
 		final BigInteger privateSigningKey = RandomNumberGenerator.generateRandomPositiveInteger(fieldModulus);
-		final EcPoint publicVerificationKey = curve.multiply(generator, privateSigningKey);
+		final EcPoint publicVerificationKey = curve.multiply(CommonConfiguration.g, privateSigningKey);
 
 		byte[] message = "Hello World!".getBytes(Charsets.UTF_8);
 		byte[] signature = sign1(curve, md, privateSigningKey, publicVerificationKey, message);
@@ -131,7 +130,6 @@ public class SchnorrSignatures {
 
 	public static void thresholdSchnorr() throws NoSuchAlgorithmException, SignatureException {
 
-
 		final MessageDigest md = MessageDigest.getInstance("SHA-512");
 
 		final int threshold = 3;
@@ -140,7 +138,7 @@ public class SchnorrSignatures {
 		final BigInteger[] coefficients = Shamir.generateCoefficients(threshold);
 		final ShamirShare[] shares = Shamir.generateShares(coefficients, numShares);
 
-		final EcPoint[] feldmanValues = Shamir.generateFeldmanValues(coefficients);
+		final EcPoint[] feldmanValues = Shamir.generateFeldmanValues(coefficients, CommonConfiguration.g);
 		final EcPoint[] shareholderPublicKeys = Shamir.computeSharePublicKeys(feldmanValues, numShares);
 
 		// The main private/public key pair
@@ -163,7 +161,8 @@ public class SchnorrSignatures {
 
 		final SortedMap<BigInteger, NonceCommitment> nonceCommitmentMap = new TreeMap<>();
 		for (int i = 1; i < 5; i++) {
-			nonceCommitmentMap.put(BigInteger.valueOf(i), NonceCommitment.generateNonceCommitment(SchnorrUtil.CURVE, i));
+			nonceCommitmentMap.put(BigInteger.valueOf(i),
+					NonceCommitment.generateNonceCommitment(SchnorrUtil.CURVE, i));
 		}
 
 		System.out.println(nonceCommitmentMap.keySet().toString());
@@ -202,15 +201,16 @@ public class SchnorrSignatures {
 		System.out.println(shareContributions.toString());
 
 		// Verify all the share contributions
-		for (Entry<BigInteger, BigInteger> entry : shareContributions.entrySet()){
+		for (Entry<BigInteger, BigInteger> entry : shareContributions.entrySet()) {
 			final BigInteger participantIndex = entry.getKey();
 			final BigInteger signatureShare = entry.getValue();
 			final EcPoint shareholderPublicKey = shareholderPublicKeys[participantIndex.intValue() - 1];
 			final EcPoint Ri = Ris.get(participantIndex);
-			
-			SchnorrUtil.verifySignatureShare(participantIndex, participantIndices, shareholderPublicKey, signatureShare, challenge, Ri);
+
+			SchnorrUtil.verifySignatureShare(participantIndex, participantIndices, shareholderPublicKey, signatureShare,
+					challenge, Ri);
 		}
-		
+
 		// Compute sum of all zs
 		BigInteger sum = SchnorrUtil.modSumNumbers(shareContributions.values());
 

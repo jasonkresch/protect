@@ -23,8 +23,9 @@ import com.ibm.pross.common.util.shamir.Polynomials;
  */
 public class SchnorrUtil {
 
-	public static EcCurve CURVE = CommonConfiguration.CURVE;
-	public static BigInteger MOD = CURVE.getR();
+	final public static EcCurve CURVE = CommonConfiguration.CURVE;
+	final public static BigInteger MOD = CURVE.getR();
+	final public static EcPoint G = CommonConfiguration.g;
 
 	/**
 	 * Sort a collection of nonce commitments by their participant index
@@ -236,11 +237,11 @@ public class SchnorrUtil {
 			final EcPoint shareholderPublicKey, final BigInteger signatureShare, final BigInteger challenge,
 			final EcPoint Ri) throws SignatureException {
 		
-		// Compute lagrange co-efficient
+		// Compute Lagrange co-efficient
 		final BigInteger l = Polynomials.computeLagrange(participantIndices, participantIndex, MOD);
 
 		// Validate signature Share
-		final EcPoint gZ = CURVE.multiply(CURVE.getG(), signatureShare);
+		final EcPoint gZ = CURVE.multiply(G, signatureShare);
 		final EcPoint Ycl = CURVE.multiply(shareholderPublicKey, challenge.multiply(l).mod(MOD));
 		final EcPoint vgZ = CURVE.addPoints(Ri, Ycl);
 

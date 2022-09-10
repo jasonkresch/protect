@@ -256,8 +256,6 @@ public class SchnorrSignatureClient extends BaseClient {
 		final SortedMap<BigInteger, NonceCommitment> nonceCommitmentMap = SchnorrUtil
 				.mapNonceCommitments(commitmentList);
 
-		// System.out.println(sortedCommitments.toString());
-
 		// Phase 2: Send the collected commitments to each server to obtain its share of
 		// the signature
 		System.out.println(
@@ -279,7 +277,6 @@ public class SchnorrSignatureClient extends BaseClient {
 		byte[] stringB = SchnorrUtil.serializeNonceCommitments(nonceCommitmentMap);
 		byte[] combinedString = Parse.concatenate(messageBytes, stringB);
 
-		// System.out.println("combined: " + HexUtil.binToHex(combinedString));
 
 		// Compute R_i sub values
 		final SortedMap<BigInteger, EcPoint> Ris = SchnorrUtil.comptuteRValues(nonceCommitmentMap, combinedString);
@@ -292,7 +289,7 @@ public class SchnorrSignatureClient extends BaseClient {
 		// Compute challenge c = H(R, Y, m)
 		final BigInteger challenge = SchnorrUtil.computeChallenge(R, publicKey, messageBytes);
 
-		System.out.println("c: " + challenge.toString());
+		//System.out.println("c: " + challenge.toString());
 
 		// Verify all the share contributions
 		for (SignatureResponse signatureResponse : sortedContributions) {
@@ -600,50 +597,5 @@ public class SchnorrSignatureClient extends BaseClient {
 
 	}
 
-	@Deprecated
-	public static byte[] localSign(byte[] message) {
-		// Static fields
-		final EcCurve curve = CommonConfiguration.CURVE;
-		final EcPoint generator = curve.getG();
-		final BigInteger fieldModulus = curve.getR();
-
-		// Constant key
-		final BigInteger privateSigningKey = BigInteger.TEN.mod(fieldModulus);
-		final EcPoint publicVerificationKey = curve.multiply(generator, privateSigningKey);
-
-		try {
-			final MessageDigest md = MessageDigest.getInstance("SHA-512");
-
-			byte[] signature = SchnorrSignatures.sign(curve, md, privateSigningKey, publicVerificationKey, message);
-
-			return signature;
-
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
-
-	}
-
-	@Deprecated
-	public static void localVerify(byte[] message, byte[] signature) throws SignatureException {
-		// Static fields
-		final EcCurve curve = CommonConfiguration.CURVE;
-		final EcPoint generator = curve.getG();
-		final BigInteger fieldModulus = curve.getR();
-
-		// Constant key
-		final BigInteger privateSigningKey = BigInteger.TEN.mod(fieldModulus);
-		final EcPoint publicVerificationKey = curve.multiply(generator, privateSigningKey);
-
-		try {
-			final MessageDigest md = MessageDigest.getInstance("SHA-512");
-
-			SchnorrSignatures.verify(curve, md, publicVerificationKey, message, signature);
-
-		} catch (NoSuchAlgorithmException e) {
-			throw new RuntimeException(e);
-		}
-
-	}
 
 }

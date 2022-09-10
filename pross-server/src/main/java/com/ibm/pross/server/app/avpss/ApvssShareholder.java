@@ -953,7 +953,7 @@ public class ApvssShareholder {
 	}
 
 	public int getRefreshFrequency() {
-		return 60;
+		return 900;
 	}
 
 	public SharingType getSharingType() {

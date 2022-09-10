@@ -230,7 +230,7 @@ public class SchnorrSignHandler extends AuthenticatedClientRequestHandler {
 			// Compute challenge c = H(R, Y, m)
 			final BigInteger challenge = SchnorrUtil.computeChallenge(R, secretPublicKey, messageBytes);
 
-			System.out.println("c: " + challenge.toString());
+			//System.out.println("c: " + challenge.toString());
 
 			// Compute our share of the signature zi = di + ei*pi + Li*si*c
 			final BigInteger zi = SchnorrUtil.computeSignatureShare(privateCommitment, si,
