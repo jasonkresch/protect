@@ -935,7 +935,7 @@ Output:
 ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
 -----------------------------------------------------------
 Beginning signature generation for file: important.txt
-Reading input file: threshold-ca.sh...  (done)
+Reading input file: important.txt...  (done)
 Read 32 bytes of input to sign.
 
 Accessing public key for secret: my-secret...  (done)
@@ -946,7 +946,7 @@ Performing threshold Schnorr signature calculation using: my-secret... Received 
 Received 3 signature contributions from the servers. Generating signature... (done)
 Signature obtained:    0000004800000020542ec404d5f0e89a95d3ba74c39b0da39a3b60b6e5708ff4128dde1c17aa034d0000002019f15bcd2ef75101b2838c29b402d8bb449aee97380236a5713a094f3f04e02f000000250000002100c6b4d26da9f3d9d23d7fd7a4e3cc553617021e7de8b9ee7655a4d309633a8220
 
-Writing signature to file: test.sig...  (done)
+Writing signature to file: important.sig...  (done)
 Wrote 117 bytes.
 
 Done.
@@ -971,15 +971,15 @@ Output:
 ```
 ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
 -----------------------------------------------------------
-Beginning signature verification for file: threshold-ca.sh
+Beginning signature verification for file: important.txt
 Accessing public key for secret: my-secret...  (done)
 Public key for secret:    EcPoint [x=12221715429226342854507927082990108132768436898461567998498578033715275293731, y=106613017902521964593225627688973131248737334507672045639908651241671827378080]
 Current epoch for secret: 0
 
-Reading signed file: threshold-ca.sh...  (done)
-Read 162 bytes.
+Reading signed file: important.txt...  (done)
+Read 32 bytes.
 
-Reading signature: test.sig...  (done)
+Reading signature: important.sig...  (done)
 Read 117 bytes.
 
 Performing Schnorr signature verification of file content...  (done)
