@@ -168,6 +168,7 @@ public class SchnorrSignatureClient extends BaseClient {
 		} catch (SignatureException e) {
 			System.out.println(" (done)");
 			System.err.println("Signature is <<< INVALID!!! >>>");
+			System.exit(1);
 		}
 		System.out.println();
 		System.exit(0);
