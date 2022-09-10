@@ -44,6 +44,7 @@ The following are supported user actions related to the management of shares.  N
 #### Elliptic Curves
 * **Pseudorandom Functions** (PRF) - May be used to derive random looking output deterministically (for PRNGs, or KDFs)
 * **Oblivious Pseudorandom Functions** - The same as a PRF but [blinded](https://en.wikipedia.org/wiki/Pseudorandom_function_family#Oblivious_pseudorandom_functions) so as to hide the input (for password hardening, OPAQUE, oblivious KDF)
+* **Schnorr Signatures** - Threshold Schnorr signature generation via [FROST](https://eprint.iacr.org/2020/852.pdf), see [draft-irtf-cfrg-frost](https://datatracker.ietf.org/doc/draft-irtf-cfrg-frost/).
 * **ECIES Encryption** - The EC version of [Integrated Encryption Scheme](https://en.wikipedia.org/wiki/Integrated_Encryption_Scheme) which is based on [ElGamal](https://en.wikipedia.org/wiki/ElGamal_encryption) encryption
 * **Elliptic Curve Diffie Hellman Key Agreement** (ECDH) - [ECDH](https://en.wikipedia.org/wiki/Elliptic-curve_Diffie%E2%80%93Hellman) is a Key Agreement Scheme commonly used in [TLS handshakes](https://en.wikipedia.org/wiki/Transport_Layer_Security)
 
@@ -369,7 +370,7 @@ server.9 = 127.0.0.1:65090
 #   - disable:      The ability to temporarily disable client actions from being performed against the shares of this key (note: does not prevent delete/enable/info)
 #   - enable:       The ability to re-enable client actions from being performed against shares of this key
 #   - exponentiate: The ability to compute an exponentiation (scalar multiply for EC curves) on a client-supplied base point: base^secret
-#   - sign:         The ability to perform an signature operation on a client-supplied message: message^(secret=d) mod N.  Secrets of this form must be stored and be under RSA or BLS groups.
+#   - sign:         The ability to perform an signature operation on a client-supplied message: signature = sign(message, secret).
 ```
 
 ##### Example Secret Definition
@@ -910,6 +911,86 @@ Writing signed certificate to file: new-cert.pem...  done.
 Operation complete. Certificate now ready for use.
 ```
 
+#### Schnorr Signature Client
+
+The "schnorr-sign.sh" script allows one to sign a file with the private key of a shared secret and then later verify it using a public key is stored across an instance of ***PROTECT*** servers.  The private key itself is never reconstructed during the signing operation.
+
+##### Signing a File
+
+*Required Permissions:* `INFO` and `SIGN`
+
+The following command uses the *administrator* user to encrypt the file "important.txt" and output the signature result to a file named "important.sig", using the private key of *prf-secret* to perform that signing. The result is a Schnorr signature of the file which is a valid Schnorr signature that can be verified by anyone possessing the public key:
+
+```
+# Writes to a file
+$ cat "This is a most important message" > important.txt
+
+# Signs the file
+$ ./schnorr-sign.sh config/ administrator my-secret SIGN important.txt important.sig
+```
+
+Output:
+
+```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Beginning signature generation for file: important.txt
+Reading input file: threshold-ca.sh...  (done)
+Read 32 bytes of input to sign.
+
+Accessing public key for secret: my-secret...  (done)
+Public key for secret:    EcPoint [x=12221715429226342854507927082990108132768436898461567998498578033715275293731, y=106613017902521964593225627688973131248737334507672045639908651241671827378080]
+Current epoch for secret: 0
+
+Performing threshold Schnorr signature calculation using: my-secret... Received 3 commitments from the servers. Proceeding to phase 2...
+Received 3 signature contributions from the servers. Generating signature... (done)
+Signature obtained:    0000004800000020542ec404d5f0e89a95d3ba74c39b0da39a3b60b6e5708ff4128dde1c17aa034d0000002019f15bcd2ef75101b2838c29b402d8bb449aee97380236a5713a094f3f04e02f000000250000002100c6b4d26da9f3d9d23d7fd7a4e3cc553617021e7de8b9ee7655a4d309633a8220
+
+Writing signature to file: test.sig...  (done)
+Wrote 117 bytes.
+
+Done.
+
+```
+
+Note: the `INFO` permission is required only to get the public key of the given secret.
+
+##### Verifying a File
+
+*Required Permissions:* `INFO`
+
+The following command uses the *administrator* user to verify the file "important.txt" against a previously generated signatured stored in "important.sig", using the public key corresponding to the secret *prf-secret* as the signature verification key:
+
+```
+# Performs a verification of the file, ensuring the file has not changed since the signature was generated for it.
+$ ./schnorr-sign.sh config/ administrator my-secret VERIFY important.txt important.sig
+```
+
+Output:
+
+```
+ServerConfiguration [numServers=5, maxBftFaults=1, reconstructionThreshold=3, maxSafetyFaults=2, maxLivenessFaults=1, serverAddresses=[/127.0.0.1:65010, /127.0.0.1:65020, /127.0.0.1:65030, /127.0.0.1:65040, /127.0.0.1:65050]]
+-----------------------------------------------------------
+Beginning signature verification for file: threshold-ca.sh
+Accessing public key for secret: my-secret...  (done)
+Public key for secret:    EcPoint [x=12221715429226342854507927082990108132768436898461567998498578033715275293731, y=106613017902521964593225627688973131248737334507672045639908651241671827378080]
+Current epoch for secret: 0
+
+Reading signed file: threshold-ca.sh...  (done)
+Read 162 bytes.
+
+Reading signature: test.sig...  (done)
+Read 117 bytes.
+
+Performing Schnorr signature verification of file content...  (done)
+Signature is VALID.
+```
+
+Note that the command will exit with code ```0``` when the signature is valid, and the last line of output will be: ```Signature is VALID.```
+
+When the signature does not match for the file, the command will exit with code ```1``` and the last line of output will be ```Signature is <<< INVALID!!! >>>```.
+
+
 #### ECIES Encryption Client
 
 The "ecies-encrypt.sh" script allows one to encrypt a file with the public key of a shared secret and then later decrypt it using a private key is stored across an instance of ***PROTECT*** servers.  The private key itself is never reconstructed during the decryption operation.
@@ -993,6 +1074,7 @@ Wrote 36 bytes.
 
 Done.
 ```
+
 
 
 ## Design
@@ -1082,6 +1164,8 @@ Over a longer time horizion the ***PROTECT*** project aims to support:
 - ["Fail-aware untrusted storage"](http://webee.technion.ac.il/~idish/ftp/faust-dsn09.pdf). Christian Cachin, Idit Keidar, Alexander Shraer. 2011, SIAM Journal on Computing, Vols. 40(2):493-533, April 2011.
 - ["Beyond one-third faulty replicas in byzantine fault tolerant systems"](http://www.scs.stanford.edu/~jinyuan/bft2f.pdf). Jinyuan Li, David Maziéres. 2007, NSDI'07 Proceedings of the 4th USENIX conference on Networked systems design & implementation, pp. 10-10.
 - ["Public-Key Cryptosystems Based on Composite Degree Residuosity Classes"](http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.112.4035&rep=rep1&type=pdf). Pascal Paillier. 1999, Advances in Cryptology --- EUROCRYPT '99, pp. 223-238
+- ["FROST: Flexible Round-Optimized Schnorr Threshold Signatures"](https://eprint.iacr.org/2020/852.pdf). Chelsea Komlo, Ian Goldberg. University of Waterloo.
+
 
 ## Team
 
